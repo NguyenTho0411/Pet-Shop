@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/bg_card">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="14dp"
+        android:clickable="true" android:focusable="true"
+        android:foreground="?attr/selectableItemBackground">
+
+        <!-- Order code + status -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:layout_marginBottom="8dp">
+            <TextView android:id="@+id/tvOrderCode"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="ORD-20240101-ABCD"
+                android:textSize="14sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <TextView android:id="@+id/tvStatus"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Chờ xác nhận" android:textSize="11sp"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_orange_pill"
+                android:paddingStart="8dp" android:paddingEnd="8dp"
+                android:paddingTop="3dp" android:paddingBottom="3dp" />
+        </LinearLayout>
+
+        <!-- Item thumbnails (up to 3) -->
+        <LinearLayout android:id="@+id/llThumbnails"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginBottom="8dp" />
+
+        <!-- Date + total -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+            <TextView android:id="@+id/tvDate"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:text="01/01/2024"
+                android:textSize="12sp" android:textColor="@color/text_secondary" />
+            <TextView android:id="@+id/tvTotal"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="12.000.000đ" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/primary" />
+        </LinearLayout>
+
+        <!-- Action buttons row -->
+        <LinearLayout android:id="@+id/llActions"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:layout_marginTop="10dp"
+            android:gravity="end">
+            <Button android:id="@+id/btnCancel"
+                android:layout_width="wrap_content" android:layout_height="34dp"
+                android:text="Huỷ đơn" android:textSize="12sp"
+                style="@style/Widget.Petshop.Button.Outline"
+                android:paddingStart="12dp" android:paddingEnd="12dp"
+                android:layout_marginEnd="8dp" android:visibility="gone" />
+            <Button android:id="@+id/btnReturn"
+                android:layout_width="wrap_content" android:layout_height="34dp"
+                android:text="Trả hàng" android:textSize="12sp"
+                style="@style/Widget.Petshop.Button.Outline"
+                android:paddingStart="12dp" android:paddingEnd="12dp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

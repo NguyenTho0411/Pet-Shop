@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#FFF8F2">
+
+    <!-- ===== HERO: food image on pastel background ===== -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="320dp"
+        android:background="#FFF3E0">
+
+        <ImageView
+            android:id="@+id/ivFoodHero"
+            android:layout_width="220dp"
+            android:layout_height="220dp"
+            android:layout_gravity="center"
+            android:scaleType="centerCrop"
+            android:src="@mipmap/ic_launcher" />
+
+        <!-- Promotion badge -->
+        <TextView
+            android:id="@+id/tvSaleBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="20dp"
+            android:layout_marginTop="54dp"
+            android:text="-20%"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:background="@drawable/bg_orange_pill"
+            android:paddingStart="10dp" android:paddingEnd="10dp"
+            android:paddingTop="4dp" android:paddingBottom="4dp"
+            android:visibility="gone" />
+
+        <!-- Back button -->
+        <FrameLayout
+            android:id="@+id/btnBack"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="16dp"
+            android:layout_gravity="top|start"
+            android:background="@drawable/bg_circle_white"
+            android:elevation="4dp"
+            android:layout_marginTop="44dp">
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@android:drawable/ic_menu_revert"
+                app:tint="@color/text_primary" />
+        </FrameLayout>
+
+        <!-- Favorite button -->
+        <FrameLayout
+            android:id="@+id/btnFavorite"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_margin="16dp"
+            android:layout_gravity="top|end"
+            android:background="@drawable/bg_circle_white"
+            android:elevation="4dp"
+            android:layout_marginTop="44dp">
+            <ImageView
+                android:id="@+id/ivFavoriteIcon"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_favorite"
+                app:tint="#FFAAAAAA" />
+        </FrameLayout>
+    </FrameLayout>
+
+    <!-- ===== WHITE SHEET ===== -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="290dp"
+        android:layout_marginBottom="80dp"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:background="@color/white"
+            android:paddingBottom="24dp">
+
+            <!-- Handle -->
+            <View android:layout_width="40dp" android:layout_height="4dp"
+                android:layout_gravity="center"
+                android:layout_marginTop="12dp" android:layout_marginBottom="16dp"
+                android:background="#E0E0E0" />
+
+            <!-- Name + brand -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="4dp">
+
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:id="@+id/tvFoodName"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:text="Royal Canin Adult" android:textSize="22sp"
+                        android:textStyle="bold" android:textColor="@color/text_primary" />
+                    <TextView android:id="@+id/tvBrand"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Royal Canin" android:textSize="14sp"
+                        android:textColor="@color/text_secondary" android:layout_marginTop="2dp" />
+                </LinearLayout>
+
+                <!-- Stock badge -->
+                <TextView android:id="@+id/tvStockBadge"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Còn hàng" android:textSize="11sp" android:textColor="@color/white"
+                    android:background="@drawable/bg_tag_status"
+                    android:paddingStart="8dp" android:paddingEnd="8dp"
+                    android:paddingTop="3dp" android:paddingBottom="3dp" />
+            </LinearLayout>
+
+            <!-- Target pet type chip -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="16dp">
+                <TextView android:id="@+id/tvTargetPet"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="🐕 Dành cho Chó" android:textSize="13sp"
+                    android:textColor="#F5A623" android:textStyle="bold"
+                    android:background="#FFF3D4"
+                    android:paddingStart="10dp" android:paddingEnd="10dp"
+                    android:paddingTop="4dp" android:paddingBottom="4dp" />
+            </LinearLayout>
+
+            <!-- Attribute chips row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="20dp">
+
+                <!-- Weight chip -->
+                <LinearLayout android:layout_width="0dp" android:layout_height="60dp"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                    android:background="@drawable/bg_tag_attr" android:layout_marginEnd="8dp">
+                    <TextView android:id="@+id/tvWeightVal"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="1.5 kg" android:textSize="14sp" android:textStyle="bold"
+                        android:textColor="#6B5CE7" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Trọng lượng" android:textSize="10sp" android:textColor="#9E96D8" />
+                </LinearLayout>
+
+                <!-- Food type chip -->
+                <LinearLayout android:layout_width="0dp" android:layout_height="60dp"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                    android:background="#FFF3D4" android:layout_marginEnd="8dp">
+                    <TextView android:id="@+id/tvFoodTypeVal"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Hạt khô" android:textSize="14sp" android:textStyle="bold"
+                        android:textColor="#B07800" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Loại" android:textSize="10sp" android:textColor="#C9A040" />
+                </LinearLayout>
+
+                <!-- Suitable age chip -->
+                <LinearLayout android:layout_width="0dp" android:layout_height="60dp"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center"
+                    android:background="#D4F5E2">
+                    <TextView android:id="@+id/tvSuitableAgeVal"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Trưởng thành" android:textSize="12sp" android:textStyle="bold"
+                        android:textColor="#1A7A46" android:maxLines="1" android:ellipsize="end"
+                        android:paddingStart="4dp" android:paddingEnd="4dp" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Độ tuổi" android:textSize="10sp" android:textColor="#50B87A" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Price + stock -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="20dp">
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Giá" android:textSize="12sp" android:textColor="@color/text_secondary" />
+                    <TextView android:id="@+id/tvPrice"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="250.000đ" android:textSize="24sp" android:textStyle="bold"
+                        android:textColor="@color/primary" />
+                    <TextView android:id="@+id/tvOriginalPrice"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="" android:textSize="13sp" android:textColor="@color/text_hint"
+                        android:visibility="gone" />
+                </LinearLayout>
+                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:gravity="end">
+                    <TextView android:id="@+id/tvStock"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Kho: 50 gói" android:textSize="13sp"
+                        android:textColor="@color/text_secondary" />
+                    <TextView android:id="@+id/tvOrigin"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="" android:textSize="12sp" android:textColor="@color/text_hint" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- Divider + Description -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="16dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="📝 Mô tả sản phẩm" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:paddingStart="20dp"
+                android:layout_marginBottom="8dp" />
+            <TextView android:id="@+id/tvDescription"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="" android:textSize="14sp" android:textColor="@color/text_secondary"
+                android:lineSpacingMultiplier="1.5" android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Ingredients -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="16dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="🧪 Thành phần" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:paddingStart="20dp"
+                android:layout_marginBottom="8dp" />
+            <TextView android:id="@+id/tvIngredients"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="" android:textSize="14sp" android:textColor="@color/text_secondary"
+                android:lineSpacingMultiplier="1.5" android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="16dp" />
+
+            <!-- Usage guide -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginHorizontal="20dp"
+                android:layout_marginBottom="16dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="📋 Hướng dẫn sử dụng" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:paddingStart="20dp"
+                android:layout_marginBottom="8dp" />
+            <TextView android:id="@+id/tvUsageGuide"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="" android:textSize="14sp" android:textColor="@color/text_secondary"
+                android:lineSpacingMultiplier="1.5" android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="8dp" />
+            <TextView android:id="@+id/tvStorageGuide"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="" android:textSize="14sp" android:textColor="@color/text_secondary"
+                android:lineSpacingMultiplier="1.5" android:paddingStart="20dp" android:paddingEnd="20dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    <!-- ===== BOTTOM BAR ===== -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:layout_gravity="bottom"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/white"
+        android:paddingStart="20dp" android:paddingEnd="20dp"
+        android:elevation="8dp">
+
+        <!-- Quantity selector -->
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="44dp"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:background="@drawable/bg_search_bar"
+            android:paddingStart="4dp" android:paddingEnd="4dp"
+            android:layout_marginEnd="12dp">
+            <TextView android:id="@+id/btnDecQty"
+                android:layout_width="36dp" android:layout_height="36dp"
+                android:text="−" android:textSize="20sp" android:gravity="center"
+                android:textColor="@color/text_primary" android:textStyle="bold" />
+            <TextView android:id="@+id/tvQty"
+                android:layout_width="36dp" android:layout_height="wrap_content"
+                android:text="1" android:textSize="16sp" android:textStyle="bold"
+                android:gravity="center" android:textColor="@color/text_primary" />
+            <TextView android:id="@+id/btnIncQty"
+                android:layout_width="36dp" android:layout_height="36dp"
+                android:text="+" android:textSize="20sp" android:gravity="center"
+                android:textColor="@color/primary" android:textStyle="bold" />
+        </LinearLayout>
+
+        <Button android:id="@+id/btnAddToCart"
+            android:layout_width="0dp" android:layout_height="52dp" android:layout_weight="1"
+            android:text="Thêm vào giỏ hàng" android:textSize="15sp" android:textStyle="bold"
+            android:textColor="@color/white" android:background="@drawable/bg_orange_pill"
+            android:layout_marginEnd="10dp" />
+
+        <Button android:id="@+id/btnBuyNow"
+            android:layout_width="52dp" android:layout_height="52dp"
+            android:text="🛒" android:textSize="22sp"
+            android:background="@drawable/bg_circle_dark" />
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

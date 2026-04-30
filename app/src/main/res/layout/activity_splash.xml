@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_main">
+
+    <!-- Decorative paw print top-right -->
+    <ImageView
+        android:id="@+id/ivDecorPaw1"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:src="@drawable/ic_paw"
+        android:alpha="0.5"
+        android:rotation="20"
+        app:tint="@color/primary"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="20dp" />
+
+    <!-- Decorative paw print mid-left -->
+<!--    <ImageView-->
+<!--        android:id="@+id/ivDecorPaw2"-->
+<!--        android:layout_width="50dp"-->
+<!--        android:layout_height="50dp"-->
+<!--        android:src="@drawable/ic_paw"-->
+<!--        android:alpha="0.7"-->
+<!--        android:rotation="-15"-->
+<!--        app:tint="@color/primary"-->
+<!--        app:layout_constraintTop_toTopOf="parent"-->
+<!--        app:layout_constrain="parent"-->
+<!--        android:layout_marginTop="220dp"-->
+<!--        android:layout_marginStart="16dp" />-->
+
+    <!-- Heading block -->
+    <LinearLayout
+        android:id="@+id/llHeading"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginTop="80dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Find Your"
+            android:textSize="38sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:fontFamily="sans-serif-black" />
+
+        <!-- Row: "Furry" + cat emoji chip -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Furry "
+                android:textSize="38sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:fontFamily="sans-serif-black" />
+
+            <!-- Pet emoji chip (orange pill) -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="20dp"
+                app:cardBackgroundColor="#FFE8C8"
+                app:cardElevation="0dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:text="🐱"
+                    android:textSize="40sp"
+                    android:gravity="center"
+                    android:paddingStart="10dp"
+                    android:paddingEnd="10dp" />
+            </androidx.cardview.widget.CardView>
+        </LinearLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Favorite"
+            android:textSize="38sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:fontFamily="sans-serif-black" />
+
+    </LinearLayout>
+
+    <!-- Pet illustration placeholder (ảnh thú cưng lớn ở giữa) -->
+
+    <!-- Bottom section -->
+    <ImageView
+        android:id="@+id/ivSplashPet"
+        android:layout_width="wrap_content"
+        android:layout_height="270dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/pngtree_orange_cat_cute_little_kitty_on_transparent_background_png_image_13990318"
+        app:layout_constraintBottom_toTopOf="@id/llBottom"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.49"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/llHeading"
+        app:layout_constraintVertical_bias="0.515" />
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/llBottom"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingBottom="40dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginEnd="32dp"
+        android:layout_marginBottom="10dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Subtitle -->
+        <TextView
+            android:id="@+id/tvSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/splash_subtitle"
+            android:textSize="23sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginTop="12dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <LinearLayout
+            android:id="@+id/llBottomRow"
+            android:layout_width="0dp"
+            android:layout_height="60dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@id/tvSubtitle"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent">
+
+            <!-- Page dots (bên trái) -->
+            <!-- Page dots (bên trái) -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginEnd="16dp">
+
+                <!-- Active dot (filled circle - to hơn) -->
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:src="@drawable/dot_active"
+                    app:tint="#1A1A1A"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- Inactive dot (outline circle - nhỏ hơn) -->
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/dot_inactive"
+                    app:tint="#CCCCCC"
+                    android:layout_marginEnd="4dp" />
+
+                <!-- Inactive dot -->
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:src="@drawable/dot_inactive"
+                    app:tint="#CCCCCC" />
+
+            </LinearLayout>
+
+            <!-- Get Started button (chiếm phần còn lại) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardBtn"
+                android:layout_width="0dp"
+                android:layout_height="60dp"
+                android:layout_weight="1"
+                app:cardCornerRadius="30dp"
+                app:cardBackgroundColor="#F5A623"
+                app:cardElevation="4dp">
+
+                <RelativeLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <!-- Icon paw nền đen tròn -->
+                    <androidx.cardview.widget.CardView
+                        android:id="@+id/cardPawIcon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_centerVertical="true"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="24dp"
+                        app:cardBackgroundColor="#1A1A1A"
+                        app:cardElevation="0dp">
+
+                        <ImageView
+                            android:layout_width="28dp"
+                            android:layout_height="28dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_paw"
+                            app:tint="@color/white" />
+                    </androidx.cardview.widget.CardView>
+
+                    <!-- Text Get Started -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/get_started"
+                        android:textSize="20sp"
+                        android:textColor="#1A1A1A"
+                        android:textStyle="bold"
+                        android:layout_centerInParent="true" />
+
+                </RelativeLayout>
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_main">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@color/white" android:paddingStart="8dp" android:paddingEnd="16dp"
+        android:paddingTop="44dp" android:paddingBottom="12dp" android:elevation="2dp">
+        <Button android:id="@+id/btnBack"
+            android:layout_width="44dp" android:layout_height="44dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless" android:text="←" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Yêu cầu trả hàng" android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" android:layout_marginStart="4dp" />
+    </LinearLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:overScrollMode="never">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+
+            <!-- Pet policy -->
+            <LinearLayout android:id="@+id/llPetPolicy"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="#FFF3D4"
+                android:padding="14dp" android:layout_marginBottom="12dp">
+                <TextView android:id="@+id/tvPetPolicy"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="13sp" android:textColor="@color/text_primary"
+                    android:lineSpacingMultiplier="1.5" />
+            </LinearLayout>
+
+            <!-- Food policy -->
+            <LinearLayout android:id="@+id/llFoodPolicy"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:background="#D4F5E2"
+                android:padding="14dp" android:layout_marginBottom="20dp">
+                <TextView android:id="@+id/tvFoodPolicy"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:textSize="13sp" android:textColor="@color/text_primary"
+                    android:lineSpacingMultiplier="1.5" />
+            </LinearLayout>
+
+            <!-- Reason input -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilReason" style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Lý do trả hàng *" android:layout_marginBottom="20dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etReturnReason"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:minLines="4" android:gravity="top" android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <Button android:id="@+id/btnSubmitReturn"
+                android:layout_width="match_parent" android:layout_height="54dp"
+                android:text="Gửi yêu cầu trả hàng" android:textSize="16sp"
+                android:textStyle="bold" android:textColor="@color/white"
+                android:background="@drawable/bg_orange_pill" />
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

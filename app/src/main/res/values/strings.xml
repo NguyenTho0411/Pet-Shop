@@ -1,0 +1,61 @@
+<resources>
+    <string name="app_name">PetShop</string>
+
+    <!-- Auth -->
+    <string name="login">Đăng nhập</string>
+    <string name="register">Đăng ký</string>
+    <string name="logout">Đăng xuất</string>
+    <string name="email">Email</string>
+    <string name="password">Mật khẩu</string>
+    <string name="confirm_password">Xác nhận mật khẩu</string>
+    <string name="full_name">Họ và tên</string>
+    <string name="forgot_password">Quên mật khẩu?</string>
+    <string name="sign_in_google">Đăng nhập với Google</string>
+    <string name="sign_in_facebook">Đăng nhập với Facebook</string>
+    <string name="no_account">Chưa có tài khoản? <b>Đăng ký</b></string>
+    <string name="has_account">Đã có tài khoản? <b>Đăng nhập</b></string>
+    <string name="or_continue_with">  Hoặc tiếp tục với  </string>
+
+    <!-- Splash -->
+    <string name="splash_title_1">Find Your</string>
+    <string name="splash_title_2">Furry</string>
+    <string name="splash_title_3">Favorite</string>
+    <string name="splash_subtitle">Find your perfect pet companion</string>
+    <string name="get_started">Get Started</string>
+
+    <!-- Home -->
+    <string name="good_morning">Chào buổi sáng</string>
+    <string name="good_afternoon">Chào buổi chiều</string>
+    <string name="good_evening">Chào buổi tối</string>
+    <string name="search_hint">Tìm theo giống, kích thước, tên...</string>
+    <string name="nearby">gần bạn</string>
+    <string name="km_nearby">km gần đây</string>
+    <string name="see_all">Xem tất cả</string>
+    <string name="featured_pets">Thú cưng nổi bật</string>
+    <string name="pet_food">Đồ ăn thú cưng</string>
+    <string name="guest_greeting">Xin chào, bạn ơi</string>
+
+    <!-- Bottom nav -->
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_search">Khám phá</string>
+    <string name="nav_chat">Hỗ trợ</string>
+    <string name="nav_cart">Giỏ hàng</string>
+    <string name="nav_orders">Đơn hàng</string>
+    <string name="nav_profile">Hồ sơ</string>
+
+    <!-- Admin -->
+    <string name="admin_dashboard">Admin Dashboard</string>
+    <string name="total_revenue">Tổng doanh thu</string>
+    <string name="total_orders">Tổng đơn hàng</string>
+    <string name="total_users">Người dùng</string>
+    <string name="manage_products">Quản lý sản phẩm</string>
+    <string name="manage_orders">Quản lý đơn hàng</string>
+    <string name="manage_users">Quản lý người dùng</string>
+    <string name="manage_promotions">Khuyến mãi</string>
+    <string name="statistics">Thống kê</string>
+
+    <!-- Facebook SDK (thay bằng App ID thật của mày) -->
+    <string name="facebook_app_id">YOUR_FACEBOOK_APP_ID</string>
+    <string name="fb_login_protocol_scheme">fbYOUR_FACEBOOK_APP_ID</string>
+    <string name="facebook_client_token">YOUR_FACEBOOK_CLIENT_TOKEN</string>
+</resources>

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/bg_card">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="12dp">
+
+        <!-- Product image -->
+        <ImageView
+            android:id="@+id/ivProduct"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:scaleType="centerCrop"
+            android:src="@mipmap/ic_launcher"
+            android:background="@color/bg_main" />
+
+        <!-- Info -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp">
+
+            <!-- Type badge + name -->
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+                <TextView
+                    android:id="@+id/tvTypeBadge"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="PET" android:textSize="9sp" android:textColor="@color/white"
+                    android:background="@drawable/bg_orange_pill"
+                    android:paddingStart="5dp" android:paddingEnd="5dp"
+                    android:paddingTop="1dp" android:paddingBottom="1dp"
+                    android:layout_marginEnd="6dp" />
+                <TextView
+                    android:id="@+id/tvProductName"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Luna" android:textSize="14sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" android:maxLines="1"
+                    android:ellipsize="end" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvProductDetail"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Siberian Husky · 3 tháng" android:textSize="11sp"
+                android:textColor="@color/text_secondary" android:layout_marginBottom="8dp" />
+
+            <!-- Price + Quantity row -->
+            <LinearLayout
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tvUnitPrice"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="12.000.000đ" android:textSize="14sp"
+                    android:textStyle="bold" android:textColor="@color/primary" />
+
+                <!-- Qty controls (hidden for PET, visible for FOOD) -->
+                <LinearLayout
+                    android:id="@+id/llQtyControl"
+                    android:layout_width="wrap_content" android:layout_height="34dp"
+                    android:orientation="horizontal" android:gravity="center_vertical"
+                    android:background="@drawable/bg_search_bar"
+                    android:visibility="gone">
+                    <TextView
+                        android:id="@+id/btnDec"
+                        android:layout_width="32dp" android:layout_height="match_parent"
+                        android:text="−" android:textSize="18sp" android:gravity="center"
+                        android:textStyle="bold" android:textColor="@color/text_primary" />
+                    <TextView
+                        android:id="@+id/tvQty"
+                        android:layout_width="32dp" android:layout_height="wrap_content"
+                        android:text="1" android:textSize="14sp" android:gravity="center"
+                        android:textStyle="bold" android:textColor="@color/text_primary" />
+                    <TextView
+                        android:id="@+id/btnInc"
+                        android:layout_width="32dp" android:layout_height="match_parent"
+                        android:text="+" android:textSize="18sp" android:gravity="center"
+                        android:textStyle="bold" android:textColor="@color/primary" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Remove button -->
+        <ImageButton
+            android:id="@+id/btnRemove"
+            android:layout_width="32dp" android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="4dp" android:layout_gravity="top" />
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <!-- USER MESSAGE -->
+    <LinearLayout
+        android:id="@+id/llUserMsg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:background="@drawable/bg_orange_pill"
+        android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:paddingTop="8dp" android:paddingBottom="8dp"
+        android:layout_marginStart="60dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvUserMsg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="User message"
+            android:textColor="@color/white"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+    <!-- BOT MESSAGE -->
+    <LinearLayout
+        android:id="@+id/llBotMsg"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:background="@drawable/bg_social_btn"
+        android:backgroundTint="#F0F0F0"
+        android:paddingStart="14dp" android:paddingEnd="14dp"
+        android:paddingTop="8dp" android:paddingBottom="8dp"
+        android:layout_marginEnd="60dp"
+        android:visibility="gone">
+        <TextView
+            android:id="@+id/tvBotMsg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bot reply..."
+            android:textColor="@color/text_primary"
+            android:textSize="14sp" />
+    </LinearLayout>
+
+</LinearLayout>

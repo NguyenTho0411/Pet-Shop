@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <application
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Petshop">
+
+        <!-- Facebook SDK — giá trị inject từ local.properties qua manifestPlaceholders -->
+        <meta-data
+            android:name="com.facebook.sdk.ApplicationId"
+            android:value="${facebookAppId}" />
+        <meta-data
+            android:name="com.facebook.sdk.ClientToken"
+            android:value="${facebookClientToken}" />
+
+        <!-- LAUNCHER -->
+        <activity
+            android:name=".view.activity.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Petshop.Splash">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".view.activity.LoginActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Petshop.Auth"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".view.activity.RegisterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Petshop.Auth"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".view.activity.PetShopActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.AdminActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.ManageUsersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.ManageCategoriesActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.ManagePetsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.AddEditPetActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".view.activity.ManageFoodActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.AddEditFoodActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Customer screens -->
+        <activity android:name=".view.activity.PetDetailActivity" android:exported="false" />
+        <activity android:name=".view.activity.FoodDetailActivity" android:exported="false" />
+        <activity android:name=".view.activity.CartActivity" android:exported="false" />
+        <activity android:name=".view.activity.ChatActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".view.activity.CheckoutActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".view.activity.OrderHistoryActivity" android:exported="false" />
+        <activity android:name=".view.activity.OrderDetailActivity" android:exported="false" />
+        <activity android:name=".view.activity.ReturnRequestActivity" android:exported="false" />
+        <activity android:name=".view.activity.ProfileActivity" android:exported="false" />
+        <activity android:name=".view.activity.EditProfileActivity" android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".view.activity.ManageAddressActivity" android:exported="false" />
+
+        <!-- Admin Order screens -->
+        <activity android:name=".view.activity.AdminOrderListActivity" android:exported="false" />
+        <activity android:name=".view.activity.AdminOrderDetailActivity" android:exported="false" />
+
+        <!-- Admin extras -->
+        <activity
+            android:name=".view.activity.ManagePromotionsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.AddEditPromotionActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".view.activity.ManageVouchersActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".view.activity.AddEditVoucherActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="false" />
+
+        <!-- Facebook -->
+        <activity
+            android:name="com.facebook.FacebookActivity"
+            android:configChanges="keyboard|keyboardHidden|screenLayout|screenSize|orientation"
+            android:label="@string/app_name" />
+
+        <activity
+            android:name="com.facebook.CustomTabActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="${fbLoginProtocolScheme}" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

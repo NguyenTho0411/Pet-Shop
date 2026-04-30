@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_main">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@color/white" android:paddingStart="8dp" android:paddingEnd="16dp"
+        android:paddingTop="44dp" android:paddingBottom="12dp" android:elevation="2dp">
+        <ImageButton android:id="@+id/btnBack"
+            android:layout_width="44dp" android:layout_height="44dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Lịch sử đơn hàng" android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" android:layout_marginStart="4dp" />
+    </LinearLayout>
+
+    <!-- Status filter tabs -->
+    <HorizontalScrollView android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:scrollbars="none" android:background="@color/white"
+        android:paddingStart="12dp" android:paddingEnd="12dp"
+        android:paddingTop="8dp" android:paddingBottom="8dp">
+        <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <com.google.android.material.chip.Chip android:id="@+id/chipAll"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Tất cả" android:layout_marginEnd="6dp"
+                style="@style/Widget.Material3.Chip.Filter" />
+            <com.google.android.material.chip.Chip android:id="@+id/chipPending"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Chờ xác nhận" android:layout_marginEnd="6dp"
+                style="@style/Widget.Material3.Chip.Filter" />
+            <com.google.android.material.chip.Chip android:id="@+id/chipShipping"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Đang giao" android:layout_marginEnd="6dp"
+                style="@style/Widget.Material3.Chip.Filter" />
+            <com.google.android.material.chip.Chip android:id="@+id/chipDelivered"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Đã giao" android:layout_marginEnd="6dp"
+                style="@style/Widget.Material3.Chip.Filter" />
+            <com.google.android.material.chip.Chip android:id="@+id/chipCancelled"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Đã huỷ" style="@style/Widget.Material3.Chip.Filter" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <ProgressBar android:id="@+id/progressBar"
+        android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:layout_gravity="center" android:visibility="gone"
+        android:layout_marginTop="40dp" />
+
+    <LinearLayout android:id="@+id/llEmpty"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:orientation="vertical"
+        android:gravity="center" android:visibility="gone">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="📦" android:textSize="56sp" android:layout_marginBottom="12dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Chưa có đơn hàng nào" android:textSize="16sp" android:textStyle="bold"
+            android:textColor="@color/text_primary" />
+    </LinearLayout>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvOrders"
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:paddingTop="12dp" android:clipToPadding="false" />
+</LinearLayout>

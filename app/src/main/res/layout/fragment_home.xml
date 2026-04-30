@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_main">
+
+    <!-- TOP BAR -->
+    <LinearLayout
+        android:id="@+id/llTopBar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="20dp" android:paddingEnd="20dp"
+        android:paddingTop="52dp" android:paddingBottom="12dp">
+
+        <LinearLayout
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:orientation="vertical">
+            <TextView android:id="@+id/tvGreeting"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Hi, bạn ơi 🐾"
+                android:textSize="20sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" />
+            <TextView android:id="@+id/tvTimeGreeting"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Chào buổi sáng"
+                android:textSize="13sp" android:textColor="@color/text_secondary" />
+        </LinearLayout>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/btnNotification"
+            android:layout_width="42dp" android:layout_height="42dp"
+            app:cardCornerRadius="12dp" app:cardBackgroundColor="@color/bg_card"
+            app:cardElevation="2dp">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_notification" app:tint="@color/text_primary" />
+        </androidx.cardview.widget.CardView>
+
+        <androidx.cardview.widget.CardView
+            android:id="@+id/btnCart"
+            android:layout_width="42dp" android:layout_height="42dp"
+            app:cardCornerRadius="12dp" app:cardBackgroundColor="@color/bg_card"
+            app:cardElevation="2dp"
+            android:layout_marginStart="10dp">
+            <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_cart" app:tint="@color/text_primary" />
+        </androidx.cardview.widget.CardView>
+
+        <Button android:id="@+id/btnLoginTopBar"
+            android:layout_width="wrap_content" android:layout_height="36dp"
+            android:text="Đăng nhập"
+            android:textSize="12sp" android:textColor="@color/white"
+            android:background="@drawable/bg_orange_pill"
+            android:paddingStart="14dp" android:paddingEnd="14dp"
+            android:layout_marginStart="10dp"
+            android:visibility="gone" />
+    </LinearLayout>
+
+    <!-- SEARCH BAR -->
+    <LinearLayout
+        android:layout_width="match_parent" android:layout_height="52dp"
+        android:orientation="horizontal" android:gravity="center_vertical"
+        android:background="@drawable/bg_search_bar"
+        android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
+        android:layout_marginBottom="20dp"
+        android:paddingStart="16dp" android:paddingEnd="12dp">
+        <ImageView android:layout_width="20dp" android:layout_height="20dp"
+            android:src="@drawable/ic_search" app:tint="@color/text_hint"
+            android:layout_marginEnd="10dp" />
+        <EditText android:id="@+id/etSearch"
+            android:layout_width="0dp" android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:hint="@string/search_hint"
+            android:textSize="14sp" android:textColor="@color/text_primary"
+            android:background="@null"
+            android:imeOptions="actionSearch" android:inputType="text" />
+        <ImageView android:id="@+id/ivFilter"
+            android:layout_width="36dp" android:layout_height="36dp"
+            android:src="@android:drawable/ic_menu_sort_by_size"
+            android:padding="6dp" android:background="@drawable/bg_orange_pill" />
+    </LinearLayout>
+
+    <!-- Scrollable content -->
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:overScrollMode="never">
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:paddingBottom="16dp">
+
+            <!-- CATEGORIES -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Danh mục" android:textSize="17sp" android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:layout_marginStart="20dp" android:layout_marginBottom="12dp" />
+
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvCategories"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:layout_marginBottom="24dp" />
+
+            <!-- FEATURED PETS -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="14dp">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="@string/featured_pets"
+                    android:textSize="17sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+                <TextView android:id="@+id/tvSeeAllPets"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/see_all" android:textSize="13sp"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvFeaturedPets"
+                android:layout_width="match_parent" android:layout_height="220dp"
+                android:orientation="horizontal"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:layout_marginBottom="24dp" />
+
+            <!-- PET FOOD -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="14dp">
+                <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="@string/pet_food"
+                    android:textSize="17sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+                <TextView android:id="@+id/tvSeeAllFood"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/see_all" android:textSize="13sp"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvFeaturedFood"
+                android:layout_width="match_parent" android:layout_height="200dp"
+                android:orientation="horizontal"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+</LinearLayout>

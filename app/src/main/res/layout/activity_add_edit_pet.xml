@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_main">
+
+    <!-- Toolbar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@color/primary"
+        android:paddingStart="8dp" android:paddingEnd="16dp"
+        android:paddingTop="44dp" android:paddingBottom="12dp">
+        <ImageButton android:id="@+id/btnBack"
+            android:layout_width="44dp" android:layout_height="44dp"
+            android:src="@android:drawable/ic_menu_revert"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            app:tint="@color/white" />
+        <TextView android:id="@+id/tvTitle"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Thêm thú cưng"
+            android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/white" android:layout_marginStart="4dp" />
+        <Button android:id="@+id/btnSave"
+            android:layout_width="wrap_content" android:layout_height="36dp"
+            android:text="Lưu"
+            android:textColor="@color/primary"
+            android:background="@color/white"
+            android:paddingStart="16dp" android:paddingEnd="16dp" />
+    </LinearLayout>
+
+    <!-- Upload progress -->
+    <ProgressBar android:id="@+id/progressBar"
+        android:layout_width="match_parent" android:layout_height="4dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:visibility="gone" android:max="100" />
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1" android:overScrollMode="never">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
+
+            <!-- ===== SECTION: Media ===== -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="📷 Ảnh &amp; Video" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="10dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvMedia"
+                android:layout_width="match_parent" android:layout_height="110dp"
+                android:orientation="horizontal"
+                android:clipToPadding="false"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:layout_marginBottom="20dp" />
+
+            <!-- ===== SECTION: Thông tin cơ bản ===== -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="🐾 Thông tin cơ bản" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilName" style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Tên thú cưng *" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etName" android:layout_width="match_parent"
+                    android:layout_height="56dp" android:inputType="textCapSentences" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Category spinner -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCategory" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Danh mục *" android:layout_marginBottom="12dp">
+                <AutoCompleteTextView android:id="@+id/actvCategory"
+                    android:layout_width="match_parent" android:layout_height="56dp"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- Species & Breed row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilSpecies" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Loài *" android:layout_marginEnd="8dp">
+                    <AutoCompleteTextView android:id="@+id/actvSpecies"
+                        android:layout_width="match_parent" android:layout_height="56dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilBreed" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Giống">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBreed" android:layout_width="match_parent"
+                        android:layout_height="56dp" android:inputType="textCapSentences" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Age & AgeUnit row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilAge" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Tuổi *" android:layout_marginEnd="8dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etAge" android:layout_width="match_parent"
+                        android:layout_height="56dp" android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilAgeUnit" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Đơn vị">
+                    <AutoCompleteTextView android:id="@+id/actvAgeUnit"
+                        android:layout_width="match_parent" android:layout_height="56dp"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Gender & Weight row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilGender" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Giới tính" android:layout_marginEnd="8dp">
+                    <AutoCompleteTextView android:id="@+id/actvGender"
+                        android:layout_width="match_parent" android:layout_height="56dp"
+                        android:inputType="none" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilWeight" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Cân nặng (kg)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etWeight" android:layout_width="match_parent"
+                        android:layout_height="56dp" android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- Color & Origin row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilColor" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Màu sắc" android:layout_marginEnd="8dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etColor" android:layout_width="match_parent" android:layout_height="56dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilOrigin" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Xuất xứ">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etOrigin" android:layout_width="match_parent" android:layout_height="56dp" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <!-- ===== SECTION: Mô tả ===== -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginVertical="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="📝 Mô tả chi tiết" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="12dp" />
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDesc" style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Mô tả tổng quan" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDesc" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:minLines="3"
+                    android:gravity="top" android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilCareGuide" style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Hướng dẫn nuôi" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etCareGuide" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:minLines="3"
+                    android:gravity="top" android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilDietInfo" style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Chế độ ăn" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etDietInfo" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:minLines="2"
+                    android:gravity="top" android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilHealthInfo" style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Tình trạng sức khỏe" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etHealthInfo" android:layout_width="match_parent"
+                    android:layout_height="wrap_content" android:minLines="2"
+                    android:gravity="top" android:inputType="textMultiLine" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <!-- ===== SECTION: Sức khoẻ ===== -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginVertical="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="💉 Sức khoẻ &amp; Giấy tờ" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="12dp" />
+
+            <!-- Vaccine status -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilVaccine" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Tình trạng vaccine" android:layout_marginBottom="12dp">
+                <AutoCompleteTextView android:id="@+id/actvVaccine"
+                    android:layout_width="match_parent" android:layout_height="56dp"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="12dp">
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbDewormed"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="✅ Đã tẩy giun" android:textSize="14sp" />
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbMicrochipped"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="📡 Gắn chip điện tử" android:textSize="14sp" />
+                <com.google.android.material.checkbox.MaterialCheckBox
+                    android:id="@+id/cbCertificate"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="📄 Có giấy tờ thuần chủng" android:textSize="14sp" />
+            </LinearLayout>
+
+            <!-- ===== SECTION: Giá & Trạng thái ===== -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="@color/divider" android:layout_marginVertical="12dp" />
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="💰 Giá &amp; Trạng thái" android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/text_primary" android:layout_marginBottom="12dp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="12dp">
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilPrice" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Giá bán (đ) *" android:layout_marginEnd="8dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etPrice" android:layout_width="match_parent"
+                        android:layout_height="56dp" android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilOriginalPrice" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:hint="Giá gốc (đ)">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etOriginalPrice" android:layout_width="match_parent"
+                        android:layout_height="56dp" android:inputType="numberDecimal" />
+                </com.google.android.material.textfield.TextInputLayout>
+            </LinearLayout>
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tilStatus" style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Trạng thái" android:layout_marginBottom="24dp">
+                <AutoCompleteTextView android:id="@+id/actvStatus"
+                    android:layout_width="match_parent" android:layout_height="56dp"
+                    android:inputType="none" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Nút lưu cố định ở dưới -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="@color/white"
+        android:paddingStart="16dp" android:paddingEnd="16dp"
+        android:paddingTop="12dp" android:paddingBottom="24dp"
+        android:elevation="8dp">
+
+        <Button
+            android:id="@+id/btnSaveBottom"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:text="💾  LƯU THÚ CƯNG"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:background="@drawable/bg_orange_pill" />
+    </LinearLayout>
+
+</LinearLayout>

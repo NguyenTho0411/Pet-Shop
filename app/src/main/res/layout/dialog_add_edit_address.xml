@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/white"
+    android:padding="20dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Địa chỉ giao hàng" android:textSize="17sp" android:textStyle="bold"
+        android:textColor="@color/text_primary" android:layout_marginBottom="16dp" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilReceiverName" style="@style/Widget.Petshop.TextInput"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="Người nhận *" android:layout_marginBottom="12dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etReceiverName" android:layout_width="match_parent"
+            android:layout_height="52dp" android:inputType="textPersonName|textCapWords" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilReceiverPhone" style="@style/Widget.Petshop.TextInput"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="Số điện thoại *" android:layout_marginBottom="12dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etReceiverPhone" android:layout_width="match_parent"
+            android:layout_height="52dp" android:inputType="phone" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilAddressLine" style="@style/Widget.Petshop.TextInput"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="Số nhà, tên đường *" android:layout_marginBottom="12dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etAddressLine" android:layout_width="match_parent"
+            android:layout_height="52dp" android:inputType="textCapSentences" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginBottom="12dp">
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilWard" style="@style/Widget.Petshop.TextInput"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:hint="Phường/Xã" android:layout_marginEnd="8dp">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etWard" android:layout_width="match_parent" android:layout_height="52dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/tilDistrict" style="@style/Widget.Petshop.TextInput"
+            android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:hint="Quận/Huyện">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/etDistrict" android:layout_width="match_parent" android:layout_height="52dp" />
+        </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilCity" style="@style/Widget.Petshop.TextInput"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="Tỉnh/Thành phố *" android:layout_marginBottom="20dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCity" android:layout_width="match_parent" android:layout_height="52dp" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button android:id="@+id/btnCancel"
+            android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
+            android:text="Huỷ" android:layout_marginEnd="8dp"
+            style="@style/Widget.Petshop.Button.Outline" />
+        <Button android:id="@+id/btnSave"
+            android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
+            android:text="Lưu" style="@style/Widget.Petshop.Button.Primary" />
+    </LinearLayout>
+</LinearLayout>
