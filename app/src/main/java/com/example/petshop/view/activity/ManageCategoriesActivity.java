@@ -35,6 +35,19 @@ public class ManageCategoriesActivity extends AppCompatActivity {
     private RecyclerView            rv;
     private ProgressBar             progressBar;
 
+    private android.widget.ImageView ivDialogPreview;
+    private android.net.Uri          selectedImageUri;
+
+    private final androidx.activity.result.ActivityResultLauncher<String[]> imagePicker =
+            registerForActivityResult(new androidx.activity.result.contract.ActivityResultContracts.OpenDocument(), uri -> {
+                if (uri != null) {
+                    selectedImageUri = uri;
+                    if (ivDialogPreview != null) {
+                        com.bumptech.glide.Glide.with(this).load(uri).centerCrop().into(ivDialogPreview);
+                    }
+                }
+            });
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,7 +102,14 @@ public class ManageCategoriesActivity extends AppCompatActivity {
             public void onBindViewHolder(RecyclerView.ViewHolder holder, int pos) {
                 Category cat = list.get(pos);
                 View v = holder.itemView;
-                ((TextView) v.findViewById(R.id.tvTypeIcon)).setText(Category.TYPE_PET.equals(cat.getType()) ? "🐾" : "🍖");
+                
+                android.widget.ImageView ivCat = v.findViewById(R.id.ivCategoryImage);
+                if (cat.getImageUrl() != null && !cat.getImageUrl().isEmpty()) {
+                    com.bumptech.glide.Glide.with(v.getContext()).load(cat.getImageUrl()).centerCrop().into(ivCat);
+                } else {
+                    ivCat.setImageResource(android.R.drawable.ic_menu_gallery);
+                }
+
                 ((TextView) v.findViewById(R.id.tvName)).setText(cat.getName());
                 ((TextView) v.findViewById(R.id.tvType)).setText(cat.getType());
                 TextView tvDesc = v.findViewById(R.id.tvDesc);
@@ -116,8 +136,9 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         dialog.setContentView(R.layout.dialog_add_edit_category);
         dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
         dialog.getWindow().setLayout(
-                (int) (getResources().getDisplayMetrics().widthPixels * 0.92f),
+                (int) (getResources().getDisplayMetrics().widthPixels * 0.96f),
                 android.view.WindowManager.LayoutParams.WRAP_CONTENT);
+        dialog.getWindow().setGravity(android.view.Gravity.CENTER);
 
         TextView tvTitle    = dialog.findViewById(R.id.tvDialogTitle);
         TextInputEditText etName       = dialog.findViewById(R.id.etName);
@@ -129,6 +150,8 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         Button btnCancel   = dialog.findViewById(R.id.btnCancel);
 
         final String[] selectedType = { Category.TYPE_PET };
+        ivDialogPreview = dialog.findViewById(R.id.ivCategory);
+        selectedImageUri = null;
 
         tvTitle.setText(existing == null ? "Thêm danh mục" : "Sửa danh mục");
 
@@ -137,7 +160,12 @@ public class ManageCategoriesActivity extends AppCompatActivity {
             etDesc.setText(existing.getDescription());
             etSortOrder.setText(String.valueOf(existing.getSortOrder()));
             selectedType[0] = existing.getType();
+            if (existing.getImageUrl() != null) {
+                com.bumptech.glide.Glide.with(this).load(existing.getImageUrl()).centerCrop().into(ivDialogPreview);
+            }
         }
+
+        ivDialogPreview.setOnClickListener(v -> imagePicker.launch(new String[]{"image/*"}));
 
         updateTypeButtons(btnTypePet, btnTypeFood, selectedType[0]);
 
@@ -162,9 +190,10 @@ public class ManageCategoriesActivity extends AppCompatActivity {
             try { cat.setSortOrder(Integer.parseInt(etSortOrder.getText().toString())); } catch (Exception e) { cat.setSortOrder(0); }
             cat.setActive(true);
 
-            if (existing == null) vm.add(cat);
-            else                  vm.update(cat);
+            if (existing == null) vm.add(cat, selectedImageUri);
+            else                  vm.update(cat, selectedImageUri);
             dialog.dismiss();
+            ivDialogPreview = null;
         });
 
         dialog.show();

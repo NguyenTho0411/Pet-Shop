@@ -31,19 +31,42 @@ public class CategoryManageViewModel extends ViewModel {
         });
     }
 
-    public void add(Category category) {
+    public void add(Category category, android.net.Uri imageUri) {
         isLoading.setValue(true);
         repo.add(category, new CategoryRepository.Callback<>() {
-            public void onSuccess(String id) { isLoading.postValue(false); success.postValue("Thêm danh mục thành công"); loadAll(); }
+            public void onSuccess(String id) {
+                if (imageUri != null) uploadImage(id, imageUri);
+                else { isLoading.postValue(false); success.postValue("Thêm danh mục thành công"); loadAll(); }
+            }
             public void onFailure(String err){ isLoading.postValue(false); error.postValue(err); }
         });
     }
 
-    public void update(Category category) {
+    public void update(Category category, android.net.Uri imageUri) {
         isLoading.setValue(true);
         repo.update(category, new CategoryRepository.Callback<>() {
-            public void onSuccess(Void v)   { isLoading.postValue(false); success.postValue("Cập nhật thành công"); loadAll(); }
+            public void onSuccess(Void v)   {
+                if (imageUri != null) uploadImage(category.getId(), imageUri);
+                else { isLoading.postValue(false); success.postValue("Cập nhật thành công"); loadAll(); }
+            }
             public void onFailure(String err){ isLoading.postValue(false); error.postValue(err); }
+        });
+    }
+
+    private void uploadImage(String catId, android.net.Uri uri) {
+        com.example.petshop.utils.StorageHelper.uploadImage(uri, "categories/" + catId, new com.example.petshop.utils.StorageHelper.OnUploadCallback() {
+            @Override
+            public void onSuccess(String downloadUrl) {
+                // Chỉ cập nhật trường imageUrl, không gửi cả object để tránh mất data khác
+                repo.updateImageUrl(catId, downloadUrl, new CategoryRepository.Callback<Void>() {
+                    @Override
+                    public void onSuccess(Void data) { isLoading.postValue(false); success.postValue("Lưu thành công"); loadAll(); }
+                    @Override
+                    public void onFailure(String err) { isLoading.postValue(false); error.postValue(err); }
+                });
+            }
+            @Override
+            public void onFailure(String err) { isLoading.postValue(false); error.postValue(err); }
         });
     }
 

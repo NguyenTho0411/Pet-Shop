@@ -22,8 +22,13 @@ public class CategoryRepository {
         db.collection(COL).orderBy("sortOrder").get()
                 .addOnSuccessListener(snap -> {
                     List<Category> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(Category.class));
+                    for (var doc : snap.getDocuments()) {
+                        Category cat = doc.toObject(Category.class);
+                        if (cat != null) {
+                            cat.setId(doc.getId());
+                            list.add(cat);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -33,8 +38,13 @@ public class CategoryRepository {
         db.collection(COL).whereEqualTo("type", type).get()
                 .addOnSuccessListener(snap -> {
                     List<Category> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(Category.class));
+                    for (var doc : snap.getDocuments()) {
+                        Category cat = doc.toObject(Category.class);
+                        if (cat != null) {
+                            cat.setId(doc.getId());
+                            list.add(cat);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -50,7 +60,8 @@ public class CategoryRepository {
     }
 
     public void update(Category category, Callback<Void> cb) {
-        db.collection(COL).document(category.getId()).set(category)
+        db.collection(COL).document(category.getId())
+                .set(category, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
@@ -63,6 +74,12 @@ public class CategoryRepository {
 
     public void toggleActive(String id, boolean isActive, Callback<Void> cb) {
         db.collection(COL).document(id).update("isActive", isActive)
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    public void updateImageUrl(String id, String url, Callback<Void> cb) {
+        db.collection(COL).document(id).update("imageUrl", url)
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
