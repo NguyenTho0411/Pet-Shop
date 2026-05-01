@@ -29,7 +29,7 @@ import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class OrderHistoryActivity extends AppCompatActivity {
-
+    private String currentStatusFilter = null;
     private List<Order>    allOrders = new ArrayList<>();
     private RecyclerView   rv;
     private ProgressBar    progressBar;
@@ -59,10 +59,24 @@ public class OrderHistoryActivity extends AppCompatActivity {
         loadOrders();
     }
 
+    private void applyCurrentFilter() {
+        List<Order> list;
+
+        if (currentStatusFilter == null) {
+            list = allOrders;
+        } else {
+            list = allOrders.stream()
+                    .filter(o -> currentStatusFilter.equals(o.getStatus()))
+                    .collect(Collectors.toList());
+        }
+
+        renderList(list);
+    }
     private void setChipFilter(int chipId, String status) {
-        findViewById(chipId).setOnClickListener(v -> renderList(
-                status == null ? allOrders
-                        : allOrders.stream().filter(o -> status.equals(o.getStatus())).collect(Collectors.toList())));
+        findViewById(chipId).setOnClickListener(v -> {
+            currentStatusFilter = status;
+            applyCurrentFilter();
+        });
     }
 
     private void loadOrders() {
@@ -74,7 +88,10 @@ public class OrderHistoryActivity extends AppCompatActivity {
         new OrderRepository().getOrdersByUser(uid, new OrderRepository.Callback<>() {
             public void onSuccess(List<Order> orders) {
                 allOrders = orders != null ? orders : new ArrayList<>();
-                runOnUiThread(() -> { progressBar.setVisibility(View.GONE); renderList(allOrders); });
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    applyCurrentFilter();
+                });
             }
             public void onFailure(String err) {
                 runOnUiThread(() -> { progressBar.setVisibility(View.GONE); Toast.makeText(OrderHistoryActivity.this, err, Toast.LENGTH_SHORT).show(); });

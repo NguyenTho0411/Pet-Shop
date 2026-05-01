@@ -208,44 +208,117 @@ public class OrderRepository {
 
     public void cancelOrder(String orderId, String reason, Callback<Void> cb) {
         db.runTransaction((Transaction.Function<Void>) tx -> {
-            DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
-            DocumentSnapshot orderSnap = tx.get(orderRef);
-            Order order = orderSnap.toObject(Order.class);
-            
-            if (order == null) throw new RuntimeException("Không tìm thấy đơn hàng");
-            if (!order.canCancel()) throw new RuntimeException("Không thể hủy đơn hàng này");
+                    DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
 
-            boolean wasSubtracted = !Order.STATUS_WAIT_PAY.equals(order.getStatus());
-            
-            if (wasSubtracted) {
-                // Restore stock
-                try {
-                    restoreStockInTx(tx, order.getItems());
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+                    // ===== 1. READS: đọc hết trước =====
+                    DocumentSnapshot orderSnap = tx.get(orderRef);
+                    Order order = orderSnap.toObject(Order.class);
 
-                // Reverse user stats
-                DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
-                DocumentSnapshot userSnap = tx.get(userRef);
-                if (userSnap.exists()) {
-                    long totalOrders = userSnap.getLong("totalOrders") != null ? userSnap.getLong("totalOrders") : 0;
-                    double totalSpent = userSnap.getDouble("totalSpent") != null ? userSnap.getDouble("totalSpent") : 0;
-                    tx.update(userRef, 
-                            "totalOrders", Math.max(0, totalOrders - 1),
-                            "totalSpent", Math.max(0, totalSpent - order.getTotalAmount()));
-                }
-            }
+                    if (order == null) {
+                        throw new RuntimeException("Không tìm thấy đơn hàng");
+                    }
 
-            tx.update(orderRef, 
-                    "status", Order.STATUS_CANCELLED,
-                    "cancelReason", reason,
-                    "updatedAt", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date()));
-            
-            return null;
-        })
-        .addOnSuccessListener(v -> cb.onSuccess(null))
-        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                    if (!order.canCancel()) {
+                        throw new RuntimeException("Không thể hủy đơn hàng này");
+                    }
+
+                    boolean wasSubtracted = !Order.STATUS_WAIT_PAY.equals(order.getStatus());
+
+                    List<OrderItem> items = order.getItems() != null
+                            ? order.getItems()
+                            : new ArrayList<>();
+
+                    Map<String, DocumentReference> foodRefs = new HashMap<>();
+                    Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
+
+                    DocumentReference userRef = null;
+                    DocumentSnapshot userSnap = null;
+
+                    if (wasSubtracted) {
+                        // gom food refs cần đọc
+                        for (OrderItem item : items) {
+                            if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                                foodRefs.put(
+                                        item.getProductId(),
+                                        db.collection(COL_FOODS).document(item.getProductId())
+                                );
+                            }
+                        }
+
+                        // đọc tất cả food trước
+                        for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
+                            foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
+                        }
+
+                        // đọc user trước khi ghi
+                        userRef = db.collection(COL_USERS).document(order.getUserId());
+                        userSnap = tx.get(userRef);
+                    }
+
+                    // ===== 2. WRITES: sau khi đọc xong mới ghi =====
+                    if (wasSubtracted) {
+                        // hoàn stock/pet status
+                        for (OrderItem item : items) {
+                            if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                                tx.update(
+                                        db.collection(COL_PETS).document(item.getProductId()),
+                                        "status",
+                                        Pet.STATUS_AVAILABLE
+                                );
+                            } else if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                                DocumentSnapshot snap = foodSnaps.get(item.getProductId());
+
+                                long stock = 0;
+                                long sold = 0;
+
+                                if (snap != null) {
+                                    Long stockValue = snap.getLong("stock");
+                                    Long soldValue = snap.getLong("sold");
+
+                                    stock = stockValue != null ? stockValue : 0;
+                                    sold = soldValue != null ? soldValue : 0;
+                                }
+
+                                tx.update(
+                                        foodRefs.get(item.getProductId()),
+                                        "stock", stock + item.getQuantity(),
+                                        "sold", Math.max(0, sold - item.getQuantity())
+                                );
+                            }
+                        }
+
+                        // trừ lại thống kê user
+                        if (userSnap != null && userSnap.exists() && userRef != null) {
+                            Long totalOrdersValue = userSnap.getLong("totalOrders");
+                            Double totalSpentValue = userSnap.getDouble("totalSpent");
+
+                            long totalOrders = totalOrdersValue != null ? totalOrdersValue : 0;
+                            double totalSpent = totalSpentValue != null ? totalSpentValue : 0;
+
+                            tx.update(
+                                    userRef,
+                                    "totalOrders", Math.max(0, totalOrders - 1),
+                                    "totalSpent", Math.max(0, totalSpent - order.getTotalAmount())
+                            );
+                        }
+                    }
+
+                    String now = new SimpleDateFormat(
+                            "yyyy-MM-dd'T'HH:mm:ss",
+                            Locale.getDefault()
+                    ).format(new Date());
+
+                    tx.update(
+                            orderRef,
+                            "status", Order.STATUS_CANCELLED,
+                            "cancelReason", reason,
+                            "updatedAt", now
+                    );
+
+                    return null;
+                })
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void getAllOrders(Callback<List<Order>> cb) {

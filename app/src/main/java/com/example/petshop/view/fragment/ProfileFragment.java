@@ -85,10 +85,28 @@ public class ProfileFragment extends Fragment {
             public void onSuccess(java.util.List<com.example.petshop.model.entity.Order> data) {
                 if (data != null && !data.isEmpty()) {
                     requireActivity().runOnUiThread(() -> {
-                        ((TextView) root.findViewById(R.id.tvTotalOrders)).setText(String.valueOf(data.size()));
+                        int validOrderCount = 0;
                         double total = 0;
-                        for (var o : data) total += o.getTotalAmount();
-                        ((TextView) root.findViewById(R.id.tvTotalSpent)).setText(VND.format((long) total) + "đ");
+
+                        for (var o : data) {
+                            String status = o.getStatus();
+
+                            boolean shouldCount =
+                                    !com.example.petshop.model.entity.Order.STATUS_CANCELLED.equals(status)
+                                            && !com.example.petshop.model.entity.Order.STATUS_REFUNDED.equals(status)
+                                            && !com.example.petshop.model.entity.Order.STATUS_WAIT_PAY.equals(status);
+
+                            if (shouldCount) {
+                                validOrderCount++;
+                                total += o.getTotalAmount();
+                            }
+                        }
+
+                        ((TextView) root.findViewById(R.id.tvTotalOrders))
+                                .setText(String.valueOf(validOrderCount));
+
+                        ((TextView) root.findViewById(R.id.tvTotalSpent))
+                                .setText(VND.format((long) total) + "đ");
                     });
                 }
             }

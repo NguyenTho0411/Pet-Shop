@@ -34,7 +34,7 @@ public class VNPayHelper {
         vnp_Params.put("vnp_CurrCode",  "VND");
         vnp_Params.put("vnp_TxnRef",    orderCode);
         vnp_Params.put("vnp_OrderInfo", orderInfo);
-        vnp_Params.put("vnp_OrderType", "250000");
+        vnp_Params.put("vnp_OrderType", "other");
         vnp_Params.put("vnp_Locale",    "vn");
         vnp_Params.put("vnp_ReturnUrl", Constants.VNPAY_RETURN_URL.trim());
         vnp_Params.put("vnp_IpAddr",    "127.0.0.1");
@@ -50,42 +50,42 @@ public class VNPayHelper {
         Collections.sort(fieldNames);
 
         StringBuilder hashData = new StringBuilder();
-        StringBuilder query    = new StringBuilder();
-        Iterator<String> itr   = fieldNames.iterator();
+        StringBuilder query = new StringBuilder();
 
-        while (itr.hasNext()) {
-            String fieldName  = itr.next();
+        for (String fieldName : fieldNames) {
             String fieldValue = vnp_Params.get(fieldName);
-            if (fieldValue == null || fieldValue.isEmpty()) continue;
 
-            try {
-                // hashData: key raw, value URLEncoded với + cho space (VNPay Java official sample)
-                String valueEncoded = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString());
-                hashData.append(fieldName).append('=').append(valueEncoded);
-
-                // query: cả key và value URLEncoded, thay + bằng %20 cho URL chuẩn
-                query.append(URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString()))
-                     .append('=')
-                     .append(valueEncoded.replace("+", "%20"));
-            } catch (Exception e) {
-                hashData.append(fieldName).append('=').append(fieldValue);
-                query.append(fieldName).append('=').append(fieldValue);
+            if (fieldValue == null || fieldValue.isEmpty()) {
+                continue;
             }
 
-            if (itr.hasNext()) {
-                hashData.append('&');
-                query.append('&');
+            try {
+                String encodedName = URLEncoder.encode(fieldName, StandardCharsets.UTF_8.toString());
+                String encodedValue = URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString());
+
+                if (hashData.length() > 0) {
+                    hashData.append('&');
+                    query.append('&');
+                }
+
+                hashData.append(encodedName).append('=').append(encodedValue);
+                query.append(encodedName).append('=').append(encodedValue);
+
+            } catch (Exception e) {
+                Log.e("VNPAY_DEBUG", "Encode error", e);
             }
         }
 
-        // lowercase hex — KHÔNG toUpperCase()
         String secureHash = hmacSHA512(Constants.VNPAY_HASH_SECRET.trim(), hashData.toString());
         query.append("&vnp_SecureHash=").append(secureHash);
 
+        String paymentUrl = Constants.VNPAY_URL + "?" + query;
+
         Log.d("VNPAY_DEBUG", "HashData: " + hashData);
         Log.d("VNPAY_DEBUG", "Hash: " + secureHash);
+        Log.d("VNPAY_DEBUG", "PaymentUrl: " + paymentUrl);
 
-        return Constants.VNPAY_URL + "?" + query;
+        return paymentUrl;
     }
 
     public static boolean isSuccess(String responseCode) {
