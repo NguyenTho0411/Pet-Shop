@@ -46,12 +46,14 @@ public class HomeFragment extends Fragment {
     private HomeFoodAdapter     foodAdapter;
     private TextView            tvGreeting, tvTimeGreeting;
     private Button              btnLoginTopBar;
+    private View                rootView;
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.fragment_home, container, false);
+        rootView = inflater.inflate(R.layout.fragment_home, container, false);
+        return rootView;
     }
 
     @Override
@@ -113,14 +115,34 @@ public class HomeFragment extends Fragment {
     }
 
     private void observeViewModel() {
-        vm.getCategories().observe(getViewLifecycleOwner(),    cats  -> categoryAdapter.updateList(cats));
-        vm.getFeaturedPets().observe(getViewLifecycleOwner(),  pets  -> petAdapter.updateList(pets));
-        vm.getFeaturedFoods().observe(getViewLifecycleOwner(), foods -> foodAdapter.updateList(foods));
+        vm.getCategories().observe(getViewLifecycleOwner(), cats -> categoryAdapter.updateList(cats));
+        
+        vm.getFeaturedPets().observe(getViewLifecycleOwner(), pets -> {
+            petAdapter.updateList(pets);
+            rootView.findViewById(R.id.rvFeaturedPets).setVisibility(pets.isEmpty() ? View.GONE : View.VISIBLE);
+        });
+
+        vm.getFeaturedFoods().observe(getViewLifecycleOwner(), foods -> {
+            foodAdapter.updateList(foods);
+            rootView.findViewById(R.id.rvFeaturedFood).setVisibility(foods.isEmpty() ? View.GONE : View.VISIBLE);
+        });
+
+        vm.getIsSearching().observe(getViewLifecycleOwner(), isSearching -> {
+            TextView tvPetTitle = rootView.findViewById(R.id.tvFeaturedPetsTitle);
+            TextView tvFoodTitle = rootView.findViewById(R.id.tvFeaturedFoodTitle);
+            if (isSearching) {
+                if (tvPetTitle != null) tvPetTitle.setText("Kết quả tìm kiếm thú cưng");
+                if (tvFoodTitle != null) tvFoodTitle.setText("Kết quả tìm kiếm thức ăn");
+            } else {
+                if (tvPetTitle != null) tvPetTitle.setText(R.string.featured_pets);
+                if (tvFoodTitle != null) tvFoodTitle.setText(R.string.pet_food);
+            }
+        });
 
         cartVm.getSuccess().observe(getViewLifecycleOwner(), msg -> {
             if (msg != null) {
                 Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show();
-                cartVm.loadCart(); // Optional: refresh cart state if needed
+                cartVm.loadCart();
             }
         });
         cartVm.getError().observe(getViewLifecycleOwner(), err -> {

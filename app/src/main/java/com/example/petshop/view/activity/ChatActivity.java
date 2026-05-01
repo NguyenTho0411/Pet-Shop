@@ -12,12 +12,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.petshop.R;
-import com.example.petshop.model.entity.ChatMessage;
 import com.example.petshop.view.adapter.ChatAdapter;
 import com.example.petshop.viewmodel.ChatViewModel;
 import com.google.firebase.auth.FirebaseAuth;
-
-import java.util.ArrayList;
 
 public class ChatActivity extends AppCompatActivity {
 
@@ -46,7 +43,7 @@ public class ChatActivity extends AppCompatActivity {
         etMessage = findViewById(R.id.etMessage);
         tvStatus  = findViewById(R.id.tvBotStatus);
 
-        adapter = new ChatAdapter(new ArrayList<>());
+        adapter = new ChatAdapter();
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);
 
@@ -56,15 +53,15 @@ public class ChatActivity extends AppCompatActivity {
 
     private void observeViewModel() {
         vm.getMessages().observe(this, list -> {
-            // Since we use the same list object in VM, we need to refresh carefully or just update whole
-            adapter.notifyDataSetChanged();
-            if (adapter.getItemCount() > 0) {
-                rv.smoothScrollToPosition(adapter.getItemCount() - 1);
-            }
+            adapter.submitList(list, () -> {
+                if (adapter.getItemCount() > 0) {
+                    rv.smoothScrollToPosition(adapter.getItemCount() - 1);
+                }
+            });
         });
 
         vm.getIsTyping().observe(this, isTyping -> {
-            tvStatus.setText(isTyping ? "AI đang trả lời..." : "Đang hoạt động");
+            tvStatus.setText(isTyping ? "AI đang soạn câu trả lời..." : "Đang hoạt động");
             tvStatus.setTextColor(isTyping ? getColor(R.color.text_secondary) : getColor(R.color.status_success));
         });
     }

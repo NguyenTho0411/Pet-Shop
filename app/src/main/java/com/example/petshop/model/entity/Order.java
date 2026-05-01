@@ -7,13 +7,16 @@ public class Order {
 
     // Trạng thái đơn hàng
     public static final String STATUS_PENDING    = "PENDING";     // chờ xác nhận
+    public static final String STATUS_WAIT_PAY   = "WAITING_PAYMENT"; // Chờ thanh toán (VNPay)
     public static final String STATUS_CONFIRMED  = "CONFIRMED";   // đã xác nhận
     public static final String STATUS_PREPARING  = "PREPARING";   // đang chuẩn bị
     public static final String STATUS_SHIPPING   = "SHIPPING";    // đang giao
     public static final String STATUS_DELIVERED  = "DELIVERED";   // đã giao
     public static final String STATUS_COMPLETED  = "COMPLETED";   // hoàn thành
-    public static final String STATUS_CANCELLED  = "CANCELLED";   // đã hủy
-    public static final String STATUS_REFUNDED   = "REFUNDED";    // hoàn tiền
+    public static final String STATUS_CANCELLED        = "CANCELLED";        // đã hủy
+    public static final String STATUS_RETURN_REQUESTED = "RETURN_REQUESTED"; // chờ duyệt hoàn trả
+    public static final String STATUS_RETURN_APPROVED  = "RETURN_APPROVED";  // đã duyệt, chờ hoàn tiền
+    public static final String STATUS_REFUNDED         = "REFUNDED";         // đã hoàn tiền
 
     // Phương thức thanh toán
     public static final String PAYMENT_COD    = "COD";
@@ -121,7 +124,7 @@ public class Order {
     public boolean isCancelled() { return STATUS_CANCELLED.equals(status); }
 
     public boolean canCancel() {
-        return STATUS_PENDING.equals(status) || STATUS_CONFIRMED.equals(status);
+        return STATUS_PENDING.equals(status) || STATUS_WAIT_PAY.equals(status) || STATUS_CONFIRMED.equals(status);
     }
 
     public boolean canReview() {

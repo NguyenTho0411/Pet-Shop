@@ -5,8 +5,11 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class PromotionRepository {
@@ -32,16 +35,25 @@ public class PromotionRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    public void getById(String id, Callback<Promotion> cb) {
+        db.collection(COL).document(id).get()
+                .addOnSuccessListener(doc -> {
+                    Promotion p = doc.toObject(Promotion.class);
+                    if (p != null) p.setId(doc.getId());
+                    cb.onSuccess(p);
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     public void getActive(Callback<List<Promotion>> cb) {
         db.collection(COL)
-                .whereEqualTo("isActive", true)
+                .whereEqualTo("active", true)
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Promotion> list = new ArrayList<>();
                     for (var doc : snap.getDocuments()) {
                         Promotion p = doc.toObject(Promotion.class);
-                        // Check if not expired
-                        if (p.getEndDate() != null && isNotExpired(p.getEndDate())) {
+                        if (p != null && isNotExpired(p.getEndDate())) {
                             list.add(p);
                         }
                     }
@@ -75,7 +87,7 @@ public class PromotionRepository {
     }
 
     public void toggleActive(String id, boolean isActive, Callback<Void> cb) {
-        db.collection(COL).document(id).update("isActive", isActive)
+        db.collection(COL).document(id).update("active", isActive)
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
@@ -93,12 +105,22 @@ public class PromotionRepository {
     }
 
     private boolean isNotExpired(String endDate) {
+        if (endDate == null || endDate.isEmpty()) return true;
         try {
-            long endTime = Long.parseLong(endDate);
-            long now = System.currentTimeMillis() / 1000;
-            return now < endTime;
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            Date end = sdf.parse(endDate);
+            return end != null && !end.before(stripTime(new Date()));
         } catch (Exception e) {
             return true;
+        }
+    }
+
+    private Date stripTime(Date date) {
+        try {
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            return sdf.parse(sdf.format(date));
+        } catch (Exception e) {
+            return date;
         }
     }
 }

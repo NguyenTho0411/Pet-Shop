@@ -8,8 +8,11 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class PetRepository {
@@ -67,9 +70,13 @@ public class PetRepository {
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
+    private String now() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
+    }
+
     public void updateThumbnail(String petId, String url, PetRepository.Callback<Void> cb) {
         db.collection(COL).document(petId)
-                .update("thumbnailUrl", url, "updatedAt", Timestamp.now().toString())
+                .update("thumbnailUrl", url, "updatedAt", now())
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
@@ -78,15 +85,16 @@ public class PetRepository {
     public void add(Pet pet, Callback<String> cb) {
         String id = UUID.randomUUID().toString();
         pet.setId(id);
-        pet.setCreatedAt(Timestamp.now().toString());
-        pet.setUpdatedAt(Timestamp.now().toString());
+        pet.setCreatedAt(now());
+        pet.setUpdatedAt(now());
+        if (pet.getStatus() == null) pet.setStatus(Pet.STATUS_AVAILABLE);
         db.collection(COL).document(id).set(pet)
                 .addOnSuccessListener(v -> cb.onSuccess(id))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void update(Pet pet, Callback<Void> cb) {
-        pet.setUpdatedAt(Timestamp.now().toString());
+        pet.setUpdatedAt(now());
         db.collection(COL).document(pet.getId()).set(pet)
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -101,13 +109,14 @@ public class PetRepository {
     public void updateStatus(String id, String status, Callback<Void> cb) {
         db.collection(COL).document(id).update(
                 "status", status,
-                "updatedAt", Timestamp.now().toString())
+                "updatedAt", now())
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void addMedia(String petId, PetMedia media, Callback<String> cb) {
         String id = UUID.randomUUID().toString();
+        media.setId(id);
         media.setPetId(petId);
         db.collection(COL).document(petId)
                 .collection(COL_MEDIA).document(id).set(media)

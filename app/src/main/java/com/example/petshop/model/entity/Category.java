@@ -1,5 +1,6 @@
 package com.example.petshop.model.entity;
 
+import com.google.firebase.firestore.Exclude;
 import com.google.gson.annotations.SerializedName;
 
 public class Category {
@@ -43,7 +44,9 @@ public class Category {
         this.isActive = true;
     }
 
+    @Exclude
     public boolean isPetCategory()  { return TYPE_PET.equals(type); }
+    @Exclude
     public boolean isFoodCategory() { return TYPE_FOOD.equals(type); }
 
     // region Getters & Setters

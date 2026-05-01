@@ -7,6 +7,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.DiffUtil;
+import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.petshop.R;
@@ -14,12 +16,20 @@ import com.example.petshop.model.entity.ChatMessage;
 
 import java.util.List;
 
-public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.VH> {
+public class ChatAdapter extends ListAdapter<ChatMessage, ChatAdapter.VH> {
 
-    private final List<ChatMessage> list;
+    public ChatAdapter() {
+        super(new DiffUtil.ItemCallback<ChatMessage>() {
+            @Override
+            public boolean areItemsTheSame(@NonNull ChatMessage oldItem, @NonNull ChatMessage newItem) {
+                return oldItem.getTimestamp() == newItem.getTimestamp();
+            }
 
-    public ChatAdapter(List<ChatMessage> list) {
-        this.list = list;
+            @Override
+            public boolean areContentsTheSame(@NonNull ChatMessage oldItem, @NonNull ChatMessage newItem) {
+                return oldItem.getText().equals(newItem.getText()) && oldItem.getType() == newItem.getType();
+            }
+        });
     }
 
     @NonNull @Override
@@ -30,7 +40,7 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.VH> {
 
     @Override
     public void onBindViewHolder(@NonNull VH h, int position) {
-        ChatMessage msg = list.get(position);
+        ChatMessage msg = getItem(position);
         if (msg.getType() == ChatMessage.TYPE_USER) {
             h.llUser.setVisibility(View.VISIBLE);
             h.llBot.setVisibility(View.GONE);
@@ -40,13 +50,6 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.VH> {
             h.llBot.setVisibility(View.VISIBLE);
             h.tvBot.setText(msg.getText());
         }
-    }
-
-    @Override public int getItemCount() { return list.size(); }
-
-    public void addMessage(ChatMessage m) {
-        list.add(m);
-        notifyItemInserted(list.size() - 1);
     }
 
     static class VH extends RecyclerView.ViewHolder {

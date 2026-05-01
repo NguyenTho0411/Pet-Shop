@@ -6,8 +6,11 @@ import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class FoodRepository {
@@ -27,8 +30,13 @@ public class FoodRepository {
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Food> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(Food.class));
+                    for (var doc : snap.getDocuments()) {
+                        Food food = doc.toObject(Food.class);
+                        if (food != null) {
+                            food.setId(doc.getId());
+                            list.add(food);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -39,8 +47,13 @@ public class FoodRepository {
                 .orderBy("createdAt", Query.Direction.DESCENDING).get()
                 .addOnSuccessListener(snap -> {
                     List<Food> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(Food.class));
+                    for (var doc : snap.getDocuments()) {
+                        Food food = doc.toObject(Food.class);
+                        if (food != null) {
+                            food.setId(doc.getId());
+                            list.add(food);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -48,22 +61,31 @@ public class FoodRepository {
 
     public void getById(String id, Callback<Food> cb) {
         db.collection(COL).document(id).get()
-                .addOnSuccessListener(doc -> cb.onSuccess(doc.toObject(Food.class)))
+                .addOnSuccessListener(doc -> {
+                    Food food = doc.toObject(Food.class);
+                    if (food != null) food.setId(doc.getId());
+                    cb.onSuccess(food);
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    private String now() {
+        return new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 
     public void add(Food food, Callback<String> cb) {
         String id = UUID.randomUUID().toString();
         food.setId(id);
-        food.setCreatedAt(Timestamp.now().toString());
-        food.setUpdatedAt(Timestamp.now().toString());
+        food.setCreatedAt(now());
+        food.setUpdatedAt(now());
+        if (food.getStatus() == null) food.setStatus(Food.STATUS_AVAILABLE);
         db.collection(COL).document(id).set(food)
                 .addOnSuccessListener(v -> cb.onSuccess(id))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void update(Food food, Callback<Void> cb) {
-        food.setUpdatedAt(Timestamp.now().toString());
+        food.setUpdatedAt(now());
         db.collection(COL).document(food.getId()).set(food)
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -78,14 +100,21 @@ public class FoodRepository {
     public void updateStock(String id, int stock, Callback<Void> cb) {
         db.collection(COL).document(id).update(
                 "stock", stock,
-                "updatedAt", Timestamp.now().toString())
+                "updatedAt", now())
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    public void updateThumbnail(String foodId, String url, Callback<Void> cb) {
+        db.collection(COL).document(foodId)
+                .update("thumbnailUrl", url, "updatedAt", now())
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
 
     public void addMedia(String foodId, FoodMedia media, Callback<String> cb) {
         String id = UUID.randomUUID().toString();
+        media.setId(id);
         media.setFoodId(foodId);
         db.collection(COL).document(foodId)
                 .collection(COL_MEDIA).document(id).set(media)
@@ -98,8 +127,13 @@ public class FoodRepository {
                 .collection(COL_MEDIA).orderBy("sortOrder").get()
                 .addOnSuccessListener(snap -> {
                     List<FoodMedia> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(FoodMedia.class));
+                    for (var doc : snap.getDocuments()) {
+                        FoodMedia media = doc.toObject(FoodMedia.class);
+                        if (media != null) {
+                            media.setId(doc.getId());
+                            list.add(media);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));

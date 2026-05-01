@@ -4,14 +4,17 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -30,12 +33,10 @@ import java.util.List;
 
 public class AddEditFoodActivity extends AppCompatActivity {
 
-    private static final int PICK_IMAGE = 100;
-    private static final int PICK_VIDEO = 101;
-
     private FoodManageViewModel vm;
     private Food currentFood;
     private List<Category> categories = new ArrayList<>();
+    private String editingFoodId;
 
     private EditText etName, etType, etWeight, etBrand, etOrigin;
     private EditText etDesc, etNutrition, etUsage, etPrice, etOrigPrice, etStock;
@@ -45,7 +46,21 @@ public class AddEditFoodActivity extends AppCompatActivity {
     private TextView tvTitle;
 
     private MediaPickerAdapter mediaAdapter;
-    private List<MediaPickerAdapter.MediaItem> mediaItems = new ArrayList<>();
+
+    private final ActivityResultLauncher<String[]> mediaPickerLauncher = registerForActivityResult(
+            new ActivityResultContracts.OpenMultipleDocuments(),
+            uris -> {
+                if (uris != null) {
+                    for (Uri uri : uris) {
+                        String mime = getContentResolver().getType(uri);
+                        int type = (mime != null && mime.startsWith("video"))
+                                ? MediaPickerAdapter.TYPE_VIDEO
+                                : MediaPickerAdapter.TYPE_IMAGE;
+                        mediaAdapter.addItem(new MediaPickerAdapter.MediaItem(uri, type));
+                    }
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,15 +70,15 @@ public class AddEditFoodActivity extends AppCompatActivity {
         vm = new ViewModelProvider(this).get(FoodManageViewModel.class);
 
         initViews();
-        setupMediaAdapter();
         loadCategories();
         observeViewModel();
 
-        String foodId = getIntent().getStringExtra("foodId");
-        if (foodId != null && !foodId.isEmpty()) {
+        editingFoodId = getIntent().getStringExtra("foodId");
+        if (editingFoodId != null && !editingFoodId.isEmpty()) {
             tvTitle.setText("Sửa thức ăn");
             btnSave.setText("Cập nhật");
-            vm.loadById(foodId);
+            vm.loadById(editingFoodId);
+            vm.loadMedia(editingFoodId);
         }
     }
 
@@ -85,115 +100,82 @@ public class AddEditFoodActivity extends AppCompatActivity {
         btnSave = findViewById(R.id.btnSave);
         tvTitle = findViewById(R.id.tvTitle);
 
+        // Media RecyclerView - Code tương tự Pet
+        RecyclerView rvMedia = findViewById(R.id.rvMedia);
+        rvMedia.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        mediaAdapter = new MediaPickerAdapter(new ArrayList<>(), new MediaPickerAdapter.OnMediaAction() {
+            @Override
+            public void onAddClick() {
+                mediaPickerLauncher.launch(new String[]{"image/*", "video/*"});
+            }
+
+            @Override
+            public void onRemoveClick(int index) {
+                MediaPickerAdapter.MediaItem item = mediaAdapter.getItems().get(index);
+                if (item.isExisting && editingFoodId != null) {
+                    new AlertDialog.Builder(AddEditFoodActivity.this)
+                            .setMessage("Xoá media này?")
+                            .setPositiveButton("Xoá", (d, w) -> {
+                                vm.deleteMediaItem(editingFoodId, item.mediaId, item.url);
+                                mediaAdapter.removeItem(index);
+                            })
+                            .setNegativeButton("Huỷ", null).show();
+                } else {
+                    mediaAdapter.removeItem(index);
+                }
+            }
+        });
+        rvMedia.setAdapter(mediaAdapter);
+
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         btnSave.setOnClickListener(v -> saveFood());
-        // Nút lưu ở bottom
         View btnSaveBottom = findViewById(R.id.btnSaveBottom);
         if (btnSaveBottom != null) btnSaveBottom.setOnClickListener(v -> saveFood());
     }
 
-    private void setupMediaAdapter() {
-        RecyclerView rvMedia = findViewById(R.id.rvMedia);
-        rvMedia.setLayoutManager(new LinearLayoutManager(this, RecyclerView.HORIZONTAL, false));
-
-        mediaAdapter = new MediaPickerAdapter(mediaItems, new MediaPickerAdapter.OnMediaAction() {
-            @Override
-            public void onAddClick() {
-                showMediaPickerMenu();
-            }
-            @Override
-            public void onRemoveClick(int index) {
-                mediaAdapter.removeItem(index);
-            }
-        });
-        rvMedia.setAdapter(mediaAdapter);
-    }
-
-    private void showMediaPickerMenu() {
-        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
-        builder.setTitle("Thêm media")
-                .setItems(new String[]{"📷 Ảnh", "🎬 Video"}, (dialog, which) -> {
-                    if (which == 0) pickImage();
-                    else            pickVideo();
-                }).show();
-    }
-
-    private void pickImage() {
-        Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-        intent.setType("image/*");
-        startActivityForResult(intent, PICK_IMAGE);
-    }
-
-    private void pickVideo() {
-        Intent intent = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
-        intent.setType("video/*");
-        startActivityForResult(intent, PICK_VIDEO);
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && data != null) {
-            Uri uri = data.getData();
-            if (uri != null) {
-                if (requestCode == PICK_IMAGE) {
-                    mediaAdapter.addItem(new MediaPickerAdapter.MediaItem(uri, MediaPickerAdapter.TYPE_IMAGE));
-                } else if (requestCode == PICK_VIDEO) {
-                    mediaAdapter.addItem(new MediaPickerAdapter.MediaItem(uri, MediaPickerAdapter.TYPE_VIDEO));
-                }
-            }
-        }
-    }
-
     private void loadCategories() {
-        CategoryRepository repo = new CategoryRepository();
-        repo.getByType(Category.TYPE_FOOD, new CategoryRepository.Callback<List<Category>>() {
+        new CategoryRepository().getByType(Category.TYPE_FOOD, new CategoryRepository.Callback<>() {
             @Override
             public void onSuccess(List<Category> data) {
                 categories = data != null ? data : new ArrayList<>();
                 List<String> names = new ArrayList<>();
                 for (Category c : categories) names.add(c.getName());
-                setupAutocomplete(actvCategory, names.toArray(new String[0]));
+                ArrayAdapter<String> adapter = new ArrayAdapter<>(AddEditFoodActivity.this,
+                        android.R.layout.simple_dropdown_item_1line, names);
+                actvCategory.setAdapter(adapter);
             }
-            @Override
-            public void onFailure(String error) {
-                Toast.makeText(AddEditFoodActivity.this, "Lỗi tải danh mục: " + error, Toast.LENGTH_LONG).show();
-            }
+            @Override public void onFailure(String error) {}
         });
-    }
-
-    private void setupAutocomplete(AutoCompleteTextView actv, String[] items) {
-        android.widget.ArrayAdapter<String> adapter = new android.widget.ArrayAdapter<>(this,
-                android.R.layout.simple_dropdown_item_1line, items);
-        actv.setAdapter(adapter);
     }
 
     private void observeViewModel() {
         vm.getLoading().observe(this, loading -> {
-            progressBar.setVisibility(loading ? android.view.View.VISIBLE : android.view.View.GONE);
+            progressBar.setVisibility(loading ? View.VISIBLE : View.GONE);
             btnSave.setEnabled(!loading);
         });
 
         vm.getCurrentFood().observe(this, food -> {
             if (food != null) {
                 currentFood = food;
-                boundFoodToUI(food);
+                fillForm(food);
             }
         });
 
         vm.getMediaList().observe(this, medias -> {
-            if (medias != null) {
-                mediaItems.clear();
-                for (FoodMedia m : medias) {
-                    int type = "VIDEO".equals(m.getMediaType()) ? MediaPickerAdapter.TYPE_VIDEO : MediaPickerAdapter.TYPE_IMAGE;
-                    mediaItems.add(new MediaPickerAdapter.MediaItem(m.getMediaUrl(), m.getId(), type));
-                }
-                mediaAdapter.notifyDataSetChanged();
+            if (medias == null) return;
+            List<MediaPickerAdapter.MediaItem> items = new ArrayList<>();
+            for (FoodMedia m : medias) {
+                int type = "VIDEO".equals(m.getMediaType()) ? MediaPickerAdapter.TYPE_VIDEO : MediaPickerAdapter.TYPE_IMAGE;
+                items.add(new MediaPickerAdapter.MediaItem(m.getMediaUrl(), m.getId(), type));
             }
-        });
+            // Giữ lại các item mới chưa upload
+            List<MediaPickerAdapter.MediaItem> current = new ArrayList<>(mediaAdapter.getItems());
+            current.removeIf(i -> i.isExisting);
+            items.addAll(current);
 
-        vm.getUploadProgress().observe(this, progress -> {
-            progressBar.setProgress(progress);
+            mediaAdapter.getItems().clear();
+            mediaAdapter.getItems().addAll(items);
+            mediaAdapter.notifyDataSetChanged();
         });
 
         vm.getSuccess().observe(this, msg -> {
@@ -210,7 +192,7 @@ public class AddEditFoodActivity extends AppCompatActivity {
         });
     }
 
-    private void boundFoodToUI(Food food) {
+    private void fillForm(Food food) {
         etName.setText(food.getName());
         etType.setText(food.getFoodType());
         etWeight.setText(String.valueOf(food.getWeightGram()));
@@ -223,36 +205,32 @@ public class AddEditFoodActivity extends AppCompatActivity {
         etOrigPrice.setText(String.valueOf(food.getOriginalPrice()));
         etStock.setText(String.valueOf(food.getStock()));
 
-        actvCategory.setText(food.getCategoryId() != null ? getCategoryName(food.getCategoryId()) : "", false);
-    }
-
-    private String getCategoryName(String categoryId) {
         for (Category c : categories) {
-            if (c.getId().equals(categoryId)) return c.getName();
+            if (c.getId().equals(food.getCategoryId())) {
+                actvCategory.setText(c.getName(), false);
+                break;
+            }
         }
-        return "";
     }
 
     private void saveFood() {
         String name = etName.getText().toString().trim();
         String categoryName = actvCategory.getText().toString().trim();
         String priceStr = etPrice.getText().toString().trim();
-        String stockStr = etStock.getText().toString().trim();
 
-        if (name.isEmpty()) {
-            Toast.makeText(this, "Tên thức ăn bắt buộc", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (categoryName.isEmpty()) {
-            Toast.makeText(this, "Danh mục bắt buộc", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (priceStr.isEmpty()) {
-            Toast.makeText(this, "Giá bán bắt buộc", Toast.LENGTH_SHORT).show();
+        if (name.isEmpty() || categoryName.isEmpty() || priceStr.isEmpty()) {
+            Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin bắt buộc (*)", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        String categoryId = getCategoryIdByName(categoryName);
+        String categoryId = null;
+        for (Category c : categories) {
+            if (c.getName().equals(categoryName)) {
+                categoryId = c.getId();
+                break;
+            }
+        }
+
         if (categoryId == null) {
             Toast.makeText(this, "Danh mục không hợp lệ", Toast.LENGTH_SHORT).show();
             return;
@@ -262,27 +240,10 @@ public class AddEditFoodActivity extends AppCompatActivity {
         food.setName(name);
         food.setCategoryId(categoryId);
         food.setFoodType(etType.getText().toString().trim());
-        
-        try {
-            food.setWeightGram((int) Double.parseDouble(etWeight.getText().toString()));
-        } catch (Exception e) {
-            food.setWeightGram(0);
-        }
-        try {
-            food.setPrice(Double.parseDouble(priceStr));
-        } catch (Exception e) {
-            food.setPrice(0);
-        }
-        try {
-            food.setOriginalPrice(Double.parseDouble(etOrigPrice.getText().toString()));
-        } catch (Exception e) {
-            food.setOriginalPrice(0);
-        }
-        try {
-            food.setStock(Integer.parseInt(stockStr));
-        } catch (Exception e) {
-            food.setStock(0);
-        }
+        try { food.setWeightGram((int) Double.parseDouble(etWeight.getText().toString())); } catch (Exception e) {}
+        try { food.setPrice(Double.parseDouble(priceStr)); } catch (Exception e) {}
+        try { food.setOriginalPrice(Double.parseDouble(etOrigPrice.getText().toString())); } catch (Exception e) {}
+        try { food.setStock(Integer.parseInt(etStock.getText().toString())); } catch (Exception e) {}
 
         food.setBrand(etBrand.getText().toString().trim());
         food.setOrigin(etOrigin.getText().toString().trim());
@@ -290,16 +251,6 @@ public class AddEditFoodActivity extends AppCompatActivity {
         food.setNutritionInfo(etNutrition.getText().toString().trim());
         food.setUsageGuide(etUsage.getText().toString().trim());
 
-        List<Uri> newUris = mediaAdapter.getNewUris();
-        List<String> mediaTypes = mediaAdapter.getNewTypes();
-
-        vm.saveFood(food, newUris, mediaTypes);
-    }
-
-    private String getCategoryIdByName(String name) {
-        for (Category c : categories) {
-            if (c.getName().equals(name)) return c.getId();
-        }
-        return null;
+        vm.saveFood(food, mediaAdapter.getNewUris(), mediaAdapter.getNewTypes());
     }
 }

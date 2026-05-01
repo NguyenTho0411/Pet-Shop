@@ -5,10 +5,12 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,20 +33,28 @@ public class AdminOrderListActivity extends AppCompatActivity {
 
     private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
 
+    private static final String[] STATUS_OPTIONS = {
+            Order.STATUS_CONFIRMED, Order.STATUS_PREPARING,
+            Order.STATUS_SHIPPING,  Order.STATUS_DELIVERED,
+            Order.STATUS_COMPLETED, Order.STATUS_CANCELLED,
+            Order.STATUS_REFUNDED
+    };
+
+    private static final String[] STATUS_LABELS = {
+            "✅ Xác nhận", "📦 Đang chuẩn bị", "🚚 Đang giao",
+            "📬 Đã giao", "🏁 Hoàn thành", "❌ Huỷ đơn", "💸 Hoàn tiền"
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        // Reuse manage users layout structure (toolbar + filter + list)
         setContentView(R.layout.activity_manage_users);
         ((TextView) findViewById(R.id.tvUserCount)).setText("đơn hàng");
 
-        // Hack: reuse manage_users layout for orders
         rv = findViewById(R.id.rvUsers);
         rv.setLayoutManager(new LinearLayoutManager(this));
         pb = findViewById(R.id.progressBar);
 
-        // Override title
-        // Filter chips → reuse chipAll/Customer/Admin → All/Pending/Shipping
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         setFilter(R.id.chipAll,      null);
         setFilter(R.id.chipCustomer, Order.STATUS_PENDING);
@@ -87,10 +97,20 @@ public class AdminOrderListActivity extends AppCompatActivity {
                 View v = h.itemView;
                 ((TextView) v.findViewById(R.id.tvOrderCode)).setText(order.getOrderCode());
                 ((TextView) v.findViewById(R.id.tvTotal)).setText(VND.format((long) order.getTotalAmount()) + "đ");
-                String date = order.getCreatedAt() != null && order.getCreatedAt().length() >= 10
-                        ? order.getCreatedAt().substring(0, 10) : "";
+                
+                String dateStr = order.getCreatedAt();
+                String displayDate = "";
+                if (dateStr != null) {
+                    if (dateStr.startsWith("Timestamp(")) {
+                        displayDate = "N/A";
+                    } else if (dateStr.length() >= 10) {
+                        displayDate = dateStr.substring(0, 10);
+                    } else {
+                        displayDate = dateStr;
+                    }
+                }
                 ((TextView) v.findViewById(R.id.tvDate)).setText(
-                        date + " · " + (order.getReceiverName() != null ? order.getReceiverName() : ""));
+                        displayDate + " · " + (order.getReceiverName() != null ? order.getReceiverName() : ""));
 
                 TextView tvStatus = v.findViewById(R.id.tvStatus);
                 tvStatus.setText(order.getStatus());
@@ -98,6 +118,10 @@ public class AdminOrderListActivity extends AppCompatActivity {
 
                 v.findViewById(R.id.btnCancel).setVisibility(View.GONE);
                 v.findViewById(R.id.btnReturn).setVisibility(View.GONE);
+                
+                Button btnUpdate = v.findViewById(R.id.btnUpdate);
+                btnUpdate.setVisibility(View.VISIBLE);
+                btnUpdate.setOnClickListener(x -> showStatusPicker(order));
 
                 v.setOnClickListener(x -> {
                     Intent i = new Intent(AdminOrderListActivity.this, AdminOrderDetailActivity.class);
@@ -106,6 +130,34 @@ public class AdminOrderListActivity extends AppCompatActivity {
                 });
             }
             @Override public int getItemCount() { return list.size(); }
+        });
+    }
+
+    private void showStatusPicker(Order order) {
+        new AlertDialog.Builder(this)
+                .setTitle("Cập nhật: " + order.getOrderCode())
+                .setItems(STATUS_LABELS, (dialog, which) -> {
+                    String newStatus = STATUS_OPTIONS[which];
+                    updateOrderStatus(order, newStatus);
+                })
+                .setNegativeButton("Đóng", null)
+                .show();
+    }
+
+    private void updateOrderStatus(Order order, String newStatus) {
+        new OrderRepository().updateStatus(order.getId(), newStatus, null, new OrderRepository.Callback<>() {
+            @Override
+            public void onSuccess(Void data) {
+                runOnUiThread(() -> {
+                    order.setStatus(newStatus);
+                    loadOrders(); // Refresh list
+                    Toast.makeText(AdminOrderListActivity.this, "Đã cập nhật trạng thái!", Toast.LENGTH_SHORT).show();
+                });
+            }
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> Toast.makeText(AdminOrderListActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show());
+            }
         });
     }
 

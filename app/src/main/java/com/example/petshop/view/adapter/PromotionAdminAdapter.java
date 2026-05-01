@@ -21,6 +21,7 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
     public interface OnActionListener {
         void onEdit(Promotion promo);
         void onDelete(Promotion promo);
+        void onToggle(Promotion promo, boolean isActive);
     }
 
     private final List<Promotion>      list;
@@ -53,9 +54,11 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
         h.tvDateRange.setText(String.format("📅 %s → %s", p.getStartDate(), p.getEndDate()));
         h.tvUsage.setText(String.format("Đã dùng: %d", p.getUsageCount()));
         
+        h.switchActive.setOnCheckedChangeListener(null); // clear trước để tránh fire khi setChecked
         h.switchActive.setChecked(p.isActive());
-        h.switchActive.setOnCheckedChangeListener((btn, checked) ->
-                listener.onEdit(p)); // Toggle via edit
+        h.switchActive.setOnCheckedChangeListener((btn, checked) -> {
+            if (btn.isPressed()) listener.onToggle(p, checked);
+        });
 
         h.btnMore.setOnClickListener(v -> showPopup(v.getContext(), v, p));
     }

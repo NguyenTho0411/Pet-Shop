@@ -272,6 +272,15 @@
                     android:id="@+id/itemManageOrders" />
 
                 <include layout="@layout/item_admin_action"
+                    android:id="@+id/itemManagePromotions" />
+
+                <include layout="@layout/item_admin_action"
+                    android:id="@+id/itemManageVouchers" />
+
+                <include layout="@layout/item_admin_action"
+                    android:id="@+id/itemManageReturns" />
+
+                <include layout="@layout/item_admin_action"
                     android:id="@+id/itemStatistics" />
 
             </LinearLayout>

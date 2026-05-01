@@ -1,5 +1,6 @@
 package com.example.petshop.model.entity;
 
+import com.google.firebase.firestore.PropertyName;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
@@ -46,6 +47,7 @@ public class Promotion {
     @SerializedName("endDate")
     private String endDate;
 
+    @PropertyName("active")
     @SerializedName("isActive")
     private boolean isActive;
 
@@ -118,7 +120,9 @@ public class Promotion {
     public String getEndDate() { return endDate; }
     public void setEndDate(String endDate) { this.endDate = endDate; }
 
+    @PropertyName("active")
     public boolean isActive() { return isActive; }
+    @PropertyName("active")
     public void setActive(boolean active) { isActive = active; }
 
     public String getCreatedBy() { return createdBy; }

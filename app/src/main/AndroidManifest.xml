@@ -99,6 +99,25 @@
         <!-- Admin Order screens -->
         <activity android:name=".view.activity.AdminOrderListActivity" android:exported="false" />
         <activity android:name=".view.activity.AdminOrderDetailActivity" android:exported="false" />
+        <activity android:name=".view.activity.AdminReturnListActivity" android:exported="false" />
+        <activity android:name=".view.activity.VNPayWebViewActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize" />
+
+        <activity android:name=".view.activity.VNPayResultActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https"
+                    android:host="petshop-payment.web.app"
+                    android:path="/vnpay-return" />
+                <data android:scheme="petshop"
+                    android:host="payment"
+                    android:path="/vnpay-return" />
+            </intent-filter>
+        </activity>
 
         <!-- Admin extras -->
         <activity

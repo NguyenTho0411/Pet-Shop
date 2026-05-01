@@ -54,6 +54,9 @@ public class ManagePromotionsActivity extends AppCompatActivity {
                         .setPositiveButton("Xoá", (d, w) -> vm.delete(promo.getId()))
                         .setNegativeButton("Huỷ", null).show();
             }
+            public void onToggle(Promotion promo, boolean isActive) {
+                vm.toggleActive(promo.getId(), isActive);
+            }
         });
         rv.setLayoutManager(new LinearLayoutManager(this));
         rv.setAdapter(adapter);

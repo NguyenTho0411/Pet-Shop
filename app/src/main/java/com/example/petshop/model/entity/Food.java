@@ -1,5 +1,6 @@
 package com.example.petshop.model.entity;
 
+import com.google.firebase.firestore.Exclude;
 import com.google.gson.annotations.SerializedName;
 import java.util.List;
 
@@ -119,9 +120,12 @@ public class Food {
 
     public Food() {}
 
+    @Exclude
     public boolean isAvailable()  { return STATUS_AVAILABLE.equals(status) && stock > 0; }
+    @Exclude
     public boolean hasPromotion() { return promotionId != null && !promotionId.isEmpty(); }
 
+    @Exclude
     public double getEffectivePrice() {
         return discountedPrice > 0 ? discountedPrice : price;
     }

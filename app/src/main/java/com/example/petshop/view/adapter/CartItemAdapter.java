@@ -1,5 +1,6 @@
 package com.example.petshop.view.adapter;
 
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,6 +50,15 @@ public class CartItemAdapter extends RecyclerView.Adapter<CartItemAdapter.VH> {
         h.tvPrice.setText(VND.format((long) item.getUnitPrice()) + "đ");
         h.tvBadge.setText(item.isPet() ? "THÚ CƯNG" : "ĐỒ ĂN");
 
+        // Hiển thị giá gốc gạch ngang nếu có khuyến mãi
+        if (item.getOriginalPrice() > 0 && item.getOriginalPrice() > item.getUnitPrice()) {
+            h.tvOriginalPrice.setVisibility(View.VISIBLE);
+            h.tvOriginalPrice.setText(VND.format((long) item.getOriginalPrice()) + "đ");
+            h.tvOriginalPrice.setPaintFlags(h.tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+        } else {
+            h.tvOriginalPrice.setVisibility(View.GONE);
+        }
+
         String detail = item.isPet()
                 ? "Số lượng: 1 (duy nhất)"
                 : "Đơn giá: " + VND.format((long) item.getUnitPrice()) + "đ";
@@ -87,22 +97,23 @@ public class CartItemAdapter extends RecyclerView.Adapter<CartItemAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         ImageView   ivProduct;
-        TextView    tvName, tvDetail, tvPrice, tvBadge, tvQty, btnDec, btnInc;
+        TextView    tvName, tvDetail, tvPrice, tvOriginalPrice, tvBadge, tvQty, btnDec, btnInc;
         ImageButton btnRemove;
         LinearLayout llQty;
 
         VH(View v) {
             super(v);
-            ivProduct = v.findViewById(R.id.ivProduct);
-            tvName    = v.findViewById(R.id.tvProductName);
-            tvDetail  = v.findViewById(R.id.tvProductDetail);
-            tvPrice   = v.findViewById(R.id.tvUnitPrice);
-            tvBadge   = v.findViewById(R.id.tvTypeBadge);
-            tvQty     = v.findViewById(R.id.tvQty);
-            btnDec    = v.findViewById(R.id.btnDec);
-            btnInc    = v.findViewById(R.id.btnInc);
-            llQty     = v.findViewById(R.id.llQtyControl);
-            btnRemove = v.findViewById(R.id.btnRemove);
+            ivProduct      = v.findViewById(R.id.ivProduct);
+            tvName         = v.findViewById(R.id.tvProductName);
+            tvDetail       = v.findViewById(R.id.tvProductDetail);
+            tvPrice        = v.findViewById(R.id.tvUnitPrice);
+            tvOriginalPrice= v.findViewById(R.id.tvOriginalPrice);
+            tvBadge        = v.findViewById(R.id.tvTypeBadge);
+            tvQty          = v.findViewById(R.id.tvQty);
+            btnDec         = v.findViewById(R.id.btnDec);
+            btnInc         = v.findViewById(R.id.btnInc);
+            llQty          = v.findViewById(R.id.llQtyControl);
+            btnRemove      = v.findViewById(R.id.btnRemove);
         }
     }
 }

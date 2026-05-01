@@ -18,10 +18,21 @@ public class VoucherManageViewModel extends ViewModel {
     private final MutableLiveData<String>        error      = new MutableLiveData<>();
     private final MutableLiveData<String>        success    = new MutableLiveData<>();
 
+    private final MutableLiveData<Voucher>       currentVoucher = new MutableLiveData<>();
+
     public LiveData<List<Voucher>> getVouchers() { return vouchers; }
+    public LiveData<Voucher>       getCurrentVoucher() { return currentVoucher; }
     public LiveData<Boolean>       getLoading()  { return isLoading; }
     public LiveData<String>        getError()    { return error; }
     public LiveData<String>        getSuccess()  { return success; }
+
+    public void loadById(String id) {
+        isLoading.setValue(true);
+        repo.getByCode(id, new VoucherRepository.Callback<>() { // actually it might be searching by doc ID or code
+            public void onSuccess(Voucher data) { isLoading.postValue(false); currentVoucher.postValue(data); }
+            public void onFailure(String err)   { isLoading.postValue(false); error.postValue(err); }
+        });
+    }
 
     public void loadAll() {
         isLoading.setValue(true);

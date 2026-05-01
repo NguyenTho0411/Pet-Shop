@@ -76,6 +76,15 @@ public class AdminActivity extends AppCompatActivity {
         setupActionItem(R.id.itemManageOrders, "🛒", "Quản lý đơn hàng", v ->
                 startActivity(new Intent(this, AdminOrderListActivity.class)));
 
+        setupActionItem(R.id.itemManagePromotions, "🎁", "Quản lý khuyến mãi", v ->
+                startActivity(new Intent(this, ManagePromotionsActivity.class)));
+
+        setupActionItem(R.id.itemManageVouchers, "🎫", "Quản lý Voucher", v ->
+                startActivity(new Intent(this, ManageVouchersActivity.class)));
+
+        setupActionItem(R.id.itemManageReturns, "↩️", "Quản lý hoàn trả", v ->
+                startActivity(new Intent(this, AdminReturnListActivity.class)));
+
         setupActionItem(R.id.itemStatistics, "📊", "Thống kê", v ->
                 Toast.makeText(this, "Thống kê - Coming soon", Toast.LENGTH_SHORT).show());
     }

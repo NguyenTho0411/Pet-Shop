@@ -1,7 +1,6 @@
 package com.example.petshop.view.activity;
 
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -196,12 +195,65 @@ public class CheckoutActivity extends AppCompatActivity {
         }
     }
 
+    private String        selectedVoucherId = null;
+    private String        selectedVoucherCode = null;
+
     private void applyVoucher() {
         TextInputEditText etVoucher = findViewById(R.id.etVoucher);
-        String code = etVoucher.getText() != null ? etVoucher.getText().toString().trim() : "";
+        String code = etVoucher.getText() != null ? etVoucher.getText().toString().trim().toUpperCase() : "";
         if (code.isEmpty()) { Toast.makeText(this, "Nhập mã voucher", Toast.LENGTH_SHORT).show(); return; }
-        // TODO: call VoucherRepository to validate
-        Toast.makeText(this, "Chức năng đang phát triển", Toast.LENGTH_SHORT).show();
+        
+        progressBar.setVisibility(View.VISIBLE);
+        new com.example.petshop.repository.VoucherRepository().getByCode(code, new com.example.petshop.repository.VoucherRepository.Callback<com.example.petshop.model.entity.Voucher>() {
+            @Override
+            public void onSuccess(com.example.petshop.model.entity.Voucher v) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    validateAndApplyVoucher(v);
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(CheckoutActivity.this, "Mã voucher không tồn tại hoặc đã hết hạn", Toast.LENGTH_SHORT).show();
+                    voucherDiscount = 0;
+                    selectedVoucherId = null;
+                    selectedVoucherCode = null;
+                    updatePriceSummary(cart.calculateSubtotal());
+                });
+            }
+        });
+    }
+
+    private void validateAndApplyVoucher(com.example.petshop.model.entity.Voucher v) {
+        double subtotal = cart.calculateSubtotal();
+        
+        if (!v.isActive()) {
+            Toast.makeText(this, "Voucher hiện không khả dụng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (v.isExpired(new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new java.util.Date()))) {
+            Toast.makeText(this, "Voucher đã hết hạn sử dụng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (v.isUsageLimitReached()) {
+            Toast.makeText(this, "Voucher đã hết lượt sử dụng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (subtotal < v.getMinOrderAmount()) {
+            Toast.makeText(this, "Đơn hàng tối thiểu " + VND.format(v.getMinOrderAmount()) + "đ để dùng voucher này", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Apply
+        voucherDiscount = v.calculateDiscount(subtotal);
+        selectedVoucherId = v.getId();
+        selectedVoucherCode = v.getCode();
+        
+        updatePriceSummary(subtotal);
+        Toast.makeText(this, "Đã áp dụng mã " + v.getCode(), Toast.LENGTH_SHORT).show();
     }
 
     private void placeOrder() {
@@ -237,6 +289,8 @@ public class CheckoutActivity extends AppCompatActivity {
         order.setSubtotal(subtotal);
         order.setShippingFee(shippingFee);
         order.setVoucherDiscount(voucherDiscount);
+        order.setVoucherId(selectedVoucherId);
+        order.setVoucherCode(selectedVoucherCode);
         order.setTotalAmount(Math.max(0, total));
         order.setPaymentMethod(paymentMethod);
         order.setPaymentStatus(Order.PAY_STATUS_PENDING);
@@ -248,7 +302,8 @@ public class CheckoutActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (Order.PAYMENT_VNPAY.equals(paymentMethod)) {
-                        openVNPay(orderId, (long) total);
+                        // Gửi Mã đơn hàng (orderCode) thay vì ID dài (orderId)
+                        openVNPay(order.getOrderCode(), (long) total);
                     } else {
                         openOrderSuccess(orderId);
                     }
@@ -263,11 +318,14 @@ public class CheckoutActivity extends AppCompatActivity {
         });
     }
 
-    private void openVNPay(String orderId, long amount) {
-        String url = VNPayHelper.buildPaymentUrl(orderId, amount, "Thanh toan don hang " + orderId);
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+    private void openVNPay(String orderCode, long amount) {
+        // Sử dụng mã đơn hàng ngắn gọn
+        String url = VNPayHelper.buildPaymentUrl(orderCode, amount, "Thanh toan don hang " + orderCode);
+        Intent i = new Intent(this, VNPayWebViewActivity.class);
+        i.putExtra(VNPayWebViewActivity.EXTRA_PAYMENT_URL, url);
+        i.putExtra(VNPayWebViewActivity.EXTRA_ORDER_ID, orderCode);
         startActivity(i);
-        openOrderSuccess(orderId);
+        finish();
     }
 
     private void openOrderSuccess(String orderId) {

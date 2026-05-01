@@ -54,6 +54,15 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
         double price = pet.getEffectivePrice();
         h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
 
+        // Sale badge
+        if (pet.hasPromotion() && pet.getOriginalPrice() > 0 && pet.getOriginalPrice() > pet.getEffectivePrice()) {
+            h.tvSaleBadge.setVisibility(View.VISIBLE);
+            int pct = (int) Math.round((1 - pet.getEffectivePrice() / pet.getOriginalPrice()) * 100);
+            h.tvSaleBadge.setText("-" + pct + "%");
+        } else {
+            h.tvSaleBadge.setVisibility(View.GONE);
+        }
+
         // Breed info line: "Species · AgeUnit · Gender"
         String ageStr = pet.getAge() > 0 ? pet.getAge() + " "
                 + ("MONTH".equals(pet.getAgeUnit()) ? "tháng" : "năm") : "";
@@ -139,13 +148,14 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         ImageView ivPet, ivAddToCart;
-        TextView  tvPetName, tvPrice, tvBreedInfo, tvTag1, tvTag2, tvTag3, tvDistance, tvStatusBadge;
+        TextView  tvPetName, tvPrice, tvBreedInfo, tvTag1, tvTag2, tvTag3, tvDistance, tvStatusBadge, tvSaleBadge;
 
         VH(View v) {
             super(v);
             ivPet       = v.findViewById(R.id.ivPetImage);
             ivAddToCart = v.findViewById(R.id.ivAddToCart);
             tvStatusBadge = v.findViewById(R.id.tvStatusBadge);
+            tvSaleBadge = v.findViewById(R.id.tvSaleBadge);
             tvPetName   = v.findViewById(R.id.tvPetName);
             tvPrice     = v.findViewById(R.id.tvPrice);
             tvBreedInfo = v.findViewById(R.id.tvBreedInfo);

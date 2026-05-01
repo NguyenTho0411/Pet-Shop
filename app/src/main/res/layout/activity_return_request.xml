@@ -6,13 +6,13 @@
     android:orientation="vertical"
     android:background="@color/bg_main">
 
+    <!-- Header -->
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="horizontal" android:gravity="center_vertical"
         android:background="@color/white" android:paddingStart="8dp" android:paddingEnd="16dp"
         android:paddingTop="44dp" android:paddingBottom="12dp" android:elevation="2dp">
         <Button android:id="@+id/btnBack"
             android:layout_width="44dp" android:layout_height="44dp"
-            android:src="@android:drawable/ic_menu_revert"
             android:background="?attr/selectableItemBackgroundBorderless" android:text="←" />
         <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
             android:text="Yêu cầu trả hàng" android:textSize="18sp" android:textStyle="bold"
@@ -50,18 +50,64 @@
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/tilReason" style="@style/Widget.Petshop.TextInput"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:hint="Lý do trả hàng *" android:layout_marginBottom="20dp">
+                android:hint="Lý do trả hàng *" android:layout_marginBottom="16dp">
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/etReturnReason"
                     android:layout_width="match_parent" android:layout_height="wrap_content"
                     android:minLines="4" android:gravity="top" android:inputType="textMultiLine" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- COD bank info section (chỉ hiện khi thanh toán COD) -->
+            <LinearLayout android:id="@+id/llBankInfo"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:visibility="gone">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
+                    app:cardCornerRadius="12dp" app:cardElevation="0dp"
+                    app:cardBackgroundColor="#FFF8E7">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="horizontal" android:padding="12dp"
+                        android:gravity="center_vertical">
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="💵" android:textSize="20sp" android:layout_marginEnd="10dp" />
+                        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+                            android:text="Đơn thanh toán COD — vui lòng cung cấp tài khoản ngân hàng để nhận hoàn tiền."
+                            android:textSize="13sp" android:textColor="@color/text_primary"
+                            android:lineSpacingMultiplier="1.4" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilBankName" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:hint="Tên ngân hàng *" android:layout_marginBottom="12dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBankName"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:inputType="text"
+                        android:hint="VD: Vietcombank, MB Bank, Techcombank..." />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilBankAccount" style="@style/Widget.Petshop.TextInput"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:hint="Số tài khoản *" android:layout_marginBottom="20dp">
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etBankAccount"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:inputType="number" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+            </LinearLayout>
+
             <Button android:id="@+id/btnSubmitReturn"
                 android:layout_width="match_parent" android:layout_height="54dp"
                 android:text="Gửi yêu cầu trả hàng" android:textSize="16sp"
                 android:textStyle="bold" android:textColor="@color/white"
                 android:background="@drawable/bg_orange_pill" />
+
         </LinearLayout>
     </ScrollView>
 </LinearLayout>

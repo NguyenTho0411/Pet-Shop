@@ -1,6 +1,7 @@
 package com.example.petshop.view.activity;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -102,10 +103,20 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 ((TextView) v.findViewById(R.id.tvOrderCode)).setText(order.getOrderCode());
                 ((TextView) v.findViewById(R.id.tvTotal)).setText(VND.format((long) order.getTotalAmount()) + "đ");
 
-                // Date
-                String date = order.getCreatedAt() != null && order.getCreatedAt().length() >= 10
-                        ? order.getCreatedAt().substring(0, 10) : "";
-                ((TextView) v.findViewById(R.id.tvDate)).setText(date);
+                // Date parsing fix
+                String dateStr = order.getCreatedAt();
+                String displayDate = "";
+                if (dateStr != null) {
+                    if (dateStr.startsWith("Timestamp(")) {
+                        // If it's the messy Firebase string, try to keep it simple or hide it
+                        displayDate = "Mới đây"; 
+                    } else if (dateStr.length() >= 10) {
+                        displayDate = dateStr.substring(0, 10);
+                    } else {
+                        displayDate = dateStr;
+                    }
+                }
+                ((TextView) v.findViewById(R.id.tvDate)).setText(displayDate);
 
                 // Status badge
                 TextView tvStatus = v.findViewById(R.id.tvStatus);
@@ -125,6 +136,18 @@ public class OrderHistoryActivity extends AppCompatActivity {
                     i.putExtra("has_pet", hasPetItem(order));
                     startActivity(i);
                 });
+
+                // Pay now button for VNPay pending
+                Button btnPay = v.findViewById(R.id.btnUpdate); // Reuse btnUpdate for Pay
+                if (Order.STATUS_WAIT_PAY.equals(order.getStatus()) && Order.PAYMENT_VNPAY.equals(order.getPaymentMethod())) {
+                    btnPay.setVisibility(View.VISIBLE);
+                    btnPay.setText("Thanh toán");
+                    btnPay.setOnClickListener(x -> {
+                        String url = com.example.petshop.utils.VNPayHelper.buildPaymentUrl(order.getId(), (long)order.getTotalAmount(), "Thanh toan don hang " + order.getOrderCode());
+                        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        startActivity(i);
+                    });
+                }
 
                 v.setOnClickListener(x -> {
                     Intent i = new Intent(OrderHistoryActivity.this, OrderDetailActivity.class);
@@ -158,6 +181,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
         if (s == null) return "—";
         switch (s) {
             case Order.STATUS_PENDING:   return "Chờ xác nhận";
+            case Order.STATUS_WAIT_PAY:  return "Chờ thanh toán";
             case Order.STATUS_CONFIRMED: return "Đã xác nhận";
             case Order.STATUS_PREPARING: return "Đang chuẩn bị";
             case Order.STATUS_SHIPPING:  return "Đang giao";
@@ -173,6 +197,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
         if (s == null) return 0xFF888888;
         switch (s) {
             case Order.STATUS_PENDING:   return 0xFFF5A623;
+            case Order.STATUS_WAIT_PAY:  return 0xFFFF3B30; // Red for attention
             case Order.STATUS_CONFIRMED: return 0xFF007AFF;
             case Order.STATUS_PREPARING: return 0xFF5856D6;
             case Order.STATUS_SHIPPING:  return 0xFF34AADC;

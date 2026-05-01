@@ -100,8 +100,17 @@ public class FoodManageViewModel extends ViewModel {
             public void onSuccess(String url) {
                 FoodMedia media = new FoodMedia(foodId, url, type);
                 media.setSortOrder(index);
-                repo.addMedia(foodId, media, new FoodRepository.Callback<>() {
-                    public void onSuccess(String id) { uploadMedia(foodId, uris, types, index + 1); }
+                repo.addMedia(foodId, media, new FoodRepository.Callback<String>() {
+                    public void onSuccess(String id) {
+                        if (index == 0 && !isVideo) {
+                            repo.updateThumbnail(foodId, url, new FoodRepository.Callback<Void>() {
+                                public void onSuccess(Void v) { uploadMedia(foodId, uris, types, index + 1); }
+                                public void onFailure(String err) { uploadMedia(foodId, uris, types, index + 1); }
+                            });
+                        } else {
+                            uploadMedia(foodId, uris, types, index + 1);
+                        }
+                    }
                     public void onFailure(String err){ uploadMedia(foodId, uris, types, index + 1); }
                 });
             }

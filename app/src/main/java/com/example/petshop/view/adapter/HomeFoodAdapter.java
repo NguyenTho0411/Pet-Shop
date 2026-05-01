@@ -1,5 +1,6 @@
 package com.example.petshop.view.adapter;
 
+import android.graphics.Paint;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -61,11 +62,18 @@ public class HomeFoodAdapter extends RecyclerView.Adapter<HomeFoodAdapter.VH> {
         double price = food.getEffectivePrice();
         h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
 
-        // Sale badge
-        if (food.hasPromotion() && food.getDiscountedPrice() > 0) {
+        // Sale badge + Original Price
+        if (food.hasPromotion() && food.getOriginalPrice() > 0 && food.getOriginalPrice() > food.getEffectivePrice()) {
             h.tvSaleBadge.setVisibility(View.VISIBLE);
+            int pct = (int) Math.round((1 - food.getEffectivePrice() / food.getOriginalPrice()) * 100);
+            h.tvSaleBadge.setText("-" + pct + "%");
+
+            h.tvOriginalPrice.setVisibility(View.VISIBLE);
+            h.tvOriginalPrice.setText(VND.format((long) food.getOriginalPrice()) + "đ");
+            h.tvOriginalPrice.setPaintFlags(h.tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
         } else {
             h.tvSaleBadge.setVisibility(View.GONE);
+            h.tvOriginalPrice.setVisibility(View.GONE);
         }
 
         // Image
@@ -90,7 +98,7 @@ public class HomeFoodAdapter extends RecyclerView.Adapter<HomeFoodAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         ImageView ivImage, ivAddToCart;
-        TextView  tvName, tvBrand, tvWeight, tvPrice, tvSaleBadge;
+        TextView  tvName, tvBrand, tvWeight, tvPrice, tvOriginalPrice, tvSaleBadge;
 
         VH(View v) {
             super(v);
@@ -100,6 +108,7 @@ public class HomeFoodAdapter extends RecyclerView.Adapter<HomeFoodAdapter.VH> {
             tvBrand     = v.findViewById(R.id.tvBrand);
             tvWeight    = v.findViewById(R.id.tvWeight);
             tvPrice     = v.findViewById(R.id.tvFoodPrice);
+            tvOriginalPrice = v.findViewById(R.id.tvOriginalPrice);
             tvSaleBadge = v.findViewById(R.id.tvSaleBadge);
         }
     }

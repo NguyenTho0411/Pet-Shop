@@ -65,6 +65,23 @@
                 app:tint="#FFAAAAAA" />
         </FrameLayout>
 
+        <!-- Promotion badge -->
+        <TextView
+            android:id="@+id/tvSaleBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|end"
+            android:layout_margin="16dp"
+            android:layout_marginTop="100dp"
+            android:text="-20%"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:background="@drawable/bg_orange_pill"
+            android:paddingStart="10dp" android:paddingEnd="10dp"
+            android:paddingTop="4dp" android:paddingBottom="4dp"
+            android:visibility="gone" />
+
     </FrameLayout>
 
     <!-- ===== BOTTOM SHEET: scrollable white card ===== -->

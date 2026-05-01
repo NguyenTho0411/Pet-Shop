@@ -26,7 +26,10 @@ public class CartItem {
     private String productThumbnail;     // snapshot ảnh
 
     @SerializedName("unitPrice")
-    private double unitPrice;            // giá tại thời điểm thêm vào giỏ
+    private double unitPrice;            // giá hiệu lực (đã giảm nếu có KM)
+
+    @SerializedName("originalPrice")
+    private double originalPrice;        // giá gốc trước khuyến mãi (0 = không có KM)
 
     @SerializedName("quantity")
     private int quantity;
@@ -88,6 +91,9 @@ public class CartItem {
 
     public double getUnitPrice() { return unitPrice; }
     public void setUnitPrice(double unitPrice) { this.unitPrice = unitPrice; }
+
+    public double getOriginalPrice() { return originalPrice; }
+    public void setOriginalPrice(double originalPrice) { this.originalPrice = originalPrice; }
 
     public int getQuantity() { return quantity; }
     public void setQuantity(int quantity) {

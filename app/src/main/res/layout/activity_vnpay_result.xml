@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="24dp"
+    android:background="@color/bg_main">
+
+    <ImageView
+        android:id="@+id/ivResultIcon"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/ic_check_circle"
+        android:layout_marginBottom="24dp" />
+
+    <TextView
+        android:id="@+id/tvResultTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Kết quả thanh toán"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/tvResultMsg"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Đang xử lý kết quả..."
+        android:textSize="15sp"
+        android:gravity="center"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="40dp" />
+
+    <Button
+        android:id="@+id/btnViewOrder"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="Xem chi tiết đơn hàng"
+        style="@style/Widget.Petshop.Button.Primary"
+        android:layout_marginBottom="12dp" />
+
+    <Button
+        android:id="@+id/btnHome"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:text="Về trang chủ"
+        style="@style/Widget.Petshop.Button.Outline" />
+
+</LinearLayout>

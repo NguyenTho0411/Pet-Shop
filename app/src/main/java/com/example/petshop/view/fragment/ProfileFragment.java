@@ -78,6 +78,22 @@ public class ProfileFragment extends Fragment {
             }
             public void onFailure(String err) {}
         });
+
+        // Bổ sung: Đếm lại đơn hàng thực tế nếu con số ở trên bị sai (0)
+        new com.example.petshop.repository.OrderRepository().getOrdersByUser(user.getUid(), new com.example.petshop.repository.OrderRepository.Callback<>() {
+            @Override
+            public void onSuccess(java.util.List<com.example.petshop.model.entity.Order> data) {
+                if (data != null && !data.isEmpty()) {
+                    requireActivity().runOnUiThread(() -> {
+                        ((TextView) root.findViewById(R.id.tvTotalOrders)).setText(String.valueOf(data.size()));
+                        double total = 0;
+                        for (var o : data) total += o.getTotalAmount();
+                        ((TextView) root.findViewById(R.id.tvTotalSpent)).setText(VND.format((long) total) + "đ");
+                    });
+                }
+            }
+            @Override public void onFailure(String error) {}
+        });
     }
 
     private void setupMenuItems(View root) {

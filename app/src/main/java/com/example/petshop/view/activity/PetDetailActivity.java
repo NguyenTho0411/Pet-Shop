@@ -30,7 +30,7 @@ public class PetDetailActivity extends AppCompatActivity {
 
     // Views
     private ImageView ivHero, ivFavoriteIcon;
-    private TextView  tvPetName, tvStatusBadge, tvSpeciesBreed;
+    private TextView  tvPetName, tvStatusBadge, tvSpeciesBreed, tvSaleBadge;
     private TextView  tvAttrGenderVal, tvAttrAgeVal, tvAttrBreedVal;
     private TextView  tvPrice, tvOriginalPrice, tvWeight, tvOrigin;
     private TextView  tvAboutTitle, tvDescription, tvCareGuide, tvDietInfo;
@@ -70,6 +70,7 @@ public class PetDetailActivity extends AppCompatActivity {
         tvPetName        = findViewById(R.id.tvPetName);
         tvStatusBadge    = findViewById(R.id.tvStatusBadge);
         tvSpeciesBreed   = findViewById(R.id.tvSpeciesBreed);
+        tvSaleBadge      = findViewById(R.id.tvSaleBadge);
         tvAttrGenderVal  = findViewById(R.id.tvAttrGenderVal);
         tvAttrAgeVal     = findViewById(R.id.tvAttrAgeVal);
         tvAttrBreedVal   = findViewById(R.id.tvAttrBreedVal);
@@ -119,8 +120,22 @@ public class PetDetailActivity extends AppCompatActivity {
         new PetRepository().getById(petId, new PetRepository.Callback<>() {
             public void onSuccess(Pet pet) {
                 if (pet == null) { finish(); return; }
-                currentPet = pet;
-                runOnUiThread(() -> bindPet(pet));
+                
+                // Áp dụng khuyến mãi nếu có
+                new com.example.petshop.repository.PromotionRepository().getActive(new com.example.petshop.repository.PromotionRepository.Callback<>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.example.petshop.model.entity.Promotion> data) {
+                        java.util.List<Pet> list = new java.util.ArrayList<>();
+                        list.add(pet);
+                        com.example.petshop.utils.PromotionManager.applyPromotions(list, null, data);
+                        currentPet = pet;
+                        runOnUiThread(() -> bindPet(pet));
+                    }
+                    @Override public void onFailure(String error) {
+                        currentPet = pet;
+                        runOnUiThread(() -> bindPet(pet));
+                    }
+                });
             }
             public void onFailure(String err) {
                 runOnUiThread(() -> {
@@ -161,10 +176,22 @@ public class PetDetailActivity extends AppCompatActivity {
         // Price
         double price = pet.getEffectivePrice();
         tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
-        if (pet.getOriginalPrice() > 0 && pet.getOriginalPrice() != pet.getPrice()) {
+        
+        if (pet.hasPromotion() && pet.getOriginalPrice() > 0 && pet.getOriginalPrice() > pet.getEffectivePrice()) {
+            // Hiển thị giá gốc gạch ngang
             tvOriginalPrice.setVisibility(View.VISIBLE);
             tvOriginalPrice.setText(VND.format((long) pet.getOriginalPrice()) + "đ");
             tvOriginalPrice.setPaintFlags(tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            
+            // Hiển thị badge giảm giá
+            if (tvSaleBadge != null) {
+                int pct = (int) Math.round((1 - pet.getEffectivePrice() / pet.getOriginalPrice()) * 100);
+                tvSaleBadge.setText(" GIẢM " + pct + "% ");
+                tvSaleBadge.setVisibility(View.VISIBLE);
+            }
+        } else {
+            tvOriginalPrice.setVisibility(View.GONE);
+            if (tvSaleBadge != null) tvSaleBadge.setVisibility(View.GONE);
         }
 
         // Weight & origin

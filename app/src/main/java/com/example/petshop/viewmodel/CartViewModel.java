@@ -7,8 +7,13 @@ import androidx.lifecycle.ViewModel;
 import com.example.petshop.model.entity.Cart;
 import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Pet;
+import com.example.petshop.model.entity.Promotion;
 import com.example.petshop.repository.CartRepository;
+import com.example.petshop.repository.PromotionRepository;
+import com.example.petshop.utils.PromotionManager;
 import com.google.firebase.auth.FirebaseAuth;
+
+import java.util.List;
 
 public class CartViewModel extends ViewModel {
 
@@ -33,8 +38,25 @@ public class CartViewModel extends ViewModel {
         String uid = uid();
         if (uid == null) { cart.setValue(new Cart()); return; }
         isLoading.setValue(true);
-        repo.getCart(uid, new CartRepository.Callback<>() {
-            public void onSuccess(Cart c)   { isLoading.postValue(false); cart.postValue(c); }
+        repo.getCart(uid, new CartRepository.Callback<Cart>() {
+            public void onSuccess(Cart c) {
+                // Luôn re-apply promotion hiện tại để đảm bảo giá đúng
+                new PromotionRepository().getActive(new PromotionRepository.Callback<List<Promotion>>() {
+                    public void onSuccess(List<Promotion> promos) {
+                        boolean changed = PromotionManager.refreshCartPrices(c, promos);
+                        if (changed) {
+                            repo.saveCart(uid, c, new CartRepository.Callback<Cart>() {
+                                public void onSuccess(Cart saved) { isLoading.postValue(false); cart.postValue(saved); }
+                                public void onFailure(String e)  { isLoading.postValue(false); cart.postValue(c); }
+                            });
+                        } else {
+                            isLoading.postValue(false);
+                            cart.postValue(c);
+                        }
+                    }
+                    public void onFailure(String e) { isLoading.postValue(false); cart.postValue(c); }
+                });
+            }
             public void onFailure(String e) { isLoading.postValue(false); error.postValue(e); }
         });
     }

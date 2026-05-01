@@ -2,6 +2,7 @@ package com.example.petshop.view.activity;
 
 import android.content.Intent;
 import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -98,13 +99,28 @@ public class OrderDetailActivity extends AppCompatActivity {
 
         // Bottom actions
         Button btnCancel = findViewById(R.id.btnCancel);
+        Button btnReorder = findViewById(R.id.btnReorder);
         Button btnReturn = findViewById(R.id.btnReturn);
-        Button btnReorder= findViewById(R.id.btnReorder);
+
+        if (Order.STATUS_WAIT_PAY.equals(order.getStatus()) && Order.PAYMENT_VNPAY.equals(order.getPaymentMethod())) {
+            btnReorder.setVisibility(View.VISIBLE);
+            btnReorder.setText("THANH TOÁN NGAY");
+            btnReorder.setOnClickListener(v -> {
+                String url = com.example.petshop.utils.VNPayHelper.buildPaymentUrl(order.getId(), (long)order.getTotalAmount(), "Thanh toan don hang " + order.getOrderCode());
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity(i);
+            });
+        } else {
+            // Original Reorder logic for Cancelled or Completed
+            btnReorder.setVisibility(Order.STATUS_CANCELLED.equals(order.getStatus())
+                    || Order.STATUS_COMPLETED.equals(order.getStatus()) ? View.VISIBLE : View.GONE);
+            btnReorder.setText("MUA LẠI");
+            btnReorder.setOnClickListener(v ->
+                    Toast.makeText(this, "Đặt lại — sắp ra mắt", Toast.LENGTH_SHORT).show());
+        }
 
         btnCancel.setVisibility(order.canCancel() ? View.VISIBLE : View.GONE);
         btnReturn.setVisibility(order.canReview() ? View.VISIBLE : View.GONE);
-        btnReorder.setVisibility(Order.STATUS_CANCELLED.equals(order.getStatus())
-                || Order.STATUS_COMPLETED.equals(order.getStatus()) ? View.VISIBLE : View.GONE);
 
         btnCancel.setOnClickListener(v -> confirmCancel(order));
         btnReturn.setOnClickListener(v -> {
@@ -115,8 +131,6 @@ public class OrderDetailActivity extends AppCompatActivity {
             i.putExtra("has_pet", hasPet);
             startActivity(i);
         });
-        btnReorder.setOnClickListener(v ->
-                Toast.makeText(this, "Đặt lại — sắp ra mắt", Toast.LENGTH_SHORT).show());
     }
 
     private void buildTimeline(String currentStatus) {

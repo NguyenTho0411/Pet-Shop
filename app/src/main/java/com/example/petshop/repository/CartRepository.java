@@ -64,6 +64,7 @@ public class CartRepository {
                     CartItem.PRODUCT_TYPE_PET, pet.getId(),
                     pet.getName(), pet.getThumbnailUrl(),
                     pet.getEffectivePrice(), 1);
+            item.setOriginalPrice(pet.getPrice());
             item.setId(UUID.randomUUID().toString());
             item.setCartId(userId);
             item.setAddedAt(Timestamp.now().toString());
@@ -108,13 +109,15 @@ public class CartRepository {
             }
             if (cart.getItems() == null) cart.setItems(new ArrayList<>());
 
-            // Check if food already in cart → update quantity
+            // Check if food already in cart → update quantity + refresh price
             boolean found = false;
             for (CartItem existing : cart.getItems()) {
                 if (CartItem.PRODUCT_TYPE_FOOD.equals(existing.getProductType())
                         && food.getId().equals(existing.getProductId())) {
                     int newQty = existing.getQuantity() + quantity;
                     if (newQty > stock) throw new RuntimeException("Kho chỉ còn " + stock + " sản phẩm");
+                    existing.setUnitPrice(food.getEffectivePrice());
+                    existing.setOriginalPrice(food.getPrice());
                     existing.setQuantity(newQty);
                     found = true;
                     break;
@@ -125,6 +128,7 @@ public class CartRepository {
                         CartItem.PRODUCT_TYPE_FOOD, food.getId(),
                         food.getName(), food.getThumbnailUrl(),
                         food.getEffectivePrice(), quantity);
+                item.setOriginalPrice(food.getPrice());
                 item.setId(UUID.randomUUID().toString());
                 item.setCartId(userId);
                 item.setAddedAt(Timestamp.now().toString());
@@ -191,6 +195,14 @@ public class CartRepository {
             }
             public void onFailure(String err) { cb.onFailure(err); }
         });
+    }
+
+    // ========== SAVE CART (refresh prices) ==========
+    public void saveCart(String userId, Cart cart, Callback<Cart> cb) {
+        cart.setUpdatedAt(Timestamp.now().toString());
+        db.collection(COL_CARTS).document(userId).set(cart)
+                .addOnSuccessListener(v -> cb.onSuccess(cart))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     // ========== CLEAR CART (after order placed) ==========

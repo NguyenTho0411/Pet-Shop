@@ -18,10 +18,21 @@ public class PromotionManageViewModel extends ViewModel {
     private final MutableLiveData<String>         error      = new MutableLiveData<>();
     private final MutableLiveData<String>         success    = new MutableLiveData<>();
 
+    private final MutableLiveData<Promotion>     currentPromo = new MutableLiveData<>();
+
     public LiveData<List<Promotion>> getPromotions() { return promotions; }
+    public LiveData<Promotion>       getCurrentPromo() { return currentPromo; }
     public LiveData<Boolean>         getLoading()    { return isLoading; }
     public LiveData<String>          getError()      { return error; }
     public LiveData<String>          getSuccess()    { return success; }
+
+    public void loadById(String id) {
+        isLoading.setValue(true);
+        repo.getById(id, new PromotionRepository.Callback<>() {
+            public void onSuccess(Promotion data) { isLoading.postValue(false); currentPromo.postValue(data); }
+            public void onFailure(String err)     { isLoading.postValue(false); error.postValue(err); }
+        });
+    }
 
     public void loadAll() {
         isLoading.setValue(true);

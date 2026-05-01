@@ -131,8 +131,22 @@ public class FoodDetailActivity extends AppCompatActivity {
         new FoodRepository().getById(foodId, new FoodRepository.Callback<>() {
             public void onSuccess(Food food) {
                 if (food == null) { finish(); return; }
-                currentFood = food;
-                runOnUiThread(() -> bindFood(food));
+
+                // Áp dụng khuyến mãi nếu có
+                new com.example.petshop.repository.PromotionRepository().getActive(new com.example.petshop.repository.PromotionRepository.Callback<>() {
+                    @Override
+                    public void onSuccess(java.util.List<com.example.petshop.model.entity.Promotion> data) {
+                        java.util.List<Food> list = new java.util.ArrayList<>();
+                        list.add(food);
+                        com.example.petshop.utils.PromotionManager.applyPromotions(null, list, data);
+                        currentFood = food;
+                        runOnUiThread(() -> bindFood(food));
+                    }
+                    @Override public void onFailure(String error) {
+                        currentFood = food;
+                        runOnUiThread(() -> bindFood(food));
+                    }
+                });
             }
             public void onFailure(String err) {
                 runOnUiThread(() -> { Toast.makeText(FoodDetailActivity.this, "Lỗi tải dữ liệu", Toast.LENGTH_SHORT).show(); finish(); });
@@ -172,10 +186,20 @@ public class FoodDetailActivity extends AppCompatActivity {
         // Price
         double price = food.getEffectivePrice();
         tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
-        if (food.getOriginalPrice() > 0 && food.getOriginalPrice() != food.getPrice()) {
+        
+        if (food.hasPromotion() && food.getOriginalPrice() > 0 && food.getOriginalPrice() > food.getEffectivePrice()) {
+            // Giá gốc gạch ngang
             tvOriginalPrice.setVisibility(View.VISIBLE);
             tvOriginalPrice.setText(VND.format((long) food.getOriginalPrice()) + "đ");
             tvOriginalPrice.setPaintFlags(tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+
+            // Badge %
+            int pct = (int) Math.round((1 - food.getEffectivePrice() / food.getOriginalPrice()) * 100);
+            tvSaleBadge.setText(" GIẢM " + pct + "% ");
+            tvSaleBadge.setVisibility(View.VISIBLE);
+        } else {
+            tvOriginalPrice.setVisibility(View.GONE);
+            tvSaleBadge.setVisibility(View.GONE);
         }
 
         // Stock count
