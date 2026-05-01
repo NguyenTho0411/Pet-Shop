@@ -34,6 +34,7 @@ public class ChatActivity extends AppCompatActivity {
         initViews();
         observeViewModel();
 
+        vm.addWelcomeMessage();
         String uid = FirebaseAuth.getInstance().getUid();
         if (uid != null) vm.initContext(uid);
     }

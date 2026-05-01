@@ -94,7 +94,10 @@ public class Address {
     public String getCityCode() { return cityCode; }
     public void setCityCode(String cityCode) { this.cityCode = cityCode; }
 
+    @com.google.firebase.firestore.PropertyName("isDefault")
     public boolean isDefault() { return isDefault; }
+    
+    @com.google.firebase.firestore.PropertyName("isDefault")
     public void setDefault(boolean aDefault) { isDefault = aDefault; }
 
     public String getCreatedAt() { return createdAt; }

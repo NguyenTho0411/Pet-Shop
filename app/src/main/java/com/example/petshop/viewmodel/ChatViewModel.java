@@ -46,6 +46,13 @@ public class ChatViewModel extends ViewModel {
     public LiveData<List<ChatMessage>> getMessages() { return messages; }
     public LiveData<Boolean>           getIsTyping() { return isTyping; }
 
+    public void addWelcomeMessage() {
+        List<ChatMessage> current = messages.getValue();
+        if (current == null || current.isEmpty()) {
+            addBotMessage("Chào bạn! Tôi là trợ lý ảo của PetShop. Tôi có thể giúp gì cho bạn hôm nay?");
+        }
+    }
+
     public void initContext(String userId) {
         StringBuilder sb = new StringBuilder();
         

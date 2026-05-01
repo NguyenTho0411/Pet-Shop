@@ -237,6 +237,9 @@ public class AddEditFoodActivity extends AppCompatActivity {
         }
 
         Food food = currentFood != null ? currentFood : new Food();
+        if (currentFood != null) {
+            food.setThumbnailUrl(currentFood.getThumbnailUrl());
+        }
         food.setName(name);
         food.setCategoryId(categoryId);
         food.setFoodType(etType.getText().toString().trim());

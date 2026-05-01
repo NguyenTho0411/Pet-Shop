@@ -71,16 +71,40 @@ public class OrderRepository {
 
         db.runTransaction((Transaction.Function<Void>) tx -> {
             if (!isVNPay) {
-                // COD: Subtract stock IMMEDIATELY
-                try {
-                    subtractStockInTx(tx, orderItems);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
+                // 1. COLLECT ALL READS FIRST
+                DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
+                
+                // Collect food references
+                Map<String, DocumentReference> foodRefs = new HashMap<>();
+                for (OrderItem item : orderItems) {
+                    if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                        foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
+                    }
                 }
                 
-                // Update User stats
-                DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
+                // Perform all gets
                 DocumentSnapshot userSnap = tx.get(userRef);
+                Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
+                for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
+                    foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
+                }
+
+                // 2. PERFORM ALL WRITES
+                // Subtract stock
+                for (OrderItem item : orderItems) {
+                    if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                        tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_SOLD);
+                    } else {
+                        DocumentSnapshot snap = foodSnaps.get(item.getProductId());
+                        long stock = (snap != null && snap.getLong("stock") != null) ? snap.getLong("stock") : 0;
+                        long sold  = (snap != null && snap.getLong("sold") != null) ? snap.getLong("sold") : 0;
+                        tx.update(foodRefs.get(item.getProductId()),
+                                "stock", Math.max(0, stock - item.getQuantity()),
+                                "sold",  sold + item.getQuantity());
+                    }
+                }
+
+                // Update User stats
                 if (userSnap.exists()) {
                     long totalOrders = userSnap.getLong("totalOrders") != null ? userSnap.getLong("totalOrders") : 0;
                     double totalSpent = userSnap.getDouble("totalSpent") != null ? userSnap.getDouble("totalSpent") : 0;

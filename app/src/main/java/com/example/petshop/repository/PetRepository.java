@@ -95,7 +95,9 @@ public class PetRepository {
 
     public void update(Pet pet, Callback<Void> cb) {
         pet.setUpdatedAt(now());
-        db.collection(COL).document(pet.getId()).set(pet)
+        // Sử dụng update thay vì set để không ghi đè mất các trường như thumbnailUrl nếu chúng không có trong object pet
+        db.collection(COL).document(pet.getId())
+                .set(pet, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
@@ -129,8 +131,13 @@ public class PetRepository {
                 .collection(COL_MEDIA).orderBy("sortOrder").get()
                 .addOnSuccessListener(snap -> {
                     List<PetMedia> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(PetMedia.class));
+                    for (var doc : snap.getDocuments()) {
+                        PetMedia media = doc.toObject(PetMedia.class);
+                        if (media != null) {
+                            media.setId(doc.getId());
+                            list.add(media);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));

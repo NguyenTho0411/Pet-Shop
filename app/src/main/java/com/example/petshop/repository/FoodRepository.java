@@ -86,7 +86,8 @@ public class FoodRepository {
 
     public void update(Food food, Callback<Void> cb) {
         food.setUpdatedAt(now());
-        db.collection(COL).document(food.getId()).set(food)
+        db.collection(COL).document(food.getId())
+                .set(food, com.google.firebase.firestore.SetOptions.merge())
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }

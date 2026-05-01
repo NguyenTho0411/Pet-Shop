@@ -25,7 +25,13 @@ public class AddressRepository {
                 .collection(COL_ADDR).get()
                 .addOnSuccessListener(snap -> {
                     List<Address> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments()) list.add(doc.toObject(Address.class));
+                    for (var doc : snap.getDocuments()) {
+                        Address addr = doc.toObject(Address.class);
+                        if (addr != null) {
+                            addr.setId(doc.getId());
+                            list.add(addr);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));

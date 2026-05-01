@@ -261,7 +261,13 @@ public class AddEditPetActivity extends AppCompatActivity {
         }
 
         Pet pet = new Pet();
-        if (editingPetId != null) pet.setId(editingPetId);
+        if (editingPetId != null) {
+            pet.setId(editingPetId);
+            // Giữ lại thumbnail cũ nếu có
+            if (vm.getCurrentPet().getValue() != null) {
+                pet.setThumbnailUrl(vm.getCurrentPet().getValue().getThumbnailUrl());
+            }
+        }
         pet.setName(name);
         pet.setCategoryId(selectedCategoryId);
         pet.setSpecies(actvSpecies.getText().toString());
