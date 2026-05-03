@@ -2,11 +2,14 @@ package com.example.petshop.repository;
 
 import com.example.petshop.model.entity.Cart;
 import com.example.petshop.model.entity.CartItem;
+import com.example.petshop.model.entity.OrderItem;
 import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Pet;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Transaction;
+import com.google.firebase.firestore.DocumentSnapshot;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -202,6 +205,144 @@ public class CartRepository {
         cart.setUpdatedAt(Timestamp.now().toString());
         db.collection(COL_CARTS).document(userId).set(cart)
                 .addOnSuccessListener(v -> cb.onSuccess(cart))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    // ========== REORDER FROM OLD ORDER ==========
+    public void reorderFromOrderItems(String userId, List<OrderItem> orderItems, Callback<Cart> cb) {
+        if (userId == null || userId.isEmpty()) {
+            cb.onFailure("Vui lòng đăng nhập");
+            return;
+        }
+
+        if (orderItems == null || orderItems.isEmpty()) {
+            cb.onFailure("Đơn hàng không có sản phẩm để mua lại");
+            return;
+        }
+
+        db.runTransaction((Transaction.Function<Void>) transaction -> {
+                    var cartRef = db.collection(COL_CARTS).document(userId);
+
+                    // Đọc cart trước để đúng rule Firestore Transaction: đọc trước, ghi sau
+                    transaction.get(cartRef);
+
+                    List<OrderItem> validOrderItems = new ArrayList<>();
+                    List<DocumentSnapshot> productSnapshots = new ArrayList<>();
+
+                    // 1. ĐỌC TOÀN BỘ SẢN PHẨM TRƯỚC
+                    for (OrderItem orderItem : orderItems) {
+                        if (orderItem == null
+                                || orderItem.getProductId() == null
+                                || orderItem.getProductType() == null) {
+                            continue;
+                        }
+
+                        if (OrderItem.PRODUCT_TYPE_PET.equals(orderItem.getProductType())) {
+                            var petRef = db.collection(COL_PETS).document(orderItem.getProductId());
+                            productSnapshots.add(transaction.get(petRef));
+                            validOrderItems.add(orderItem);
+
+                        } else if (OrderItem.PRODUCT_TYPE_FOOD.equals(orderItem.getProductType())) {
+                            var foodRef = db.collection(COL_FOODS).document(orderItem.getProductId());
+                            productSnapshots.add(transaction.get(foodRef));
+                            validOrderItems.add(orderItem);
+                        }
+                    }
+
+                    if (validOrderItems.isEmpty()) {
+                        throw new RuntimeException("Không có sản phẩm hợp lệ để mua lại");
+                    }
+
+                    // Mua lại sẽ thay thế giỏ hàng hiện tại bằng đơn cũ
+                    Cart newCart = emptyCart(userId);
+
+                    // 2. VALIDATE + TẠO CART ITEM
+                    for (int i = 0; i < validOrderItems.size(); i++) {
+                        OrderItem orderItem = validOrderItems.get(i);
+                        DocumentSnapshot snap = productSnapshots.get(i);
+
+                        if (!snap.exists()) {
+                            throw new RuntimeException("Sản phẩm " + orderItem.getProductName() + " không còn tồn tại");
+                        }
+
+                        CartItem cartItem;
+
+                        if (OrderItem.PRODUCT_TYPE_PET.equals(orderItem.getProductType())) {
+                            Pet pet = snap.toObject(Pet.class);
+                            if (pet == null) {
+                                throw new RuntimeException("Không đọc được thông tin thú cưng");
+                            }
+
+                            pet.setId(snap.getId());
+
+                            String status = snap.getString("status");
+                            if (!Pet.STATUS_AVAILABLE.equals(status)) {
+                                throw new RuntimeException("Thú cưng " + orderItem.getProductName() + " hiện không còn khả dụng");
+                            }
+
+                            // Đưa pet vào giỏ thì reserve lại để tránh người khác mua cùng lúc
+                            transaction.update(snap.getReference(), "status", Pet.STATUS_RESERVED);
+
+                            cartItem = new CartItem(
+                                    CartItem.PRODUCT_TYPE_PET,
+                                    pet.getId(),
+                                    pet.getName(),
+                                    pet.getThumbnailUrl(),
+                                    pet.getEffectivePrice(),
+                                    1
+                            );
+                            cartItem.setOriginalPrice(pet.getPrice());
+
+                        } else {
+                            Food food = snap.toObject(Food.class);
+                            if (food == null) {
+                                throw new RuntimeException("Không đọc được thông tin đồ ăn");
+                            }
+
+                            food.setId(snap.getId());
+
+                            String status = snap.getString("status");
+                            if (status != null && !Food.STATUS_AVAILABLE.equals(status)) {
+                                throw new RuntimeException("Sản phẩm " + orderItem.getProductName() + " hiện không khả dụng");
+                            }
+
+                            Long stockLong = snap.getLong("stock");
+                            int stock = stockLong != null ? stockLong.intValue() : 0;
+                            int quantity = Math.max(1, orderItem.getQuantity());
+
+                            if (stock < quantity) {
+                                throw new RuntimeException(orderItem.getProductName()
+                                        + " chỉ còn " + stock + " sản phẩm trong kho");
+                            }
+
+                            cartItem = new CartItem(
+                                    CartItem.PRODUCT_TYPE_FOOD,
+                                    food.getId(),
+                                    food.getName(),
+                                    food.getThumbnailUrl(),
+                                    food.getEffectivePrice(),
+                                    quantity
+                            );
+                            cartItem.setOriginalPrice(food.getPrice());
+                        }
+
+                        cartItem.setId(UUID.randomUUID().toString());
+                        cartItem.setCartId(userId);
+                        cartItem.setAddedAt(Timestamp.now().toString());
+
+                        newCart.getItems().add(cartItem);
+                    }
+
+                    // 3. GHI GIỎ HÀNG MỚI
+                    newCart.setSubtotal(newCart.calculateSubtotal());
+                    newCart.setTotalItems(newCart.calculateTotalItems());
+                    newCart.setUpdatedAt(Timestamp.now().toString());
+
+                    transaction.set(cartRef, newCart);
+
+                    return null;
+                })
+                .addOnSuccessListener(v -> getCart(userId, cb))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 

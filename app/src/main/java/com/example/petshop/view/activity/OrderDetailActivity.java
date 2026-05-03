@@ -24,6 +24,9 @@ import com.example.petshop.R;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.model.entity.OrderItem;
 import com.example.petshop.repository.OrderRepository;
+import com.example.petshop.model.entity.Cart;
+import com.example.petshop.repository.CartRepository;
+import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -105,18 +108,14 @@ public class OrderDetailActivity extends AppCompatActivity {
         if (Order.STATUS_WAIT_PAY.equals(order.getStatus()) && Order.PAYMENT_VNPAY.equals(order.getPaymentMethod())) {
             btnReorder.setVisibility(View.VISIBLE);
             btnReorder.setText("THANH TOÁN NGAY");
-            btnReorder.setOnClickListener(v -> {
-                String url = com.example.petshop.utils.VNPayHelper.buildPaymentUrl(order.getId(), (long)order.getTotalAmount(), "Thanh toan don hang " + order.getOrderCode());
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                startActivity(i);
-            });
+            btnReorder.setOnClickListener(v -> openVNPay(order));
         } else {
-            // Original Reorder logic for Cancelled or Completed
+            // Mua lại đơn đã hủy hoặc đã hoàn thành
             btnReorder.setVisibility(Order.STATUS_CANCELLED.equals(order.getStatus())
                     || Order.STATUS_COMPLETED.equals(order.getStatus()) ? View.VISIBLE : View.GONE);
+
             btnReorder.setText("MUA LẠI");
-            btnReorder.setOnClickListener(v ->
-                    Toast.makeText(this, "Đặt lại — sắp ra mắt", Toast.LENGTH_SHORT).show());
+            btnReorder.setOnClickListener(v -> reorder(order));
         }
 
         btnCancel.setVisibility(order.canCancel() ? View.VISIBLE : View.GONE);
@@ -222,6 +221,44 @@ public class OrderDetailActivity extends AppCompatActivity {
         };
     }
 
+    private void reorder(Order order) {
+        if (order == null || order.getItems() == null || order.getItems().isEmpty()) {
+            Toast.makeText(this, "Đơn hàng không có sản phẩm để mua lại", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+
+        if (uid == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            return;
+        }
+
+        Toast.makeText(this, "Đang tạo lại giỏ hàng...", Toast.LENGTH_SHORT).show();
+
+        new CartRepository().reorderFromOrderItems(uid, order.getItems(), new CartRepository.Callback<Cart>() {
+            @Override
+            public void onSuccess(Cart cart) {
+                runOnUiThread(() -> {
+                    Toast.makeText(OrderDetailActivity.this, "Đã thêm lại sản phẩm vào giỏ", Toast.LENGTH_SHORT).show();
+
+                    Intent i = new Intent(OrderDetailActivity.this, CheckoutActivity.class);
+                    startActivity(i);
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> Toast.makeText(
+                        OrderDetailActivity.this,
+                        "Không thể mua lại: " + error,
+                        Toast.LENGTH_LONG
+                ).show());
+            }
+        });
+    }
     private void confirmCancel(Order order) {
         new AlertDialog.Builder(this)
                 .setTitle("Huỷ đơn hàng")
@@ -232,6 +269,23 @@ public class OrderDetailActivity extends AppCompatActivity {
                             public void onFailure(String err) { runOnUiThread(() -> Toast.makeText(OrderDetailActivity.this, err, Toast.LENGTH_LONG).show()); }
                         }))
                 .setNegativeButton("Không", null).show();
+    }
+
+    private void openVNPay(Order order) {
+        String txnRef = order.getOrderCode() != null && !order.getOrderCode().isEmpty()
+                ? order.getOrderCode()
+                : order.getId();
+
+        String url = com.example.petshop.utils.VNPayHelper.buildPaymentUrl(
+                txnRef,
+                (long) order.getTotalAmount(),
+                "Thanh toan don hang " + txnRef
+        );
+
+        Intent i = new Intent(this, VNPayWebViewActivity.class);
+        i.putExtra(VNPayWebViewActivity.EXTRA_PAYMENT_URL, url);
+        i.putExtra(VNPayWebViewActivity.EXTRA_ORDER_ID, txnRef);
+        startActivity(i);
     }
 
     private String statusVi(String s) {

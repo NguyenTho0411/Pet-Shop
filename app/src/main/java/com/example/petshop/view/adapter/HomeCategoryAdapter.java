@@ -22,16 +22,19 @@ public class HomeCategoryAdapter extends RecyclerView.Adapter<HomeCategoryAdapte
         void onClick(Category category, int position);
     }
 
-    private final List<Category>   list;
-    private final OnCategoryClick  listener;
-    private int selectedPos = 0;
+    private final List<Category> list;
+    private final OnCategoryClick listener;
+
+    // KHÔNG chọn sẵn item nào khi mới vào
+    private int selectedPos = RecyclerView.NO_POSITION;
 
     public HomeCategoryAdapter(List<Category> list, OnCategoryClick listener) {
-        this.list     = list;
+        this.list = list;
         this.listener = listener;
     }
 
-    @NonNull @Override
+    @NonNull
+    @Override
     public VH onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_category_home, parent, false);
@@ -45,50 +48,73 @@ public class HomeCategoryAdapter extends RecyclerView.Adapter<HomeCategoryAdapte
 
         Context ctx = h.itemView.getContext();
 
-        // Selected → orange circle, else white
+        // Chỉ item đang chọn mới có viền vàng
         if (pos == selectedPos) {
             h.vCircleBg.setBackgroundResource(R.drawable.bg_circle_orange);
         } else {
             h.vCircleBg.setBackgroundResource(R.drawable.bg_circle_white);
         }
 
-        // Load category image or show emoji placeholder
         if (cat.getImageUrl() != null && !cat.getImageUrl().isEmpty()) {
-            Glide.with(ctx).load(cat.getImageUrl())
-                    .circleCrop().into(h.ivImage);
+            Glide.with(ctx)
+                    .load(cat.getImageUrl())
+                    .circleCrop()
+                    .into(h.ivImage);
         } else {
-            // Placeholder emoji via text trick or default launcher
             h.ivImage.setImageResource(R.mipmap.ic_launcher);
         }
 
         h.itemView.setOnClickListener(v -> {
-            int old = selectedPos;
-            selectedPos = h.getAdapterPosition();
-            notifyItemChanged(old);
+            int newPos = h.getBindingAdapterPosition();
+            if (newPos == RecyclerView.NO_POSITION) return;
+
+            int oldPos = selectedPos;
+            selectedPos = newPos;
+
+            if (oldPos != RecyclerView.NO_POSITION) {
+                notifyItemChanged(oldPos);
+            }
             notifyItemChanged(selectedPos);
-            listener.onClick(cat, selectedPos);
+
+            if (listener != null) {
+                listener.onClick(cat, selectedPos);
+            }
         });
     }
 
-    @Override public int getItemCount() { return list.size(); }
+    @Override
+    public int getItemCount() {
+        return list.size();
+    }
 
     public void updateList(List<Category> newList) {
         list.clear();
         list.addAll(newList);
-        selectedPos = 0;
+
+        // load lại list thì không chọn sẵn item nào
+        selectedPos = RecyclerView.NO_POSITION;
         notifyDataSetChanged();
     }
 
+    // Nếu sau này bạn muốn bỏ chọn tất cả
+    public void clearSelection() {
+        int oldPos = selectedPos;
+        selectedPos = RecyclerView.NO_POSITION;
+        if (oldPos != RecyclerView.NO_POSITION) {
+            notifyItemChanged(oldPos);
+        }
+    }
+
     static class VH extends RecyclerView.ViewHolder {
-        View      vCircleBg;
+        View vCircleBg;
         ImageView ivImage;
-        TextView  tvName;
+        TextView tvName;
 
         VH(View v) {
             super(v);
             vCircleBg = v.findViewById(R.id.vCircleBg);
-            ivImage   = v.findViewById(R.id.ivCategoryImage);
-            tvName    = v.findViewById(R.id.tvCategoryName);
+            ivImage = v.findViewById(R.id.ivCategoryImage);
+            tvName = v.findViewById(R.id.tvCategoryName);
         }
     }
 }

@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.repository.OrderRepository;
+import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.NumberFormat;
@@ -34,6 +35,13 @@ public class OrderHistoryActivity extends AppCompatActivity {
     private RecyclerView   rv;
     private ProgressBar    progressBar;
     private LinearLayout   llEmpty;
+    private final int[] chipIds = {
+            R.id.chipAll,
+            R.id.chipPending,
+            R.id.chipShipping,
+            R.id.chipDelivered,
+            R.id.chipCancelled
+    };
 
     private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
 
@@ -73,10 +81,27 @@ public class OrderHistoryActivity extends AppCompatActivity {
         renderList(list);
     }
     private void setChipFilter(int chipId, String status) {
-        findViewById(chipId).setOnClickListener(v -> {
+        Chip chip = findViewById(chipId);
+        chip.setCheckable(true);
+
+        chip.setOnClickListener(v -> {
             currentStatusFilter = status;
+            updateChipSelection(chipId);
             applyCurrentFilter();
         });
+
+        if (chipId == R.id.chipAll) {
+            chip.setChecked(true);
+        }
+    }
+
+    private void updateChipSelection(int selectedChipId) {
+        for (int id : chipIds) {
+            Chip chip = findViewById(id);
+            if (chip != null) {
+                chip.setChecked(id == selectedChipId);
+            }
+        }
     }
 
     private void loadOrders() {
@@ -143,10 +168,19 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 // Can cancel
                 Button btnCancel = v.findViewById(R.id.btnCancel);
                 Button btnReturn = v.findViewById(R.id.btnReturn);
-                btnCancel.setVisibility(order.canCancel() ? View.VISIBLE : View.GONE);
                 btnReturn.setVisibility(order.canReview() ? View.VISIBLE : View.GONE);
+                btnCancel.setVisibility(View.GONE);
+                btnCancel.setOnClickListener(null);
 
-                btnCancel.setOnClickListener(x -> confirmCancel(order));
+                if (Order.STATUS_CANCELLED.equals(order.getStatus())) {
+                    btnCancel.setVisibility(View.VISIBLE);
+                    btnCancel.setText("Xóa đơn");
+                    btnCancel.setOnClickListener(x -> confirmDelete(order));
+                } else if (order.canCancel()) {
+                    btnCancel.setVisibility(View.VISIBLE);
+                    btnCancel.setText("Hủy đơn");
+                    btnCancel.setOnClickListener(x -> confirmCancel(order));
+                }
                 btnReturn.setOnClickListener(x -> {
                     Intent i = new Intent(OrderHistoryActivity.this, ReturnRequestActivity.class);
                     i.putExtra("order_id", order.getId());
@@ -159,11 +193,10 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 if (Order.STATUS_WAIT_PAY.equals(order.getStatus()) && Order.PAYMENT_VNPAY.equals(order.getPaymentMethod())) {
                     btnPay.setVisibility(View.VISIBLE);
                     btnPay.setText("Thanh toán");
-                    btnPay.setOnClickListener(x -> {
-                        String url = com.example.petshop.utils.VNPayHelper.buildPaymentUrl(order.getId(), (long)order.getTotalAmount(), "Thanh toan don hang " + order.getOrderCode());
-                        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                        startActivity(i);
-                    });
+                    btnPay.setOnClickListener(x -> openVNPay(order));
+                } else {
+                    btnPay.setVisibility(View.GONE);
+                    btnPay.setOnClickListener(null);
                 }
 
                 v.setOnClickListener(x -> {
@@ -187,6 +220,55 @@ public class OrderHistoryActivity extends AppCompatActivity {
                     });
                 })
                 .setNegativeButton("Không", null).show();
+    }
+
+    private void confirmDelete(Order order) {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Xóa đơn hàng")
+                .setMessage("Bạn có chắc muốn xóa đơn " + order.getOrderCode() + " không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    new OrderRepository().deleteOrder(order.getId(), new OrderRepository.Callback<Void>() {
+                        @Override
+                        public void onSuccess(Void data) {
+                            runOnUiThread(() -> {
+                                allOrders.removeIf(o -> o.getId() != null && o.getId().equals(order.getId()));
+                                applyCurrentFilter();
+                                android.widget.Toast.makeText(
+                                        OrderHistoryActivity.this,
+                                        "Đã xóa đơn hàng",
+                                        android.widget.Toast.LENGTH_SHORT
+                                ).show();
+                            });
+                        }
+
+                        @Override
+                        public void onFailure(String error) {
+                            runOnUiThread(() -> android.widget.Toast.makeText(
+                                    OrderHistoryActivity.this,
+                                    "Xóa thất bại: " + error,
+                                    android.widget.Toast.LENGTH_LONG
+                            ).show());
+                        }
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+    private void openVNPay(Order order) {
+        String txnRef = order.getOrderCode() != null && !order.getOrderCode().isEmpty()
+                ? order.getOrderCode()
+                : order.getId();
+
+        String url = com.example.petshop.utils.VNPayHelper.buildPaymentUrl(
+                txnRef,
+                (long) order.getTotalAmount(),
+                "Thanh toan don hang " + txnRef
+        );
+
+        Intent i = new Intent(this, VNPayWebViewActivity.class);
+        i.putExtra(VNPayWebViewActivity.EXTRA_PAYMENT_URL, url);
+        i.putExtra(VNPayWebViewActivity.EXTRA_ORDER_ID, txnRef);
+        startActivity(i);
     }
 
     private boolean hasPetItem(Order order) {

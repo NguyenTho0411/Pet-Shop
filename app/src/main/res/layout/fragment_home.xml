@@ -80,10 +80,6 @@
             android:textSize="14sp" android:textColor="@color/text_primary"
             android:background="@null"
             android:imeOptions="actionSearch" android:inputType="text" />
-        <ImageView android:id="@+id/ivFilter"
-            android:layout_width="36dp" android:layout_height="36dp"
-            android:src="@android:drawable/ic_menu_sort_by_size"
-            android:padding="6dp" android:background="@drawable/bg_orange_pill" />
     </LinearLayout>
 
     <!-- Scrollable content -->
@@ -131,6 +127,16 @@
                 android:clipToPadding="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 android:layout_marginBottom="24dp" />
+            <TextView
+                android:id="@+id/tvEmptyPets"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:gravity="center"
+                android:text="Không có thú cưng nào trong danh mục này"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone"
+                android:layout_marginBottom="24dp" />
 
             <!-- PET FOOD -->
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -154,6 +160,15 @@
                 android:paddingStart="20dp" android:paddingEnd="20dp"
                 android:clipToPadding="false"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+            <TextView
+                android:id="@+id/tvEmptyFood"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:gravity="center"
+                android:text="Không có sản phẩm nào trong danh mục này"
+                android:textSize="14sp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

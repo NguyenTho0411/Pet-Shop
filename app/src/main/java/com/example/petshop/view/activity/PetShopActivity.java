@@ -48,8 +48,8 @@ public class PetShopActivity extends AppCompatActivity {
                 return true;
 
             } else if (id == R.id.nav_search) {
-                // TODO: SearchFragment
                 showFragment(homeFragment);
+                homeFragment.focusSearch();
                 return true;
 
             } else if (id == R.id.nav_chat) {

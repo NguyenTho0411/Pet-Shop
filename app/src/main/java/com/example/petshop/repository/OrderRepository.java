@@ -390,6 +390,13 @@ public class OrderRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    public void deleteOrder(String orderId, Callback<Void> cb) {
+        db.collection(COL_ORDERS)
+                .document(orderId)
+                .delete()
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
     public void countPending(Callback<Long> cb) {
         db.collection(COL_ORDERS).whereEqualTo("status", Order.STATUS_PENDING)
                 .count().get(com.google.firebase.firestore.AggregateSource.SERVER)

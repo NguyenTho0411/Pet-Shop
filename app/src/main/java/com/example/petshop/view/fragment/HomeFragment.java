@@ -11,6 +11,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -22,6 +24,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Pet;
+import com.example.petshop.model.entity.Category;
 import com.example.petshop.utils.FirebaseHelper;
 import com.example.petshop.view.activity.CartActivity;
 import com.example.petshop.view.activity.FoodDetailActivity;
@@ -36,6 +39,8 @@ import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import android.content.Context;
+import android.view.inputmethod.InputMethodManager;
 
 public class HomeFragment extends Fragment {
 
@@ -46,7 +51,10 @@ public class HomeFragment extends Fragment {
     private HomeFoodAdapter     foodAdapter;
     private TextView            tvGreeting, tvTimeGreeting;
     private Button              btnLoginTopBar;
+    private EditText            etSearch;
     private View                rootView;
+    private String currentCategoryType = null;
+    private String currentCategoryName = null;
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -86,10 +94,16 @@ public class HomeFragment extends Fragment {
         root.findViewById(R.id.tvSeeAllFood).setOnClickListener(v ->
                 Toast.makeText(requireContext(), "Xem tất cả đồ ăn", Toast.LENGTH_SHORT).show());
 
-        ((EditText) root.findViewById(R.id.etSearch)).addTextChangedListener(new TextWatcher() {
+        etSearch = root.findViewById(R.id.etSearch);
+        etSearch.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
             public void onTextChanged(CharSequence s, int st, int b, int c) {}
-            public void afterTextChanged(Editable s) { vm.search(s.toString()); }
+            public void afterTextChanged(Editable s) {
+                currentCategoryType = null;
+                currentCategoryName = null;
+                vm.search(s.toString());
+                updateSectionTitles();
+            }
         });
 
         updateTopBar();
@@ -98,8 +112,13 @@ public class HomeFragment extends Fragment {
     private void setupRecyclerViews(View root) {
         RecyclerView rvCat = root.findViewById(R.id.rvCategories);
         rvCat.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
-        categoryAdapter = new HomeCategoryAdapter(new ArrayList<>(),
-                (cat, pos) -> vm.filterByCategory(cat.getId(), cat.getType()));
+        categoryAdapter = new HomeCategoryAdapter(new ArrayList<>(), (cat, pos) -> {
+            currentCategoryType = resolveCategoryType(cat);
+            currentCategoryName = cat.getName();
+
+            updateSectionTitles();
+            vm.filterByCategory(cat);
+        });
         rvCat.setAdapter(categoryAdapter);
 
         RecyclerView rvPets = root.findViewById(R.id.rvFeaturedPets);
@@ -116,28 +135,11 @@ public class HomeFragment extends Fragment {
 
     private void observeViewModel() {
         vm.getCategories().observe(getViewLifecycleOwner(), cats -> categoryAdapter.updateList(cats));
-        
-        vm.getFeaturedPets().observe(getViewLifecycleOwner(), pets -> {
-            petAdapter.updateList(pets);
-            rootView.findViewById(R.id.rvFeaturedPets).setVisibility(pets.isEmpty() ? View.GONE : View.VISIBLE);
-        });
 
-        vm.getFeaturedFoods().observe(getViewLifecycleOwner(), foods -> {
-            foodAdapter.updateList(foods);
-            rootView.findViewById(R.id.rvFeaturedFood).setVisibility(foods.isEmpty() ? View.GONE : View.VISIBLE);
-        });
+        vm.getFeaturedPets().observe(getViewLifecycleOwner(), this::renderPets);
+        vm.getFeaturedFoods().observe(getViewLifecycleOwner(), this::renderFoods);
 
-        vm.getIsSearching().observe(getViewLifecycleOwner(), isSearching -> {
-            TextView tvPetTitle = rootView.findViewById(R.id.tvFeaturedPetsTitle);
-            TextView tvFoodTitle = rootView.findViewById(R.id.tvFeaturedFoodTitle);
-            if (isSearching) {
-                if (tvPetTitle != null) tvPetTitle.setText("Kết quả tìm kiếm thú cưng");
-                if (tvFoodTitle != null) tvFoodTitle.setText("Kết quả tìm kiếm thức ăn");
-            } else {
-                if (tvPetTitle != null) tvPetTitle.setText(R.string.featured_pets);
-                if (tvFoodTitle != null) tvFoodTitle.setText(R.string.pet_food);
-            }
-        });
+        vm.getIsSearching().observe(getViewLifecycleOwner(), isSearching -> updateSectionTitles());
 
         cartVm.getSuccess().observe(getViewLifecycleOwner(), msg -> {
             if (msg != null) {
@@ -173,6 +175,114 @@ public class HomeFragment extends Fragment {
         return getString(R.string.good_evening);
     }
 
+    private void renderPets(java.util.List<Pet> pets) {
+        petAdapter.updateList(pets);
+
+        View petHeader = (View) rootView.findViewById(R.id.tvFeaturedPetsTitle).getParent();
+        boolean hidePetSection = Category.TYPE_FOOD.equals(currentCategoryType);
+
+        if (hidePetSection) {
+            petHeader.setVisibility(View.GONE);
+            rootView.findViewById(R.id.rvFeaturedPets).setVisibility(View.GONE);
+            rootView.findViewById(R.id.tvEmptyPets).setVisibility(View.GONE);
+            return;
+        }
+
+        petHeader.setVisibility(View.VISIBLE);
+
+        boolean empty = pets == null || pets.isEmpty();
+
+        rootView.findViewById(R.id.rvFeaturedPets)
+                .setVisibility(empty ? View.GONE : View.VISIBLE);
+
+        rootView.findViewById(R.id.tvEmptyPets)
+                .setVisibility(empty ? View.VISIBLE : View.GONE);
+    }
+
+    private void renderFoods(java.util.List<Food> foods) {
+        foodAdapter.updateList(foods);
+
+        View foodHeader = (View) rootView.findViewById(R.id.tvFeaturedFoodTitle).getParent();
+        boolean hideFoodSection = Category.TYPE_PET.equals(currentCategoryType);
+
+        if (hideFoodSection) {
+            foodHeader.setVisibility(View.GONE);
+            rootView.findViewById(R.id.rvFeaturedFood).setVisibility(View.GONE);
+            rootView.findViewById(R.id.tvEmptyFood).setVisibility(View.GONE);
+            return;
+        }
+
+        foodHeader.setVisibility(View.VISIBLE);
+
+        boolean empty = foods == null || foods.isEmpty();
+
+        rootView.findViewById(R.id.rvFeaturedFood)
+                .setVisibility(empty ? View.GONE : View.VISIBLE);
+
+        rootView.findViewById(R.id.tvEmptyFood)
+                .setVisibility(empty ? View.VISIBLE : View.GONE);
+    }
+
+    private void updateSectionTitles() {
+        TextView tvPetTitle = rootView.findViewById(R.id.tvFeaturedPetsTitle);
+        TextView tvFoodTitle = rootView.findViewById(R.id.tvFeaturedFoodTitle);
+
+        if (Category.TYPE_PET.equals(currentCategoryType)) {
+            if (tvPetTitle != null) {
+                tvPetTitle.setText(currentCategoryName != null
+                        ? "Danh sách " + currentCategoryName
+                        : "Danh sách thú cưng");
+            }
+            return;
+        }
+
+        if (Category.TYPE_FOOD.equals(currentCategoryType)) {
+            if (tvFoodTitle != null) {
+                tvFoodTitle.setText(currentCategoryName != null
+                        ? "Danh sách " + currentCategoryName
+                        : "Danh sách đồ ăn");
+            }
+            return;
+        }
+
+        Boolean isSearching = vm.getIsSearching().getValue();
+
+        if (Boolean.TRUE.equals(isSearching)) {
+            if (tvPetTitle != null) tvPetTitle.setText("Kết quả tìm kiếm thú cưng");
+            if (tvFoodTitle != null) tvFoodTitle.setText("Kết quả tìm kiếm thức ăn");
+        } else {
+            if (tvPetTitle != null) tvPetTitle.setText(R.string.featured_pets);
+            if (tvFoodTitle != null) tvFoodTitle.setText(R.string.pet_food);
+        }
+    }
+
+    private String resolveCategoryType(Category category) {
+        if (category == null) return null;
+
+        if (Category.TYPE_FOOD.equals(category.getType())) {
+            return Category.TYPE_FOOD;
+        }
+
+        if (Category.TYPE_PET.equals(category.getType())) {
+            return Category.TYPE_PET;
+        }
+
+        String name = category.getName() != null ? category.getName().toLowerCase() : "";
+        String id = category.getId() != null ? category.getId().toLowerCase() : "";
+        String key = name + " " + id;
+
+        if (key.contains("pate")
+                || key.contains("wet")
+                || key.contains("dry")
+                || key.contains("snack")
+                || key.contains("milk")
+                || key.contains("food")) {
+            return Category.TYPE_FOOD;
+        }
+
+        return Category.TYPE_PET;
+    }
+
     private void openPetDetail(Pet pet) {
         Intent i = new Intent(requireContext(), PetDetailActivity.class);
         i.putExtra(PetDetailActivity.EXTRA_PET_ID, pet.getId());
@@ -183,5 +293,22 @@ public class HomeFragment extends Fragment {
         Intent i = new Intent(requireContext(), FoodDetailActivity.class);
         i.putExtra(FoodDetailActivity.EXTRA_FOOD_ID, food.getId());
         startActivity(i);
+    }
+    public void focusSearch() {
+        if (etSearch == null) return;
+
+        etSearch.requestFocus();
+        etSearch.post(() -> {
+            if (etSearch.getText() != null) {
+                etSearch.setSelection(etSearch.getText().length());
+            }
+
+            InputMethodManager imm =
+                    (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+
+            if (imm != null) {
+                imm.showSoftInput(etSearch, InputMethodManager.SHOW_IMPLICIT);
+            }
+        });
     }
 }
