@@ -42,6 +42,7 @@ public class AddEditPetActivity extends AppCompatActivity {
     private List<Category>     categories  = new ArrayList<>();
     private String             selectedCategoryId;
     private String             editingPetId;
+    private boolean localSaving = false;
 
     // Views
     private TextInputEditText etName, etBreed, etAge, etWeight, etColor,
@@ -50,7 +51,7 @@ public class AddEditPetActivity extends AppCompatActivity {
             actvGender, actvVaccine, actvStatus;
     private MaterialCheckBox cbDewormed, cbMicrochipped, cbCertificate;
     private ProgressBar progressBar;
-
+    private View btnSaveTop, btnSaveBottom;
     // Image/video picker
     private final ActivityResultLauncher<String[]> mediaPickerLauncher =
             registerForActivityResult(new ActivityResultContracts.OpenMultipleDocuments(), uris -> {
@@ -134,10 +135,10 @@ public class AddEditPetActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
         // Nút Lưu ở toolbar (top)
-        View btnSaveTop = findViewById(R.id.btnSave);
+        btnSaveTop = findViewById(R.id.btnSave);
         if (btnSaveTop != null) btnSaveTop.setOnClickListener(v -> savePet());
-        // Nút Lưu ở bottom (luôn hiển thị dù cuộn)
-        View btnSaveBottom = findViewById(R.id.btnSaveBottom);
+
+        btnSaveBottom = findViewById(R.id.btnSaveBottom);
         if (btnSaveBottom != null) btnSaveBottom.setOnClickListener(v -> savePet());
     }
 
@@ -182,8 +183,17 @@ public class AddEditPetActivity extends AppCompatActivity {
     }
 
     private void observeViewModel() {
-        vm.getLoading().observe(this, loading ->
-                progressBar.setVisibility(loading ? View.VISIBLE : View.GONE));
+        vm.getLoading().observe(this, loading -> {
+            boolean isLoading = Boolean.TRUE.equals(loading);
+
+            progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+
+            if (btnSaveTop != null) btnSaveTop.setEnabled(!isLoading);
+            if (btnSaveBottom != null) btnSaveBottom.setEnabled(!isLoading);
+
+            if (btnSaveTop != null) btnSaveTop.setAlpha(isLoading ? 0.5f : 1f);
+            if (btnSaveBottom != null) btnSaveBottom.setAlpha(isLoading ? 0.5f : 1f);
+        });
 
         vm.getUploadProgress().observe(this, prog ->
                 progressBar.setProgress(prog));
@@ -219,8 +229,10 @@ public class AddEditPetActivity extends AppCompatActivity {
         });
 
         vm.getError().observe(this, err -> {
-            if (err != null && !err.isEmpty())
+            if (err != null && !err.isEmpty()) {
+                localSaving = false;
                 Toast.makeText(this, err, Toast.LENGTH_LONG).show();
+            }
         });
     }
 
@@ -249,6 +261,8 @@ public class AddEditPetActivity extends AppCompatActivity {
     }
 
     private void savePet() {
+        if (localSaving) return;
+        localSaving = true;
         String name = getText(etName);
         if (TextUtils.isEmpty(name)) { etName.setError("Bắt buộc"); return; }
         if (TextUtils.isEmpty(getText(etAge))) { etAge.setError("Bắt buộc"); return; }

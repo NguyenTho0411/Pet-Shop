@@ -11,6 +11,8 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.example.petshop.R;
@@ -18,9 +20,13 @@ import com.example.petshop.model.entity.Pet;
 import com.example.petshop.repository.PetRepository;
 import com.example.petshop.utils.FirebaseHelper;
 import com.example.petshop.viewmodel.CartViewModel;
+import com.example.petshop.model.entity.PetMedia;
+import com.example.petshop.view.adapter.PetMediaThumbAdapter;
 
 import java.text.NumberFormat;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 
 public class PetDetailActivity extends AppCompatActivity {
 
@@ -30,6 +36,8 @@ public class PetDetailActivity extends AppCompatActivity {
 
     // Views
     private ImageView ivHero, ivFavoriteIcon;
+    private RecyclerView rvPetMedia;
+    private PetMediaThumbAdapter mediaAdapter;
     private TextView  tvPetName, tvStatusBadge, tvSpeciesBreed, tvSaleBadge;
     private TextView  tvAttrGenderVal, tvAttrAgeVal, tvAttrBreedVal;
     private TextView  tvPrice, tvOriginalPrice, tvWeight, tvOrigin;
@@ -67,6 +75,21 @@ public class PetDetailActivity extends AppCompatActivity {
     private void bindViews() {
         ivHero           = findViewById(R.id.ivPetHero);
         ivFavoriteIcon   = findViewById(R.id.ivFavoriteIcon);
+        rvPetMedia = findViewById(R.id.rvPetMedia);
+        rvPetMedia.setLayoutManager(
+                new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        );
+
+        mediaAdapter = new PetMediaThumbAdapter(media -> {
+            if (media != null && media.getMediaUrl() != null && !media.getMediaUrl().isEmpty()) {
+                Glide.with(this)
+                        .load(media.getMediaUrl())
+                        .centerCrop()
+                        .into(ivHero);
+            }
+        });
+
+        rvPetMedia.setAdapter(mediaAdapter);
         tvPetName        = findViewById(R.id.tvPetName);
         tvStatusBadge    = findViewById(R.id.tvStatusBadge);
         tvSpeciesBreed   = findViewById(R.id.tvSpeciesBreed);
@@ -129,11 +152,17 @@ public class PetDetailActivity extends AppCompatActivity {
                         list.add(pet);
                         com.example.petshop.utils.PromotionManager.applyPromotions(list, null, data);
                         currentPet = pet;
-                        runOnUiThread(() -> bindPet(pet));
+                        runOnUiThread(() -> {
+                            bindPet(pet);
+                            loadPetMedia(petId, pet);
+                        });
                     }
                     @Override public void onFailure(String error) {
                         currentPet = pet;
-                        runOnUiThread(() -> bindPet(pet));
+                        runOnUiThread(() -> {
+                            bindPet(pet);
+                            loadPetMedia(petId, pet);
+                        });
                     }
                 });
             }
@@ -210,6 +239,52 @@ public class PetDetailActivity extends AppCompatActivity {
         tvCertificate.setText(pet.isHasCertificate() ? "📄 Có giấy tờ" : "❌ Không có giấy");
     }
 
+    private void loadPetMedia(String petId, Pet pet) {
+        new PetRepository().getMedia(petId, new PetRepository.Callback<List<PetMedia>>() {
+            @Override
+            public void onSuccess(List<PetMedia> medias) {
+                runOnUiThread(() -> {
+                    List<PetMedia> displayList = new ArrayList<>();
+
+                    if (medias != null) {
+                        displayList.addAll(medias);
+                    }
+
+                    // Nếu media rỗng thì dùng thumbnail làm ảnh duy nhất
+                    if (displayList.isEmpty()
+                            && pet.getThumbnailUrl() != null
+                            && !pet.getThumbnailUrl().isEmpty()) {
+                        PetMedia thumbnail = new PetMedia();
+                        thumbnail.setMediaUrl(pet.getThumbnailUrl());
+                        thumbnail.setMediaType(PetMedia.TYPE_IMAGE);
+                        displayList.add(thumbnail);
+                    }
+
+                    if (displayList.isEmpty()) {
+                        rvPetMedia.setVisibility(View.GONE);
+                        return;
+                    }
+
+                    rvPetMedia.setVisibility(displayList.size() > 1 ? View.VISIBLE : View.GONE);
+                    mediaAdapter.updateList(displayList);
+
+                    // Ảnh đầu tiên trong media list làm ảnh lớn
+                    String firstUrl = displayList.get(0).getMediaUrl();
+                    if (firstUrl != null && !firstUrl.isEmpty()) {
+                        Glide.with(PetDetailActivity.this)
+                                .load(firstUrl)
+                                .centerCrop()
+                                .into(ivHero);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(String err) {
+                runOnUiThread(() -> rvPetMedia.setVisibility(View.GONE));
+            }
+        });
+    }
     private void toggleFavorite() {
         if (FirebaseHelper.getCurrentUser() == null) {
             startActivity(new Intent(this, LoginActivity.class));
