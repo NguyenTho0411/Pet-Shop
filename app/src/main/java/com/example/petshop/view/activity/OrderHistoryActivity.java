@@ -37,6 +37,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
     private LinearLayout   llEmpty;
     private final int[] chipIds = {
             R.id.chipAll,
+            R.id.chipWaitPay,
             R.id.chipPending,
             R.id.chipShipping,
             R.id.chipDelivered,
@@ -59,6 +60,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
 
         // Chip filters
         setChipFilter(R.id.chipAll,       null);
+        setChipFilter(R.id.chipWaitPay,   Order.STATUS_WAIT_PAY);
         setChipFilter(R.id.chipPending,   Order.STATUS_PENDING);
         setChipFilter(R.id.chipShipping,  Order.STATUS_SHIPPING);
         setChipFilter(R.id.chipDelivered, Order.STATUS_DELIVERED);

@@ -25,13 +25,28 @@
         android:paddingTop="8dp" android:paddingBottom="8dp">
         <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:orientation="horizontal">
-            <com.google.android.material.chip.Chip android:id="@+id/chipAll"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Tất cả" android:layout_marginEnd="6dp"
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipAll"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tất cả"
+                android:layout_marginEnd="6dp"
                 style="@style/Widget.Material3.Chip.Filter" />
-            <com.google.android.material.chip.Chip android:id="@+id/chipPending"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Chờ xác nhận" android:layout_marginEnd="6dp"
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipWaitPay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chờ thanh toán"
+                android:layout_marginEnd="6dp"
+                style="@style/Widget.Material3.Chip.Filter" />
+
+            <com.google.android.material.chip.Chip
+                android:id="@+id/chipPending"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chờ xác nhận"
+                android:layout_marginEnd="6dp"
                 style="@style/Widget.Material3.Chip.Filter" />
             <com.google.android.material.chip.Chip android:id="@+id/chipShipping"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
