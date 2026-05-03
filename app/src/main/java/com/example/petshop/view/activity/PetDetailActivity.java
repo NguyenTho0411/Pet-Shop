@@ -4,22 +4,29 @@ import android.content.Intent;
 import android.graphics.Paint;
 import android.net.Uri;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Pet;
+import com.example.petshop.model.entity.PetMedia;
 import com.example.petshop.repository.PetRepository;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.view.adapter.ImageSliderAdapter;
 import com.example.petshop.viewmodel.CartViewModel;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class PetDetailActivity extends AppCompatActivity {
@@ -30,6 +37,9 @@ public class PetDetailActivity extends AppCompatActivity {
 
     // Views
     private ImageView ivHero, ivFavoriteIcon;
+    private ViewPager2 vpPetImages;
+    private LinearLayout llDotIndicator;
+    private ImageSliderAdapter sliderAdapter;
     private TextView  tvPetName, tvStatusBadge, tvSpeciesBreed, tvSaleBadge;
     private TextView  tvAttrGenderVal, tvAttrAgeVal, tvAttrBreedVal;
     private TextView  tvPrice, tvOriginalPrice, tvWeight, tvOrigin;
@@ -67,6 +77,12 @@ public class PetDetailActivity extends AppCompatActivity {
     private void bindViews() {
         ivHero           = findViewById(R.id.ivPetHero);
         ivFavoriteIcon   = findViewById(R.id.ivFavoriteIcon);
+        vpPetImages      = findViewById(R.id.vpPetImages);
+        llDotIndicator   = findViewById(R.id.llDotIndicator);
+
+        // Setup ViewPager2 slider
+        sliderAdapter = new ImageSliderAdapter();
+        vpPetImages.setAdapter(sliderAdapter);
         tvPetName        = findViewById(R.id.tvPetName);
         tvStatusBadge    = findViewById(R.id.tvStatusBadge);
         tvSpeciesBreed   = findViewById(R.id.tvSpeciesBreed);
@@ -147,10 +163,13 @@ public class PetDetailActivity extends AppCompatActivity {
     }
 
     private void bindPet(Pet pet) {
-        // Hero image
+        // Hero image (fallback thumbnail)
         if (pet.getThumbnailUrl() != null && !pet.getThumbnailUrl().isEmpty()) {
             Glide.with(this).load(pet.getThumbnailUrl()).centerCrop().into(ivHero);
         }
+
+        // Load all media from subcollection for gallery
+        loadMediaGallery(pet);
 
         // Name + About title
         tvPetName.setText("Pet Name:  " + pet.getName());
@@ -256,5 +275,78 @@ public class PetDetailActivity extends AppCompatActivity {
             }
         }
         return sb.toString();
+    }
+
+    private void loadMediaGallery(Pet pet) {
+        new PetRepository().getMedia(pet.getId(), new PetRepository.Callback<List<PetMedia>>() {
+            @Override
+            public void onSuccess(List<PetMedia> data) {
+                List<String> imageUrls = new ArrayList<>();
+                if (data != null) {
+                    for (PetMedia m : data) {
+                        // Chỉ lấy ảnh, bỏ qua video
+                        if (!PetMedia.TYPE_VIDEO.equals(m.getMediaType()) && m.getMediaUrl() != null) {
+                            imageUrls.add(m.getMediaUrl());
+                        }
+                    }
+                }
+
+                // Nếu subcollection không có ảnh, dùng thumbnail làm ảnh duy nhất
+                if (imageUrls.isEmpty() && pet.getThumbnailUrl() != null && !pet.getThumbnailUrl().isEmpty()) {
+                    imageUrls.add(pet.getThumbnailUrl());
+                }
+
+                if (imageUrls.size() > 1) {
+                    // Có nhiều ảnh → hiện ViewPager, ẩn ImageView đơn
+                    runOnUiThread(() -> {
+                        ivHero.setVisibility(View.GONE);
+                        vpPetImages.setVisibility(View.VISIBLE);
+                        sliderAdapter.setImages(imageUrls);
+                        setupDotIndicator(imageUrls.size());
+                    });
+                } else if (imageUrls.size() == 1) {
+                    // Chỉ 1 ảnh → dùng ImageView đơn cho đẹp
+                    runOnUiThread(() -> {
+                        vpPetImages.setVisibility(View.GONE);
+                        ivHero.setVisibility(View.VISIBLE);
+                        Glide.with(PetDetailActivity.this).load(imageUrls.get(0)).centerCrop().into(ivHero);
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(String error) {
+                // Giữ nguyên thumbnail đã load ở trên
+            }
+        });
+    }
+
+    private void setupDotIndicator(int count) {
+        llDotIndicator.removeAllViews();
+        llDotIndicator.setVisibility(View.VISIBLE);
+
+        View[] dots = new View[count];
+        float density = getResources().getDisplayMetrics().density;
+        int dotSize = (int) (8 * density);
+        int dotMargin = (int) (4 * density);
+
+        for (int i = 0; i < count; i++) {
+            dots[i] = new View(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dotSize, dotSize);
+            lp.setMargins(dotMargin, 0, dotMargin, 0);
+            dots[i].setLayoutParams(lp);
+            dots[i].setBackgroundResource(R.drawable.bg_circle_white);
+            dots[i].setAlpha(i == 0 ? 1f : 0.4f);
+            llDotIndicator.addView(dots[i]);
+        }
+
+        vpPetImages.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                for (int i = 0; i < count; i++) {
+                    dots[i].setAlpha(i == position ? 1f : 0.4f);
+                }
+            }
+        });
     }
 }

@@ -13,13 +13,29 @@
         android:layout_height="380dp"
         android:background="#F5B5A0">
 
-        <!-- Pet large image -->
+        <!-- Pet image gallery (ViewPager2) -->
+        <androidx.viewpager2.widget.ViewPager2
+            android:id="@+id/vpPetImages"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- Fallback single image (shown if no media loaded) -->
         <ImageView
             android:id="@+id/ivPetHero"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:scaleType="centerCrop"
             android:src="@mipmap/ic_launcher" />
+
+        <!-- Dot indicator -->
+        <LinearLayout
+            android:id="@+id/llDotIndicator"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|center_horizontal"
+            android:layout_marginBottom="50dp"
+            android:orientation="horizontal"
+            android:visibility="gone" />
 
         <!-- Gradient overlay at bottom for readability -->
         <View

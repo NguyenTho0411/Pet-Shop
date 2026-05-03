@@ -5,20 +5,26 @@ import android.graphics.Paint;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Food;
+import com.example.petshop.model.entity.FoodMedia;
 import com.example.petshop.repository.FoodRepository;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.view.adapter.ImageSliderAdapter;
 import com.example.petshop.viewmodel.CartViewModel;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class FoodDetailActivity extends AppCompatActivity {
@@ -28,6 +34,9 @@ public class FoodDetailActivity extends AppCompatActivity {
     private final NumberFormat VND = NumberFormat.getInstance(new Locale("vi", "VN"));
 
     private ImageView ivHero, ivFavoriteIcon;
+    private ViewPager2 vpFoodImages;
+    private LinearLayout llDotIndicator;
+    private ImageSliderAdapter sliderAdapter;
     private TextView  tvFoodName, tvBrand, tvStockBadge, tvTargetPet;
     private TextView  tvWeightVal, tvFoodTypeVal, tvSuitableAgeVal;
     private TextView  tvPrice, tvOriginalPrice, tvStock, tvOrigin, tvSaleBadge;
@@ -66,6 +75,12 @@ public class FoodDetailActivity extends AppCompatActivity {
     private void bindViews() {
         ivHero          = findViewById(R.id.ivFoodHero);
         ivFavoriteIcon  = findViewById(R.id.ivFavoriteIcon);
+        vpFoodImages    = findViewById(R.id.vpFoodImages);
+        llDotIndicator  = findViewById(R.id.llDotIndicator);
+
+        // Setup ViewPager2 slider
+        sliderAdapter = new ImageSliderAdapter();
+        vpFoodImages.setAdapter(sliderAdapter);
         tvFoodName      = findViewById(R.id.tvFoodName);
         tvBrand         = findViewById(R.id.tvBrand);
         tvStockBadge    = findViewById(R.id.tvStockBadge);
@@ -155,10 +170,13 @@ public class FoodDetailActivity extends AppCompatActivity {
     }
 
     private void bindFood(Food food) {
-        // Hero image
+        // Hero image (fallback thumbnail)
         if (food.getThumbnailUrl() != null && !food.getThumbnailUrl().isEmpty()) {
             Glide.with(this).load(food.getThumbnailUrl()).centerCrop().into(ivHero);
         }
+
+        // Load all media from subcollection for gallery
+        loadMediaGallery(food);
 
         tvFoodName.setText(food.getName());
         tvBrand.setText(food.getBrand() != null ? food.getBrand() : "");
@@ -268,4 +286,71 @@ public class FoodDetailActivity extends AppCompatActivity {
     }
 
     private String orEmpty(String s) { return s != null ? s : ""; }
+
+    private void loadMediaGallery(Food food) {
+        new FoodRepository().getMedia(food.getId(), new FoodRepository.Callback<List<FoodMedia>>() {
+            @Override
+            public void onSuccess(List<FoodMedia> data) {
+                List<String> imageUrls = new ArrayList<>();
+                if (data != null) {
+                    for (FoodMedia m : data) {
+                        if (!FoodMedia.TYPE_VIDEO.equals(m.getMediaType()) && m.getMediaUrl() != null) {
+                            imageUrls.add(m.getMediaUrl());
+                        }
+                    }
+                }
+
+                if (imageUrls.isEmpty() && food.getThumbnailUrl() != null && !food.getThumbnailUrl().isEmpty()) {
+                    imageUrls.add(food.getThumbnailUrl());
+                }
+
+                if (imageUrls.size() > 1) {
+                    runOnUiThread(() -> {
+                        ivHero.setVisibility(View.GONE);
+                        vpFoodImages.setVisibility(View.VISIBLE);
+                        sliderAdapter.setImages(imageUrls);
+                        setupDotIndicator(imageUrls.size());
+                    });
+                } else if (imageUrls.size() == 1) {
+                    runOnUiThread(() -> {
+                        vpFoodImages.setVisibility(View.GONE);
+                        ivHero.setVisibility(View.VISIBLE);
+                        Glide.with(FoodDetailActivity.this).load(imageUrls.get(0)).centerCrop().into(ivHero);
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(String error) { /* keep thumbnail */ }
+        });
+    }
+
+    private void setupDotIndicator(int count) {
+        llDotIndicator.removeAllViews();
+        llDotIndicator.setVisibility(View.VISIBLE);
+
+        View[] dots = new View[count];
+        float density = getResources().getDisplayMetrics().density;
+        int dotSize = (int) (8 * density);
+        int dotMargin = (int) (4 * density);
+
+        for (int i = 0; i < count; i++) {
+            dots[i] = new View(this);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dotSize, dotSize);
+            lp.setMargins(dotMargin, 0, dotMargin, 0);
+            dots[i].setLayoutParams(lp);
+            dots[i].setBackgroundResource(R.drawable.bg_circle_white);
+            dots[i].setAlpha(i == 0 ? 1f : 0.4f);
+            llDotIndicator.addView(dots[i]);
+        }
+
+        vpFoodImages.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                for (int i = 0; i < count; i++) {
+                    dots[i].setAlpha(i == position ? 1f : 0.4f);
+                }
+            }
+        });
+    }
 }

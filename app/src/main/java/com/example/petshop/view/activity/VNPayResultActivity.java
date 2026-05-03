@@ -80,6 +80,7 @@ public class VNPayResultActivity extends AppCompatActivity {
             if (orderId != null) {
                 Intent i = new Intent(this, OrderDetailActivity.class);
                 i.putExtra(OrderDetailActivity.EXTRA_ORDER_ID, orderId);
+                i.putExtra("from_checkout", true);
                 startActivity(i);
             }
             finish();
@@ -112,5 +113,13 @@ public class VNPayResultActivity extends AppCompatActivity {
                 Toast.makeText(VNPayResultActivity.this, "Không tìm thấy đơn hàng: " + orderCode, Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    @Override
+    public void onBackPressed() {
+        Intent i = new Intent(this, PetShopActivity.class);
+        i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(i);
+        finish();
     }
 }

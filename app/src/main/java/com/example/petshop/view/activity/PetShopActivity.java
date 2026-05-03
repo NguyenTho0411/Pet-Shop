@@ -47,11 +47,6 @@ public class PetShopActivity extends AppCompatActivity {
                 showFragment(homeFragment);
                 return true;
 
-            } else if (id == R.id.nav_search) {
-                showFragment(homeFragment);
-                homeFragment.focusSearch();
-                return true;
-
             } else if (id == R.id.nav_chat) {
                 if (!requireLogin()) return false;
                 startActivity(new Intent(this, ChatActivity.class));

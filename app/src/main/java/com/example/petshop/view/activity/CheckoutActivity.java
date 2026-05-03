@@ -99,11 +99,13 @@ public class CheckoutActivity extends AppCompatActivity {
         ((Button) findViewById(R.id.btnApplyVoucher)).setOnClickListener(v -> applyVoucher());
 
         // Change address
-        findViewById(R.id.btnChangeAddress).setOnClickListener(v -> {
+        View.OnClickListener changeAddressListener = v -> {
             Intent i = new Intent(this, ManageAddressActivity.class);
             i.putExtra("pick_mode", true);
             startActivityForResult(i, 100);
-        });
+        };
+        findViewById(R.id.btnChangeAddress).setOnClickListener(changeAddressListener);
+        findViewById(R.id.cvAddress).setOnClickListener(changeAddressListener);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
@@ -331,7 +333,7 @@ public class CheckoutActivity extends AppCompatActivity {
     private void openOrderSuccess(String orderId) {
         Intent i = new Intent(this, OrderDetailActivity.class);
         i.putExtra(OrderDetailActivity.EXTRA_ORDER_ID, orderId);
-        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        i.putExtra("from_checkout", true);
         startActivity(i);
         finish();
     }

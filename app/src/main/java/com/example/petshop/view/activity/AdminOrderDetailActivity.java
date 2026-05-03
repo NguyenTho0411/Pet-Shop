@@ -102,6 +102,14 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
                 Order.PAYMENT_VNPAY.equals(order.getPaymentMethod()) ? "VNPay 🏦" : "COD 💵");
         ((TextView) findViewById(R.id.tvSubtotal)).setText(VND.format((long) order.getSubtotal()) + "đ");
         ((TextView) findViewById(R.id.tvShipping)).setText(VND.format((long) order.getShippingFee()) + "đ");
+        
+        if (order.getVoucherDiscount() > 0) {
+            findViewById(R.id.llDiscountRow).setVisibility(View.VISIBLE);
+            ((TextView) findViewById(R.id.tvDiscount)).setText("-" + VND.format((long) order.getVoucherDiscount()) + "đ");
+        } else {
+            findViewById(R.id.llDiscountRow).setVisibility(View.GONE);
+        }
+        
         ((TextView) findViewById(R.id.tvTotal)).setText(VND.format((long) order.getTotalAmount()) + "đ");
 
         if (order.getNote() != null && !order.getNote().isEmpty()) {

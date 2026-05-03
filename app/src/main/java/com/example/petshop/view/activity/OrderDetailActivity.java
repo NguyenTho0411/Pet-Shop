@@ -52,12 +52,13 @@ public class OrderDetailActivity extends AppCompatActivity {
         String orderId = getIntent().getStringExtra(EXTRA_ORDER_ID);
         if (orderId == null) { finish(); return; }
 
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+        findViewById(R.id.btnBack).setOnClickListener(v -> onBackPressed());
 
         ProgressBar pb = findViewById(R.id.progressBar);
         pb.setVisibility(View.VISIBLE);
 
-        new OrderRepository().getOrderById(orderId, new OrderRepository.Callback<>() {
+        OrderRepository repo = new OrderRepository();
+        OrderRepository.Callback<Order> callback = new OrderRepository.Callback<>() {
             public void onSuccess(Order order) {
                 if (order == null) { finish(); return; }
                 runOnUiThread(() -> { pb.setVisibility(View.GONE); bindOrder(order); });
@@ -65,7 +66,14 @@ public class OrderDetailActivity extends AppCompatActivity {
             public void onFailure(String err) {
                 runOnUiThread(() -> { pb.setVisibility(View.GONE); Toast.makeText(OrderDetailActivity.this, err, Toast.LENGTH_SHORT).show(); finish(); });
             }
-        });
+        };
+
+        // orderId có thể là UUID (document ID) hoặc orderCode (ORD-xxx) từ VNPay
+        if (orderId.startsWith("ORD-")) {
+            repo.getOrderByCode(orderId, callback);
+        } else {
+            repo.getOrderById(orderId, callback);
+        }
     }
 
     private void bindOrder(Order order) {
@@ -98,6 +106,14 @@ public class OrderDetailActivity extends AppCompatActivity {
                 Order.PAYMENT_VNPAY.equals(order.getPaymentMethod()) ? "VNPay 🏦" : "COD 💵");
         ((TextView) findViewById(R.id.tvSubtotal)).setText(VND.format((long) order.getSubtotal()) + "đ");
         ((TextView) findViewById(R.id.tvShipping)).setText(VND.format((long) order.getShippingFee()) + "đ");
+        
+        if (order.getVoucherDiscount() > 0) {
+            findViewById(R.id.llDiscountRow).setVisibility(View.VISIBLE);
+            ((TextView) findViewById(R.id.tvDiscount)).setText("-" + VND.format((long) order.getVoucherDiscount()) + "đ");
+        } else {
+            findViewById(R.id.llDiscountRow).setVisibility(View.GONE);
+        }
+        
         ((TextView) findViewById(R.id.tvTotal)).setText(VND.format((long) order.getTotalAmount()) + "đ");
 
         // Bottom actions
@@ -314,6 +330,18 @@ public class OrderDetailActivity extends AppCompatActivity {
             case Order.STATUS_CANCELLED: return 0xFFFF3B30;
             case Order.STATUS_REFUNDED:  return 0xFFFF9500;
             default: return 0xFF888888;
+        }
+    }
+    
+    @Override
+    public void onBackPressed() {
+        if (getIntent().getBooleanExtra("from_checkout", false)) {
+            Intent i = new Intent(this, PetShopActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(i);
+            finish();
+        } else {
+            super.onBackPressed();
         }
     }
 }

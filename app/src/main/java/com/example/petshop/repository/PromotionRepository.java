@@ -28,8 +28,13 @@ public class PromotionRepository {
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Promotion> list = new ArrayList<>();
-                    for (var doc : snap.getDocuments())
-                        list.add(doc.toObject(Promotion.class));
+                    for (var doc : snap.getDocuments()) {
+                        Promotion p = doc.toObject(Promotion.class);
+                        if (p != null) {
+                            p.setId(doc.getId());
+                            list.add(p);
+                        }
+                    }
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -53,8 +58,11 @@ public class PromotionRepository {
                     List<Promotion> list = new ArrayList<>();
                     for (var doc : snap.getDocuments()) {
                         Promotion p = doc.toObject(Promotion.class);
-                        if (p != null && isNotExpired(p.getEndDate())) {
-                            list.add(p);
+                        if (p != null) {
+                            p.setId(doc.getId());
+                            if (isNotExpired(p.getEndDate())) {
+                                list.add(p);
+                            }
                         }
                     }
                     cb.onSuccess(list);
