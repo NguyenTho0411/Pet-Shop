@@ -89,6 +89,7 @@
         <activity android:name=".view.activity.CheckoutActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".view.activity.OrderHistoryActivity" android:exported="false" />
+        <activity android:name=".view.activity.NotificationActivity" android:exported="false" />
         <activity android:name=".view.activity.OrderDetailActivity" android:exported="false" />
         <activity android:name=".view.activity.ReturnRequestActivity" android:exported="false" />
         <activity android:name=".view.activity.ProfileActivity" android:exported="false" />

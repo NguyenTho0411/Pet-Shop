@@ -33,12 +33,33 @@
 
         <androidx.cardview.widget.CardView
             android:id="@+id/btnNotification"
-            android:layout_width="42dp" android:layout_height="42dp"
-            app:cardCornerRadius="12dp" app:cardBackgroundColor="@color/bg_card"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            app:cardCornerRadius="12dp"
+            app:cardBackgroundColor="@color/bg_card"
             app:cardElevation="2dp">
-            <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_notification" app:tint="@color/text_primary" />
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_notification"
+                    app:tint="@color/text_primary" />
+
+                <View
+                    android:id="@+id/vNotificationDot"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@drawable/bg_red_dot"
+                    android:visibility="gone" />
+            </FrameLayout>
         </androidx.cardview.widget.CardView>
 
         <androidx.cardview.widget.CardView
