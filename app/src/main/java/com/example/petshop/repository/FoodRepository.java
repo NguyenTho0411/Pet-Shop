@@ -146,4 +146,33 @@ public class FoodRepository {
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
+
+    /**
+     * Cập nhật thông tin khuyến mãi cho food (discountedPrice, promotionId).
+     * Gọi khi có promotion mới được thêm để đồng bộ giá xuống Firestore.
+     */
+    public void updatePromotionInfo(String foodId, String promoId, double discountedPrice, Callback<Void> cb) {
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("promotionId", promoId != null ? promoId : "");
+        updates.put("discountedPrice", discountedPrice);
+        updates.put("updatedAt", now());
+
+        db.collection(COL).document(foodId).update(updates)
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    /**
+     * Xóa thông tin khuyến mãi của food (khi promotion hết hạn hoặc bị xóa).
+     */
+    public void clearPromotionInfo(String foodId, Callback<Void> cb) {
+        java.util.Map<String, Object> updates = new java.util.HashMap<>();
+        updates.put("promotionId", "");
+        updates.put("discountedPrice", 0);
+        updates.put("updatedAt", now());
+
+        db.collection(COL).document(foodId).update(updates)
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
 }

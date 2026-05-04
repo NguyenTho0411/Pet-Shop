@@ -1,6 +1,8 @@
 package com.example.petshop.repository;
 
+import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Notification;
+import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.Promotion;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
@@ -118,6 +120,8 @@ public class PromotionRepository {
                     cb.onSuccess(id);
                     // Gửi thông báo khuyến mãi cho tất cả khách hàng
                     sendPromotionNotification(promotion);
+                    // Đồng bộ giá khuyến mãi xuống pets/foods trong Firestore
+                    syncPromotionToProducts(promotion, null);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
@@ -167,23 +171,191 @@ public class PromotionRepository {
         return nf.format((long) price) + "đ";
     }
 
+    /**
+     * Đồng bộ thông tin khuyến mãi xuống Firestore cho tất cả sản phẩm áp dụng.
+     * Gọi khi thêm/sửa promotion để cập nhật discountedPrice vào pets/foods.
+     */
+    public void syncPromotionToProducts(Promotion promotion, Runnable onComplete) {
+        if (promotion == null || !promotion.isActive()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        final com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+        final java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+        final String promoId = promotion.getId();
+
+        // Đếm số task cần hoàn thành
+        final int[] pendingTasks = {2}; // pets + foods
+        final Runnable checkComplete = () -> {
+            synchronized (pendingTasks) {
+                pendingTasks[0]--;
+                if (pendingTasks[0] <= 0 && onComplete != null) {
+                    onComplete.run();
+                }
+            }
+        };
+
+        // Lấy danh sách pets và cập nhật
+        db.collection("pets").get()
+                .addOnSuccessListener(snap -> {
+                    for (var doc : snap.getDocuments()) {
+                        Pet pet = doc.toObject(Pet.class);
+                        if (pet == null) continue;
+
+                        // Kiểm tra promotion có áp dụng cho pet này không
+                        if (promotion.appliesTo(pet)) {
+                            double discountedPrice = promotion.applyDiscount(pet.getPrice());
+                            db.collection("pets").document(doc.getId())
+                                    .update(
+                                            "promotionId", promoId,
+                                            "discountedPrice", discountedPrice,
+                                            "updatedAt", com.google.firebase.Timestamp.now().toString()
+                                    );
+                        }
+                    }
+                    checkComplete.run();
+                })
+                .addOnFailureListener(e -> checkComplete.run());
+
+        // Lấy danh sách foods và cập nhật
+        db.collection("foods").get()
+                .addOnSuccessListener(snap -> {
+                    for (var doc : snap.getDocuments()) {
+                        Food food = doc.toObject(Food.class);
+                        if (food == null) continue;
+
+                        // Kiểm tra promotion có áp dụng cho food này không
+                        if (promotion.appliesTo(food)) {
+                            double discountedPrice = promotion.applyDiscount(food.getPrice());
+                            db.collection("foods").document(doc.getId())
+                                    .update(
+                                            "promotionId", promoId,
+                                            "discountedPrice", discountedPrice,
+                                            "updatedAt", com.google.firebase.Timestamp.now().toString()
+                                    );
+                        }
+                    }
+                    checkComplete.run();
+                })
+                .addOnFailureListener(e -> checkComplete.run());
+    }
+
+    /**
+     * Xóa thông tin khuyến mãi khỏi tất cả sản phẩm.
+     * Gọi khi promotion bị xóa hoặc hết hạn.
+     */
+    public void clearPromotionFromProducts(String promoId, Runnable onComplete) {
+        if (promoId == null || promoId.isEmpty()) {
+            if (onComplete != null) onComplete.run();
+            return;
+        }
+
+        final com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+        final int[] pendingTasks = {2};
+        final Runnable checkComplete = () -> {
+            synchronized (pendingTasks) {
+                pendingTasks[0]--;
+                if (pendingTasks[0] <= 0 && onComplete != null) {
+                    onComplete.run();
+                }
+            }
+        };
+
+        // Xóa khỏi pets
+        db.collection("pets").whereEqualTo("promotionId", promoId).get()
+                .addOnSuccessListener(snap -> {
+                    for (var doc : snap.getDocuments()) {
+                        doc.getReference().update(
+                                "promotionId", "",
+                                "discountedPrice", 0,
+                                "updatedAt", com.google.firebase.Timestamp.now().toString()
+                        );
+                    }
+                    checkComplete.run();
+                })
+                .addOnFailureListener(e -> checkComplete.run());
+
+        // Xóa khỏi foods
+        db.collection("foods").whereEqualTo("promotionId", promoId).get()
+                .addOnSuccessListener(snap -> {
+                    for (var doc : snap.getDocuments()) {
+                        doc.getReference().update(
+                                "promotionId", "",
+                                "discountedPrice", 0,
+                                "updatedAt", com.google.firebase.Timestamp.now().toString()
+                        );
+                    }
+                    checkComplete.run();
+                })
+                .addOnFailureListener(e -> checkComplete.run());
+    }
+
     public void update(Promotion promotion, Callback<Void> cb) {
         promotion.setUpdatedAt(Timestamp.now().toString());
         db.collection(COL).document(promotion.getId()).set(promotion)
-                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnSuccessListener(v -> {
+                    cb.onSuccess(null);
+                    // Đồng bộ giá khuyến mãi xuống pets/foods
+                    if (promotion.isActive()) {
+                        syncPromotionToProducts(promotion, null);
+                    } else {
+                        // Nếu promotion bị tắt, xóa khỏi tất cả sản phẩm
+                        clearPromotionFromProducts(promotion.getId(), null);
+                    }
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void delete(String id, Callback<Void> cb) {
-        db.collection(COL).document(id).delete()
-                .addOnSuccessListener(v -> cb.onSuccess(null))
-                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+        // Trước khi xóa, lấy promotion để biết id
+        getById(id, new Callback<Promotion>() {
+            @Override
+            public void onSuccess(Promotion data) {
+                // Xóa khuyến mãi khỏi tất cả sản phẩm trước
+                clearPromotionFromProducts(id, () -> {
+                    // Sau đó xóa promotion
+                    db.collection(COL).document(id).delete()
+                            .addOnSuccessListener(v -> cb.onSuccess(null))
+                            .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                // Không tìm thấy promotion, vẫn xóa
+                db.collection(COL).document(id).delete()
+                        .addOnSuccessListener(v -> cb.onSuccess(null))
+                        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+            }
+        });
     }
 
     public void toggleActive(String id, boolean isActive, Callback<Void> cb) {
-        db.collection(COL).document(id).update("active", isActive)
-                .addOnSuccessListener(v -> cb.onSuccess(null))
-                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+        // Lấy promotion trước để biết thông tin
+        getById(id, new Callback<Promotion>() {
+            @Override
+            public void onSuccess(Promotion data) {
+                db.collection(COL).document(id).update("active", isActive)
+                        .addOnSuccessListener(v -> {
+                            cb.onSuccess(null);
+                            // Đồng bộ giá
+                            if (isActive && data != null) {
+                                syncPromotionToProducts(data, null);
+                            } else {
+                                clearPromotionFromProducts(id, null);
+                            }
+                        })
+                        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+            }
+
+            @Override
+            public void onFailure(String error) {
+                db.collection(COL).document(id).update("active", isActive)
+                        .addOnSuccessListener(v -> cb.onSuccess(null))
+                        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+            }
+        });
     }
 
     public void incrementUsageCount(String id, Callback<Void> cb) {
