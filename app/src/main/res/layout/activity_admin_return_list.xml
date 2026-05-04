@@ -14,7 +14,7 @@
         android:paddingTop="44dp" android:paddingBottom="14dp">
         <ImageButton android:id="@+id/btnBack"
             android:layout_width="44dp" android:layout_height="44dp"
-            android:src="@drawable/ic_back"
+            android:src="@drawable/ic_arrow_back"
             android:background="?attr/selectableItemBackgroundBorderless"
             app:tint="@color/white"
             android:contentDescription="Quay lại" />

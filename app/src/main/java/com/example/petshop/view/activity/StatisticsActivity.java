@@ -229,7 +229,7 @@ public class StatisticsActivity extends AppCompatActivity {
             rank.setText("#" + (count + 1));
             rank.setTextSize(14);
             rank.setTextColor(Color.parseColor("#F5A623"));
-            rank.setTextStyle(android.graphics.Typeface.BOLD);
+            rank.setTypeface(null, android.graphics.Typeface.BOLD);
             rank.setLayoutParams(new LinearLayout.LayoutParams(40, LinearLayout.LayoutParams.WRAP_CONTENT));
 
             TextView name = new TextView(this);
