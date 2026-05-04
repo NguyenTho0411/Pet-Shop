@@ -32,16 +32,6 @@
         </LinearLayout>
 
         <androidx.cardview.widget.CardView
-            android:id="@+id/btnNotification"
-            android:layout_width="42dp" android:layout_height="42dp"
-            app:cardCornerRadius="12dp" app:cardBackgroundColor="@color/bg_card"
-            app:cardElevation="2dp">
-            <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_notification" app:tint="@color/text_primary" />
-        </androidx.cardview.widget.CardView>
-
-        <androidx.cardview.widget.CardView
             android:id="@+id/btnCart"
             android:layout_width="42dp" android:layout_height="42dp"
             app:cardCornerRadius="12dp" app:cardBackgroundColor="@color/bg_card"

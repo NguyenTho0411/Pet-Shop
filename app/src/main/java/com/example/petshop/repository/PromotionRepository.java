@@ -1,7 +1,6 @@
 package com.example.petshop.repository;
 
 import com.example.petshop.model.entity.Food;
-import com.example.petshop.model.entity.Notification;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.Promotion;
 import com.google.firebase.Timestamp;
@@ -122,82 +121,12 @@ public class PromotionRepository {
                 .addOnSuccessListener(v -> {
                     android.util.Log.d("PromotionRepo", "add: promo created successfully, id=" + id);
                     cb.onSuccess(id);
-                    // Gửi thông báo khuyến mãi cho tất cả khách hàng
-                    sendPromotionNotification(promotion);
                     // Đồng bộ giá khuyến mãi xuống pets/foods trong Firestore
                     syncPromotionToProducts(promotion, null);
                 })
                 .addOnFailureListener(e -> {
                     android.util.Log.e("PromotionRepo", "add FAILED: " + e.getMessage());
                     cb.onFailure(e.getMessage());
-                });
-    }
-
-    private void sendPromotionNotification(Promotion promotion) {
-        if (promotion == null) {
-            android.util.Log.w("PromotionRepo", "sendPromotionNotification: promotion is null");
-            return;
-        }
-        if (!promotion.isActive()) {
-            android.util.Log.w("PromotionRepo", "sendPromotionNotification: promo is not active, skip");
-            return;
-        }
-
-        android.util.Log.d("PromotionRepo", "sendPromotionNotification: starting for promo=" + promotion.getName());
-
-        // Lấy tất cả khách hàng
-        db.collection("users")
-                .whereEqualTo("role", "CUSTOMER")
-                .whereEqualTo("status", "ACTIVE")
-                .get()
-                .addOnSuccessListener(snap -> {
-                    android.util.Log.d("PromotionRepo", "sendPromotionNotification: found " + snap.size() + " customers");
-                    if (snap.isEmpty()) {
-                        android.util.Log.w("PromotionRepo", "sendPromotionNotification: no customers found");
-                        return;
-                    }
-
-                    String title = "Khuyến mãi mới! 🎉";
-                    String discountText = promotion.isPercentType()
-                            ? " giảm " + (int) promotion.getDiscountValue() + "%"
-                            : " giảm " + formatPrice(promotion.getDiscountValue());
-                    String message = promotion.getName() + discountText
-                            + (promotion.getVoucherCode() != null && !promotion.getVoucherCode().isEmpty()
-                                ? "\nMã: " + promotion.getVoucherCode()
-                                : "");
-
-                    String createdAt = Timestamp.now().toString();
-
-                    // Counters for tracking
-                    final int[] counters = {0}; // total count
-
-                    // Send notifications individually (simpler and more reliable)
-                    for (var doc : snap.getDocuments()) {
-                        counters[0]++;
-                        String notifId = System.currentTimeMillis() + "_" + doc.getId();
-                        Notification notif = new Notification();
-                        notif.setId(notifId);
-                        notif.setUserId(doc.getId());
-                        notif.setTitle(title);
-                        notif.setMessage(message);
-                        notif.setType("PROMO");
-                        notif.setCreatedAt(createdAt);
-                        notif.setRead(false);
-
-                        final int currentCount = counters[0];
-                        db.collection("notifications").document(notifId).set(notif)
-                                .addOnSuccessListener(v -> {
-                                    android.util.Log.d("PromotionRepo", "Notification sent: " + currentCount);
-                                })
-                                .addOnFailureListener(e -> {
-                                    android.util.Log.e("PromotionRepo", "Notification failed for " + doc.getId() + ": " + e.getMessage());
-                                });
-                    }
-
-                    android.util.Log.d("PromotionRepo", "sendPromotionNotification: queued " + counters[0] + " notifications");
-                })
-                .addOnFailureListener(e -> {
-                    android.util.Log.e("PromotionRepo", "sendPromotionNotification FAILED: " + e.getMessage());
                 });
     }
 
@@ -413,11 +342,10 @@ public class PromotionRepository {
                             android.util.Log.d("PromotionRepo", "toggleActive: id=" + id + ", isActive=" + isActive + ", promo=" + (data != null ? data.getName() : "null"));
                             
                             if (isActive && data != null) {
-                                // Toggle ON: đồng bộ giá + gửi notification
+                                // Toggle ON: đồng bộ giá
                                 data.setActive(true);
                                 syncPromotionToProducts(data, null);
-                                sendPromotionNotification(data);
-                                android.util.Log.d("PromotionRepo", "Toggle ON: sent notification for promo=" + data.getName());
+                                android.util.Log.d("PromotionRepo", "Toggle ON: synced prices for promo=" + data.getName());
                             } else {
                                 // Toggle OFF: xóa khuyến mãi khỏi sản phẩm
                                 clearPromotionFromProducts(id, null);

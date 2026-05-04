@@ -30,7 +30,6 @@ import com.example.petshop.utils.SessionManager;
 import com.example.petshop.view.activity.CartActivity;
 import com.example.petshop.view.activity.FoodDetailActivity;
 import com.example.petshop.view.activity.LoginActivity;
-import com.example.petshop.view.activity.NotificationActivity;
 import com.example.petshop.view.activity.PetDetailActivity;
 import com.example.petshop.view.activity.ProductListActivity;
 import com.example.petshop.view.activity.PromotionActivity;
@@ -89,9 +88,6 @@ public class HomeFragment extends Fragment {
 
         root.findViewById(R.id.btnCart).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CartActivity.class)));
-
-        root.findViewById(R.id.btnNotification).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), NotificationActivity.class)));
 
         root.findViewById(R.id.cardPromo).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PromotionActivity.class)));
