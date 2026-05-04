@@ -2,11 +2,9 @@ package com.example.petshop.repository;
 
 import com.example.petshop.model.entity.Notification;
 import com.example.petshop.model.entity.Promotion;
-import com.example.petshop.model.entity.User;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
-import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
