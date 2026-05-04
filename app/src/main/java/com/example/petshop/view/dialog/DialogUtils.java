@@ -66,12 +66,56 @@ public class DialogUtils {
     }
 
     /**
+     * Hiển thị ConfirmDialog với title và message tùy chỉnh, nút mặc định
+     */
+    public static void showConfirmDialog(FragmentManager fragmentManager,
+                                        String title,
+                                        String message,
+                                        ConfirmDialog.OnConfirmListener listener) {
+        showConfirmDialog(fragmentManager, title, message, "Có", "Không", listener, "confirmDialog");
+    }
+
+    /**
+     * Hiển thị ConfirmDialog với title, message, và nút tùy chỉnh
+     */
+    public static void showConfirmDialog(FragmentManager fragmentManager,
+                                        String title,
+                                        String message,
+                                        String positiveText,
+                                        String negativeText,
+                                        ConfirmDialog.OnConfirmListener listener) {
+        showConfirmDialog(fragmentManager, title, message, positiveText, negativeText, listener, "confirmDialog");
+    }
+
+    /**
      * Hiển thị ConfirmDialog từ Activity với các giá trị mặc định
      */
     public static void showConfirmDialog(Activity activity,
                                         String message,
                                         ConfirmDialog.OnConfirmListener listener) {
         showConfirmDialog(activity, "Xác nhận", message, "Có", "Không", listener, "confirmDialog");
+    }
+
+    /**
+     * Hiển thị ConfirmDialog từ Activity với title và message tùy chỉnh
+     */
+    public static void showConfirmDialog(Activity activity,
+                                        String title,
+                                        String message,
+                                        ConfirmDialog.OnConfirmListener listener) {
+        showConfirmDialog(activity, title, message, "Có", "Không", listener, "confirmDialog");
+    }
+
+    /**
+     * Hiển thị ConfirmDialog từ Activity với title, message và nút tùy chỉnh
+     */
+    public static void showConfirmDialog(Activity activity,
+                                        String title,
+                                        String message,
+                                        String positiveText,
+                                        String negativeText,
+                                        ConfirmDialog.OnConfirmListener listener) {
+        showConfirmDialog(getFragmentManager(activity), title, message, positiveText, negativeText, listener, "confirmDialog");
     }
 
     /**

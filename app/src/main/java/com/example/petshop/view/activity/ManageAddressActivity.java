@@ -20,6 +20,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Address;
 import com.example.petshop.repository.AddressRepository;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseAuth;
@@ -166,7 +167,7 @@ public class ManageAddressActivity extends AppCompatActivity {
     private String get(TextInputEditText et) { return et.getText() != null ? et.getText().toString().trim() : ""; }
 
     private void confirmDeleteAddress(String addressId) {
-        DialogUtils.showConfirmDialog(this, "Xoá địa chỉ này?", 
+        DialogUtils.showConfirmDialog(this, "Xoá địa chỉ này?",
             new ConfirmDialog.OnConfirmListener() {
                 @Override
                 public void onConfirm() {
