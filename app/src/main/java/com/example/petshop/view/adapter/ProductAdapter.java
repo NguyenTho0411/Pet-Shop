@@ -78,18 +78,21 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.VH> {
         h.tvBrand.setVisibility(View.GONE);
 
         double price = pet.getEffectivePrice();
-        h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
+        double originalPrice = pet.getOriginalPrice() > 0 ? pet.getOriginalPrice() : pet.getPrice();
 
-        if (pet.hasPromotion() && pet.getOriginalPrice() > 0 && pet.getOriginalPrice() > pet.getEffectivePrice()) {
+        // Luôn hiện giá gốc nếu có promotion
+        if (pet.hasPromotion() && originalPrice > price) {
             h.tvOriginalPrice.setVisibility(View.VISIBLE);
-            h.tvOriginalPrice.setText(VND.format((long) pet.getOriginalPrice()) + "đ");
+            h.tvOriginalPrice.setText(VND.format((long) originalPrice) + "đ");
             h.tvOriginalPrice.setPaintFlags(h.tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            h.tvPrice.setText(VND.format((long) price) + "đ");
             h.tvSaleBadge.setVisibility(View.VISIBLE);
-            int pct = (int) Math.round((1 - pet.getEffectivePrice() / pet.getOriginalPrice()) * 100);
+            int pct = (int) Math.round((1 - price / originalPrice) * 100);
             h.tvSaleBadge.setText("-" + pct + "%");
         } else {
             h.tvOriginalPrice.setVisibility(View.GONE);
             h.tvSaleBadge.setVisibility(View.GONE);
+            h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
         }
 
         String thumb = pet.getThumbnailUrl();
@@ -131,18 +134,21 @@ public class ProductAdapter extends RecyclerView.Adapter<ProductAdapter.VH> {
         h.tvBrand.setText(food.getBrand() != null ? food.getBrand() : "");
 
         double price = food.getEffectivePrice();
-        h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
+        double originalPrice = food.getOriginalPrice() > 0 ? food.getOriginalPrice() : food.getPrice();
 
-        if (food.hasPromotion() && food.getOriginalPrice() > 0 && food.getOriginalPrice() > food.getEffectivePrice()) {
+        // Luôn hiện giá gốc nếu có promotion
+        if (food.hasPromotion() && originalPrice > price) {
             h.tvOriginalPrice.setVisibility(View.VISIBLE);
-            h.tvOriginalPrice.setText(VND.format((long) food.getOriginalPrice()) + "đ");
+            h.tvOriginalPrice.setText(VND.format((long) originalPrice) + "đ");
             h.tvOriginalPrice.setPaintFlags(h.tvOriginalPrice.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+            h.tvPrice.setText(VND.format((long) price) + "đ");
             h.tvSaleBadge.setVisibility(View.VISIBLE);
-            int pct = (int) Math.round((1 - food.getEffectivePrice() / food.getOriginalPrice()) * 100);
+            int pct = (int) Math.round((1 - price / originalPrice) * 100);
             h.tvSaleBadge.setText("-" + pct + "%");
         } else {
             h.tvOriginalPrice.setVisibility(View.GONE);
             h.tvSaleBadge.setVisibility(View.GONE);
+            h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
         }
 
         String thumb = food.getThumbnailUrl();

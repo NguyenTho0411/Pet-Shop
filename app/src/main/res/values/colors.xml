@@ -36,4 +36,7 @@
     <color name="tag_purple_bg">#E8E0FF</color>
     <color name="tag_yellow_bg">#FFF3D4</color>
     <color name="tag_green_bg">#D4F5E2</color>
+
+    <!-- Accent -->
+    <color name="yellow">#FFD700</color>
 </resources>
