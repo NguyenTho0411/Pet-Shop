@@ -167,13 +167,13 @@ public class PromotionRepository {
                                 : "");
 
                     String createdAt = Timestamp.now().toString();
-                    
-                    // Use batch write for better performance and error handling
-                    com.google.firebase.firestore.WriteBatch batch = db.batch();
-                    int batchSize = 0;
-                    int totalNotifications = 0;
 
+                    // Counters for tracking
+                    final int[] counters = {0}; // total count
+
+                    // Send notifications individually (simpler and more reliable)
                     for (var doc : snap.getDocuments()) {
+                        counters[0]++;
                         String notifId = System.currentTimeMillis() + "_" + doc.getId();
                         Notification notif = new Notification();
                         notif.setId(notifId);
@@ -183,37 +183,18 @@ public class PromotionRepository {
                         notif.setType("PROMO");
                         notif.setCreatedAt(createdAt);
                         notif.setRead(false);
-                        
-                        batch.set(db.collection("notifications").document(notifId), notif);
-                        batchSize++;
-                        totalNotifications++;
-                        
-                        // Firestore batch limit is 500 operations
-                        if (batchSize >= 100) {
-                            batch.commit()
-                                    .addOnSuccessListener(v -> {
-                                        android.util.Log.d("PromotionRepo", "Batch sent: " + batchSize + " notifications");
-                                    })
-                                    .addOnFailureListener(e -> {
-                                        android.util.Log.e("PromotionRepo", "Batch failed: " + e.getMessage());
-                                    });
-                            batch = db.batch();
-                            batchSize = 0;
-                        }
-                    }
-                    
-                    // Commit remaining notifications
-                    if (batchSize > 0) {
-                        batch.commit()
+
+                        final int currentCount = counters[0];
+                        db.collection("notifications").document(notifId).set(notif)
                                 .addOnSuccessListener(v -> {
-                                    android.util.Log.d("PromotionRepo", "Final batch sent: " + batchSize + " notifications");
+                                    android.util.Log.d("PromotionRepo", "Notification sent: " + currentCount);
                                 })
                                 .addOnFailureListener(e -> {
-                                    android.util.Log.e("PromotionRepo", "Final batch failed: " + e.getMessage());
+                                    android.util.Log.e("PromotionRepo", "Notification failed for " + doc.getId() + ": " + e.getMessage());
                                 });
                     }
-                    
-                    android.util.Log.d("PromotionRepo", "sendPromotionNotification: completed, queued " + totalNotifications + " notifications");
+
+                    android.util.Log.d("PromotionRepo", "sendPromotionNotification: queued " + counters[0] + " notifications");
                 })
                 .addOnFailureListener(e -> {
                     android.util.Log.e("PromotionRepo", "sendPromotionNotification FAILED: " + e.getMessage());
