@@ -5,15 +5,22 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.petshop.R;
+import com.example.petshop.model.entity.Food;
+import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.Product;
-import com.example.petshop.repository.ProductRepository;
+import com.example.petshop.repository.FoodRepository;
+import com.example.petshop.repository.PetRepository;
+import com.example.petshop.utils.SessionManager;
 import com.example.petshop.view.adapter.ProductAdapter;
+import com.example.petshop.viewmodel.CartViewModel;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,6 +37,7 @@ public class ProductListActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView tvEmpty;
     private ProductAdapter adapter;
+    private CartViewModel cartViewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,8 +47,11 @@ public class ProductListActivity extends AppCompatActivity {
         String title = getIntent().getStringExtra(EXTRA_TITLE);
         String category = getIntent().getStringExtra(EXTRA_CATEGORY);
 
+        cartViewModel = new ViewModelProvider(this).get(CartViewModel.class);
+
         initViews(title);
         loadProducts(category);
+        observeCart();
     }
 
     private void initViews(String title) {
@@ -54,13 +65,40 @@ public class ProductListActivity extends AppCompatActivity {
         tvEmpty = findViewById(R.id.tvEmpty);
 
         rvProducts.setLayoutManager(new GridLayoutManager(this, 2));
-        adapter = new ProductAdapter(new ArrayList<>(), product -> {
-            // Open product detail
-            Intent i = new Intent(this, ProductDetailActivity.class);
-            i.putExtra(ProductDetailActivity.EXTRA_PRODUCT_ID, product.getId());
-            startActivity(i);
-        });
+        adapter = new ProductAdapter(new ArrayList<>(), product -> openProductDetail(product),
+                product -> addToCart(product));
         rvProducts.setAdapter(adapter);
+    }
+
+    private void addToCart(Object product) {
+        if (product instanceof Pet) {
+            cartViewModel.addPet((Pet) product);
+        } else if (product instanceof Food) {
+            cartViewModel.addFood((Food) product, 1);
+        }
+    }
+
+    private void openProductDetail(Object product) {
+        Intent i;
+        if (product instanceof Pet) {
+            i = new Intent(this, PetDetailActivity.class);
+            i.putExtra(PetDetailActivity.EXTRA_PET_ID, ((Pet) product).getId());
+        } else if (product instanceof Food) {
+            i = new Intent(this, FoodDetailActivity.class);
+            i.putExtra(FoodDetailActivity.EXTRA_FOOD_ID, ((Food) product).getId());
+        } else {
+            return;
+        }
+        startActivity(i);
+    }
+
+    private void observeCart() {
+        cartViewModel.getSuccess().observe(this, msg -> {
+            if (msg != null) Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
+        });
+        cartViewModel.getError().observe(this, err -> {
+            if (err != null) Toast.makeText(this, err, Toast.LENGTH_SHORT).show();
+        });
     }
 
     private void loadProducts(String category) {
@@ -68,45 +106,98 @@ public class ProductListActivity extends AppCompatActivity {
         rvProducts.setVisibility(View.GONE);
         tvEmpty.setVisibility(View.GONE);
 
-        ProductRepository repo = new ProductRepository();
-
         if (CATEGORY_PET.equals(category)) {
-            repo.getProductsByCategory(Product.CATEGORY_PET, new ProductRepository.Callback<>() {
-                @Override
-                public void onSuccess(List<Product> data) {
-                    runOnUiThread(() -> displayProducts(data));
-                }
-                @Override
-                public void onFailure(String error) {
-                    runOnUiThread(() -> showEmpty());
-                }
-            });
+            loadPets();
         } else if (CATEGORY_FOOD.equals(category)) {
-            repo.getProductsByCategory(Product.CATEGORY_FOOD, new ProductRepository.Callback<>() {
-                @Override
-                public void onSuccess(List<Product> data) {
-                    runOnUiThread(() -> displayProducts(data));
-                }
-                @Override
-                public void onFailure(String error) {
-                    runOnUiThread(() -> showEmpty());
-                }
-            });
+            loadFoods();
         } else {
-            repo.getAllProducts(new ProductRepository.Callback<>() {
-                @Override
-                public void onSuccess(List<Product> data) {
-                    runOnUiThread(() -> displayProducts(data));
-                }
-                @Override
-                public void onFailure(String error) {
-                    runOnUiThread(() -> showEmpty());
-                }
-            });
+            loadAllProducts();
         }
     }
 
-    private void displayProducts(List<Product> data) {
+    private void loadPets() {
+        new PetRepository().getAllPets(new PetRepository.Callback<>() {
+            @Override
+            public void onSuccess(List<Pet> data) {
+                runOnUiThread(() -> displayProducts(new ArrayList<>((List) data)));
+            }
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> showEmpty());
+            }
+        });
+    }
+
+    private void loadFoods() {
+        new FoodRepository().getAllFoods(new FoodRepository.Callback<>() {
+            @Override
+            public void onSuccess(List<Food> data) {
+                runOnUiThread(() -> displayProducts(new ArrayList<>((List) data)));
+            }
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> showEmpty());
+            }
+        });
+    }
+
+    private void loadAllProducts() {
+        List<Object> allProducts = new ArrayList<>();
+        final int[] loadedCount = {0};
+
+        PetRepository.Callback<List<Pet>> petCallback = new PetRepository.Callback<>() {
+            @Override
+            public void onSuccess(List<Pet> data) {
+                synchronized (allProducts) {
+                    allProducts.addAll(data);
+                }
+                synchronized (loadedCount) {
+                    loadedCount[0]++;
+                    if (loadedCount[0] >= 2) {
+                        runOnUiThread(() -> displayProducts(allProducts));
+                    }
+                }
+            }
+            @Override
+            public void onFailure(String error) {
+                synchronized (loadedCount) {
+                    loadedCount[0]++;
+                    if (loadedCount[0] >= 2) {
+                        runOnUiThread(() -> displayProducts(allProducts));
+                    }
+                }
+            }
+        };
+
+        FoodRepository.Callback<List<Food>> foodCallback = new FoodRepository.Callback<>() {
+            @Override
+            public void onSuccess(List<Food> data) {
+                synchronized (allProducts) {
+                    allProducts.addAll(data);
+                }
+                synchronized (loadedCount) {
+                    loadedCount[0]++;
+                    if (loadedCount[0] >= 2) {
+                        runOnUiThread(() -> displayProducts(allProducts));
+                    }
+                }
+            }
+            @Override
+            public void onFailure(String error) {
+                synchronized (loadedCount) {
+                    loadedCount[0]++;
+                    if (loadedCount[0] >= 2) {
+                        runOnUiThread(() -> displayProducts(allProducts));
+                    }
+                }
+            }
+        };
+
+        new PetRepository().getAllPets(petCallback);
+        new FoodRepository().getAllFoods(foodCallback);
+    }
+
+    private void displayProducts(List<Object> data) {
         progressBar.setVisibility(View.GONE);
         if (data == null || data.isEmpty()) {
             showEmpty();

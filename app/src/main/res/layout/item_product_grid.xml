@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="@color/white"
+    app:cardElevation="2dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <FrameLayout android:layout_width="match_parent" android:layout_height="140dp">
+
+            <ImageView android:id="@+id/ivProductImage"
+                android:layout_width="match_parent" android:layout_height="match_parent"
+                android:scaleType="centerCrop" />
+
+            <!-- Sale badge -->
+            <TextView android:id="@+id/tvSaleBadge"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="@color/status_error"
+                android:paddingHorizontal="8dp" android:paddingVertical="4dp"
+                android:text="-10%"
+                android:textColor="@color/white" android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_gravity="start|top"
+                android:layout_margin="8dp" />
+
+            <!-- Status badge (Sold/Reserved) -->
+            <TextView android:id="@+id/tvStatusBadge"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="@color/badge_red"
+                android:paddingHorizontal="8dp" android:paddingVertical="4dp"
+                android:text="ĐÃ BÁN"
+                android:textColor="@color/white" android:textSize="10sp"
+                android:textStyle="bold"
+                android:layout_gravity="end|top"
+                android:layout_margin="8dp"
+                android:visibility="gone" />
+
+            <!-- Add to cart button -->
+            <ImageView android:id="@+id/ivAddToCart"
+                android:layout_width="36dp" android:layout_height="36dp"
+                android:src="@android:drawable/ic_input_add"
+                android:background="@drawable/bg_circle_primary"
+                android:padding="8dp"
+                app:tint="@color/white"
+                android:layout_gravity="end|bottom"
+                android:layout_margin="8dp" />
+        </FrameLayout>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="10dp">
+
+            <TextView android:id="@+id/tvProductName"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Tên sản phẩm"
+                android:textSize="14sp" android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:maxLines="2" android:ellipsize="end" />
+
+            <TextView android:id="@+id/tvProductBrand"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="Thương hiệu"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:maxLines="1" android:ellipsize="end"
+                android:visibility="gone" android:layout_marginTop="2dp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:layout_marginTop="4dp">
+
+                <TextView android:id="@+id/tvProductPrice"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="0đ"
+                    android:textSize="14sp" android:textStyle="bold"
+                    android:textColor="@color/primary" />
+
+                <TextView android:id="@+id/tvOriginalPrice"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="0đ"
+                    android:textSize="11sp"
+                    android:textColor="@color/text_hint"
+                    android:layout_marginStart="6dp"
+                    android:visibility="gone" />
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
