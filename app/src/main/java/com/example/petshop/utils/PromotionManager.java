@@ -20,7 +20,7 @@ public class PromotionManager {
         // Apply for Pets
         if (pets != null) {
             for (Pet p : pets) {
-                Promotion best = findBestPromo(p.getId(), Promotion.APPLY_PET, activePromos);
+                Promotion best = findBestPromoForProduct(p, activePromos);
                 if (best != null) {
                     p.setPromotionId(best.getId());
                     p.setPromotion(best);
@@ -33,7 +33,7 @@ public class PromotionManager {
         // Apply for Foods
         if (foods != null) {
             for (Food f : foods) {
-                Promotion best = findBestPromo(f.getId(), Promotion.APPLY_FOOD, activePromos);
+                Promotion best = findBestPromoForProduct(f, activePromos);
                 if (best != null) {
                     f.setPromotionId(best.getId());
                     f.setPromotion(best);
@@ -56,8 +56,8 @@ public class PromotionManager {
 
         for (CartItem item : cart.getItems()) {
             if (item.getOriginalPrice() <= 0) continue; // item cũ không có giá gốc, bỏ qua
-            String categoryType = item.isPet() ? Promotion.APPLY_PET : Promotion.APPLY_FOOD;
-            Promotion best = findBestPromo(item.getProductId(), categoryType, promos);
+            String categoryType = item.isPet() ? Promotion.CATEGORY_PET : Promotion.CATEGORY_FOOD;
+            Promotion best = findBestPromoForCartItem(item, categoryType, promos);
             double newPrice = best != null
                     ? best.applyDiscount(item.getOriginalPrice())
                     : item.getOriginalPrice(); // hết KM → hoàn lại giá gốc
@@ -74,18 +74,54 @@ public class PromotionManager {
         return changed;
     }
 
-    private static Promotion findBestPromo(String productId, String categoryType, List<Promotion> promos) {
+    private static Promotion findBestPromoForProduct(Object product, List<Promotion> promos) {
+        Promotion best = null;
+        double maxSaving = 0;
+        double price = 0;
+
+        if (product instanceof Pet) price = ((Pet) product).getPrice();
+        else if (product instanceof Food) price = ((Food) product).getPrice();
+
+        for (Promotion p : promos) {
+            if (p.appliesTo(product)) {
+                double saving = p.calculateDiscount(price);
+                if (saving > maxSaving) {
+                    maxSaving = saving;
+                    best = p;
+                }
+            }
+        }
+        return best;
+    }
+
+    private static Promotion findBestPromoForCartItem(CartItem item, String categoryType, List<Promotion> promos) {
         Promotion best = null;
         double maxSaving = 0;
 
+        // Nếu có thông tin chi tiết (snapshot), ưu tiên dùng hàm appliesTo chuẩn
+        Object productSnapshot = item.isPet() ? item.getPetInfo() : item.getFoodInfo();
+
         for (Promotion p : promos) {
-            boolean applies = Promotion.APPLY_ALL.equals(p.getApplyTo())
-                    || categoryType.equals(p.getApplyTo())
-                    || (Promotion.APPLY_SPECIFIC.equals(p.getApplyTo()) && p.getProductIds() != null && p.getProductIds().contains(productId));
+            boolean applies = false;
+
+            if (productSnapshot != null) {
+                applies = p.appliesTo(productSnapshot);
+            } else {
+                // Fallback nếu không có snapshot
+                if (!p.isActive() || !p.isWithinDateRange()) continue;
+
+                if (Promotion.APPLY_ALL.equals(p.getApplyType())) {
+                    applies = true;
+                } else if (Promotion.APPLY_CATEGORY.equals(p.getApplyType())) {
+                    applies = categoryType.equals(p.getApplyCategory());
+                } else if (Promotion.APPLY_PRODUCT.equals(p.getApplyType())) {
+                    applies = p.getProductIds() != null && p.getProductIds().contains(item.getProductId());
+                }
+                // APPLY_SPECIES không thể xác định nếu không có snapshot (vì CartItem không lưu species)
+            }
 
             if (applies) {
-                // For simplicity, we assume price = 100 to compare percentage vs fixed
-                double saving = p.calculateDiscount(1000000); 
+                double saving = p.calculateDiscount(item.getOriginalPrice());
                 if (saving > maxSaving) {
                     maxSaving = saving;
                     best = p;

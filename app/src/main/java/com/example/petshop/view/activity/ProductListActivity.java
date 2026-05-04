@@ -15,10 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Pet;
-import com.example.petshop.model.entity.Product;
 import com.example.petshop.repository.FoodRepository;
 import com.example.petshop.repository.PetRepository;
-import com.example.petshop.utils.SessionManager;
 import com.example.petshop.view.adapter.ProductAdapter;
 import com.example.petshop.viewmodel.CartViewModel;
 
@@ -70,14 +68,6 @@ public class ProductListActivity extends AppCompatActivity {
         rvProducts.setAdapter(adapter);
     }
 
-    private void addToCart(Object product) {
-        if (product instanceof Pet) {
-            cartViewModel.addPet((Pet) product);
-        } else if (product instanceof Food) {
-            cartViewModel.addFood((Food) product, 1);
-        }
-    }
-
     private void openProductDetail(Object product) {
         Intent i;
         if (product instanceof Pet) {
@@ -90,6 +80,14 @@ public class ProductListActivity extends AppCompatActivity {
             return;
         }
         startActivity(i);
+    }
+
+    private void addToCart(Object product) {
+        if (product instanceof Pet) {
+            cartViewModel.addPet((Pet) product);
+        } else if (product instanceof Food) {
+            cartViewModel.addFood((Food) product, 1);
+        }
     }
 
     private void observeCart() {
@@ -116,11 +114,12 @@ public class ProductListActivity extends AppCompatActivity {
     }
 
     private void loadPets() {
-        new PetRepository().getAllPets(new PetRepository.Callback<>() {
+        new PetRepository().getAll(new PetRepository.Callback<List<Pet>>() {
             @Override
             public void onSuccess(List<Pet> data) {
-                runOnUiThread(() -> displayProducts(new ArrayList<>((List) data)));
+                runOnUiThread(() -> displayProducts(new ArrayList<>(data)));
             }
+
             @Override
             public void onFailure(String error) {
                 runOnUiThread(() -> showEmpty());
@@ -129,11 +128,12 @@ public class ProductListActivity extends AppCompatActivity {
     }
 
     private void loadFoods() {
-        new FoodRepository().getAllFoods(new FoodRepository.Callback<>() {
+        new FoodRepository().getAll(new FoodRepository.Callback<List<Food>>() {
             @Override
             public void onSuccess(List<Food> data) {
-                runOnUiThread(() -> displayProducts(new ArrayList<>((List) data)));
+                runOnUiThread(() -> displayProducts(new ArrayList<>(data)));
             }
+
             @Override
             public void onFailure(String error) {
                 runOnUiThread(() -> showEmpty());
@@ -145,11 +145,11 @@ public class ProductListActivity extends AppCompatActivity {
         List<Object> allProducts = new ArrayList<>();
         final int[] loadedCount = {0};
 
-        PetRepository.Callback<List<Pet>> petCallback = new PetRepository.Callback<>() {
+        PetRepository.Callback<List<Pet>> petCallback = new PetRepository.Callback<List<Pet>>() {
             @Override
             public void onSuccess(List<Pet> data) {
                 synchronized (allProducts) {
-                    allProducts.addAll(data);
+                    if (data != null) allProducts.addAll(data);
                 }
                 synchronized (loadedCount) {
                     loadedCount[0]++;
@@ -158,6 +158,7 @@ public class ProductListActivity extends AppCompatActivity {
                     }
                 }
             }
+
             @Override
             public void onFailure(String error) {
                 synchronized (loadedCount) {
@@ -169,11 +170,11 @@ public class ProductListActivity extends AppCompatActivity {
             }
         };
 
-        FoodRepository.Callback<List<Food>> foodCallback = new FoodRepository.Callback<>() {
+        FoodRepository.Callback<List<Food>> foodCallback = new FoodRepository.Callback<List<Food>>() {
             @Override
             public void onSuccess(List<Food> data) {
                 synchronized (allProducts) {
-                    allProducts.addAll(data);
+                    if (data != null) allProducts.addAll(data);
                 }
                 synchronized (loadedCount) {
                     loadedCount[0]++;
@@ -182,6 +183,7 @@ public class ProductListActivity extends AppCompatActivity {
                     }
                 }
             }
+
             @Override
             public void onFailure(String error) {
                 synchronized (loadedCount) {
@@ -193,8 +195,8 @@ public class ProductListActivity extends AppCompatActivity {
             }
         };
 
-        new PetRepository().getAllPets(petCallback);
-        new FoodRepository().getAllFoods(foodCallback);
+        new PetRepository().getAll(petCallback);
+        new FoodRepository().getAll(foodCallback);
     }
 
     private void displayProducts(List<Object> data) {
