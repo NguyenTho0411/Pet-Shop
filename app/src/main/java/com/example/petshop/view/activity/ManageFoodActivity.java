@@ -123,8 +123,6 @@ public class ManageFoodActivity extends AppCompatActivity {
                 .setNegativeButton("Huỷ", null)
                 .show();
     }
-}
-
 
     private void confirmDeleteFood(Food food) {
         DialogUtils.showDeleteConfirmDialog(this, food.getName(),
@@ -140,3 +138,4 @@ public class ManageFoodActivity extends AppCompatActivity {
                 }
             });
     }
+}

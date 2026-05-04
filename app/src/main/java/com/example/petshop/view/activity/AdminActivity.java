@@ -116,6 +116,4 @@ public class AdminActivity extends AppCompatActivity {
                 }
             }, "logoutDialog");
     }
-                .show();
-    }
 }
