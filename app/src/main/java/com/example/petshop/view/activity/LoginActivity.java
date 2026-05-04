@@ -113,11 +113,14 @@ public class LoginActivity extends AppCompatActivity {
 
     private void initGoogleSignIn() {
         // Web Client ID đọc từ local.properties → BuildConfig → Constants
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestIdToken(Constants.GOOGLE_WEB_CLIENT_ID)
-                .requestEmail()
-                .build();
-        googleSignInClient = GoogleSignIn.getClient(this, gso);
+        GoogleSignInOptions.Builder builder = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                .requestEmail();
+                
+        if (Constants.GOOGLE_WEB_CLIENT_ID != null && !Constants.GOOGLE_WEB_CLIENT_ID.trim().isEmpty()) {
+            builder.requestIdToken(Constants.GOOGLE_WEB_CLIENT_ID);
+        }
+        
+        googleSignInClient = GoogleSignIn.getClient(this, builder.build());
     }
 
     private void initFacebookLogin() {
