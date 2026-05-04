@@ -115,19 +115,35 @@ public class PromotionRepository {
         promotion.setCreatedAt(Timestamp.now().toString());
         promotion.setUpdatedAt(Timestamp.now().toString());
         promotion.setUsageCount(0);
+        
+        android.util.Log.d("PromotionRepo", "add: creating promo id=" + id + ", name=" + promotion.getName() + ", active=" + promotion.isActive());
+        
         db.collection(COL).document(id).set(promotion)
                 .addOnSuccessListener(v -> {
+                    android.util.Log.d("PromotionRepo", "add: promo created successfully, id=" + id);
                     cb.onSuccess(id);
                     // Gửi thông báo khuyến mãi cho tất cả khách hàng
                     sendPromotionNotification(promotion);
                     // Đồng bộ giá khuyến mãi xuống pets/foods trong Firestore
                     syncPromotionToProducts(promotion, null);
                 })
-                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("PromotionRepo", "add FAILED: " + e.getMessage());
+                    cb.onFailure(e.getMessage());
+                });
     }
 
     private void sendPromotionNotification(Promotion promotion) {
-        if (promotion == null || !promotion.isActive()) return;
+        if (promotion == null) {
+            android.util.Log.w("PromotionRepo", "sendPromotionNotification: promotion is null");
+            return;
+        }
+        if (!promotion.isActive()) {
+            android.util.Log.w("PromotionRepo", "sendPromotionNotification: promo is not active, skip");
+            return;
+        }
+
+        android.util.Log.d("PromotionRepo", "sendPromotionNotification: starting for promo=" + promotion.getName());
 
         // Lấy tất cả khách hàng
         db.collection("users")
@@ -135,7 +151,11 @@ public class PromotionRepository {
                 .whereEqualTo("status", "ACTIVE")
                 .get()
                 .addOnSuccessListener(snap -> {
-                    if (snap.isEmpty()) return;
+                    android.util.Log.d("PromotionRepo", "sendPromotionNotification: found " + snap.size() + " customers");
+                    if (snap.isEmpty()) {
+                        android.util.Log.w("PromotionRepo", "sendPromotionNotification: no customers found");
+                        return;
+                    }
 
                     String title = "Khuyến mãi mới! 🎉";
                     String discountText = promotion.isPercentType()
@@ -147,6 +167,11 @@ public class PromotionRepository {
                                 : "");
 
                     String createdAt = Timestamp.now().toString();
+                    
+                    // Use batch write for better performance and error handling
+                    com.google.firebase.firestore.WriteBatch batch = db.batch();
+                    int batchSize = 0;
+                    int totalNotifications = 0;
 
                     for (var doc : snap.getDocuments()) {
                         String notifId = System.currentTimeMillis() + "_" + doc.getId();
@@ -158,11 +183,40 @@ public class PromotionRepository {
                         notif.setType("PROMO");
                         notif.setCreatedAt(createdAt);
                         notif.setRead(false);
-                        db.collection("notifications").document(notifId).set(notif);
+                        
+                        batch.set(db.collection("notifications").document(notifId), notif);
+                        batchSize++;
+                        totalNotifications++;
+                        
+                        // Firestore batch limit is 500 operations
+                        if (batchSize >= 100) {
+                            batch.commit()
+                                    .addOnSuccessListener(v -> {
+                                        android.util.Log.d("PromotionRepo", "Batch sent: " + batchSize + " notifications");
+                                    })
+                                    .addOnFailureListener(e -> {
+                                        android.util.Log.e("PromotionRepo", "Batch failed: " + e.getMessage());
+                                    });
+                            batch = db.batch();
+                            batchSize = 0;
+                        }
                     }
+                    
+                    // Commit remaining notifications
+                    if (batchSize > 0) {
+                        batch.commit()
+                                .addOnSuccessListener(v -> {
+                                    android.util.Log.d("PromotionRepo", "Final batch sent: " + batchSize + " notifications");
+                                })
+                                .addOnFailureListener(e -> {
+                                    android.util.Log.e("PromotionRepo", "Final batch failed: " + e.getMessage());
+                                });
+                    }
+                    
+                    android.util.Log.d("PromotionRepo", "sendPromotionNotification: completed, queued " + totalNotifications + " notifications");
                 })
                 .addOnFailureListener(e -> {
-                    // Silent fail - notification is not critical
+                    android.util.Log.e("PromotionRepo", "sendPromotionNotification FAILED: " + e.getMessage());
                 });
     }
 
@@ -177,21 +231,27 @@ public class PromotionRepository {
      */
     public void syncPromotionToProducts(Promotion promotion, Runnable onComplete) {
         if (promotion == null || !promotion.isActive()) {
+            android.util.Log.w("PromotionRepo", "syncPromotionToProducts: skipped (promo null or inactive)");
             if (onComplete != null) onComplete.run();
             return;
         }
 
+        android.util.Log.d("PromotionRepo", "syncPromotionToProducts: starting for promo=" + promotion.getName());
+
         final com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
         final java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
         final String promoId = promotion.getId();
+        final int[] updatedPets = {0};
+        final int[] updatedFoods = {0};
 
         // Đếm số task cần hoàn thành
         final int[] pendingTasks = {2}; // pets + foods
         final Runnable checkComplete = () -> {
             synchronized (pendingTasks) {
                 pendingTasks[0]--;
-                if (pendingTasks[0] <= 0 && onComplete != null) {
-                    onComplete.run();
+                if (pendingTasks[0] <= 0) {
+                    android.util.Log.d("PromotionRepo", "syncPromotionToProducts: completed. Updated " + updatedPets[0] + " pets, " + updatedFoods[0] + " foods");
+                    if (onComplete != null) onComplete.run();
                 }
             }
         };
@@ -199,6 +259,7 @@ public class PromotionRepository {
         // Lấy danh sách pets và cập nhật
         db.collection("pets").get()
                 .addOnSuccessListener(snap -> {
+                    android.util.Log.d("PromotionRepo", "syncPromotionToProducts: checking " + snap.size() + " pets");
                     for (var doc : snap.getDocuments()) {
                         Pet pet = doc.toObject(Pet.class);
                         if (pet == null) continue;
@@ -212,15 +273,21 @@ public class PromotionRepository {
                                             "discountedPrice", discountedPrice,
                                             "updatedAt", com.google.firebase.Timestamp.now().toString()
                                     );
+                            updatedPets[0]++;
+                            android.util.Log.d("PromotionRepo", "syncPromotionToProducts: updated pet " + pet.getName() + " price to " + discountedPrice);
                         }
                     }
                     checkComplete.run();
                 })
-                .addOnFailureListener(e -> checkComplete.run());
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("PromotionRepo", "syncPromotionToProducts pets FAILED: " + e.getMessage());
+                    checkComplete.run();
+                });
 
         // Lấy danh sách foods và cập nhật
         db.collection("foods").get()
                 .addOnSuccessListener(snap -> {
+                    android.util.Log.d("PromotionRepo", "syncPromotionToProducts: checking " + snap.size() + " foods");
                     for (var doc : snap.getDocuments()) {
                         Food food = doc.toObject(Food.class);
                         if (food == null) continue;
@@ -234,11 +301,16 @@ public class PromotionRepository {
                                             "discountedPrice", discountedPrice,
                                             "updatedAt", com.google.firebase.Timestamp.now().toString()
                                     );
+                            updatedFoods[0]++;
+                            android.util.Log.d("PromotionRepo", "syncPromotionToProducts: updated food " + food.getName() + " price to " + discountedPrice);
                         }
                     }
                     checkComplete.run();
                 })
-                .addOnFailureListener(e -> checkComplete.run());
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("PromotionRepo", "syncPromotionToProducts foods FAILED: " + e.getMessage());
+                    checkComplete.run();
+                });
     }
 
     /**
@@ -247,17 +319,25 @@ public class PromotionRepository {
      */
     public void clearPromotionFromProducts(String promoId, Runnable onComplete) {
         if (promoId == null || promoId.isEmpty()) {
+            android.util.Log.w("PromotionRepo", "clearPromotionFromProducts: promoId is null/empty, skip");
             if (onComplete != null) onComplete.run();
             return;
         }
 
+        android.util.Log.d("PromotionRepo", "clearPromotionFromProducts: starting for promoId=" + promoId);
+
         final com.google.firebase.firestore.FirebaseFirestore db = com.google.firebase.firestore.FirebaseFirestore.getInstance();
+        final int[] clearedPets = {0};
+        final int[] clearedFoods = {0};
+
+        // Đếm số task cần hoàn thành
         final int[] pendingTasks = {2};
         final Runnable checkComplete = () -> {
             synchronized (pendingTasks) {
                 pendingTasks[0]--;
-                if (pendingTasks[0] <= 0 && onComplete != null) {
-                    onComplete.run();
+                if (pendingTasks[0] <= 0) {
+                    android.util.Log.d("PromotionRepo", "clearPromotionFromProducts: completed. Cleared " + clearedPets[0] + " pets, " + clearedFoods[0] + " foods");
+                    if (onComplete != null) onComplete.run();
                 }
             }
         };
@@ -265,30 +345,40 @@ public class PromotionRepository {
         // Xóa khỏi pets
         db.collection("pets").whereEqualTo("promotionId", promoId).get()
                 .addOnSuccessListener(snap -> {
+                    android.util.Log.d("PromotionRepo", "clearPromotionFromProducts: found " + snap.size() + " pets with this promo");
                     for (var doc : snap.getDocuments()) {
                         doc.getReference().update(
                                 "promotionId", "",
                                 "discountedPrice", 0,
                                 "updatedAt", com.google.firebase.Timestamp.now().toString()
                         );
+                        clearedPets[0]++;
                     }
                     checkComplete.run();
                 })
-                .addOnFailureListener(e -> checkComplete.run());
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("PromotionRepo", "clearPromotionFromProducts pets FAILED: " + e.getMessage());
+                    checkComplete.run();
+                });
 
         // Xóa khỏi foods
         db.collection("foods").whereEqualTo("promotionId", promoId).get()
                 .addOnSuccessListener(snap -> {
+                    android.util.Log.d("PromotionRepo", "clearPromotionFromProducts: found " + snap.size() + " foods with this promo");
                     for (var doc : snap.getDocuments()) {
                         doc.getReference().update(
                                 "promotionId", "",
                                 "discountedPrice", 0,
                                 "updatedAt", com.google.firebase.Timestamp.now().toString()
                         );
+                        clearedFoods[0]++;
                     }
                     checkComplete.run();
                 })
-                .addOnFailureListener(e -> checkComplete.run());
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("PromotionRepo", "clearPromotionFromProducts foods FAILED: " + e.getMessage());
+                    checkComplete.run();
+                });
     }
 
     public void update(Promotion promotion, Callback<Void> cb) {
@@ -339,21 +429,30 @@ public class PromotionRepository {
                 db.collection(COL).document(id).update("active", isActive)
                         .addOnSuccessListener(v -> {
                             cb.onSuccess(null);
-                            // Đồng bộ giá
+                            android.util.Log.d("PromotionRepo", "toggleActive: id=" + id + ", isActive=" + isActive + ", promo=" + (data != null ? data.getName() : "null"));
+                            
                             if (isActive && data != null) {
+                                // Toggle ON: đồng bộ giá + gửi notification
+                                data.setActive(true);
                                 syncPromotionToProducts(data, null);
+                                sendPromotionNotification(data);
+                                android.util.Log.d("PromotionRepo", "Toggle ON: sent notification for promo=" + data.getName());
                             } else {
+                                // Toggle OFF: xóa khuyến mãi khỏi sản phẩm
                                 clearPromotionFromProducts(id, null);
+                                android.util.Log.d("PromotionRepo", "Toggle OFF: cleared promotion from products");
                             }
                         })
-                        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                        .addOnFailureListener(e -> {
+                            android.util.Log.e("PromotionRepo", "toggleActive FAILED: " + e.getMessage());
+                            cb.onFailure(e.getMessage());
+                        });
             }
 
             @Override
             public void onFailure(String error) {
-                db.collection(COL).document(id).update("active", isActive)
-                        .addOnSuccessListener(v -> cb.onSuccess(null))
-                        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                android.util.Log.e("PromotionRepo", "toggleActive getById FAILED: " + error);
+                cb.onFailure(error);
             }
         });
     }

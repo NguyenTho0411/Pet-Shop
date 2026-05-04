@@ -66,20 +66,25 @@ public class ProfileActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.tvUserEmail)).setText(user.getEmail());
 
         ivAvatar = findViewById(R.id.ivAvatar);
-        if (user.getPhotoUrl() != null) {
-            Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatar);
-        }
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
-        // Lấy thông tin user (role, totalOrders, totalSpent)
+
+        // Lấy thông tin user từ Firestore (ưu tiên avatar từ đây)
         db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
                 String role = doc.getString("role");
                 if (role == null || role.isEmpty()) role = "Khách hàng";
                 String finalRole = role;
 
-                // Lấy totalOrders và totalSpent đã được cập nhật sẵn
+                // Lấy avatar từ Firestore (ưu tiên) hoặc Firebase Auth
+                String avatarUrl = doc.getString("avatarUrl");
+                if (avatarUrl != null && !avatarUrl.isEmpty()) {
+                    Glide.with(this).load(avatarUrl).circleCrop().into(ivAvatar);
+                } else if (user.getPhotoUrl() != null) {
+                    Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatar);
+                }
+
+                // Lấy totalOrders và totalSpent
                 Long totalOrders = doc.getLong("totalOrders");
                 Double totalSpent = doc.getDouble("totalSpent");
 
@@ -90,6 +95,16 @@ public class ProfileActivity extends AppCompatActivity {
                     ((TextView) findViewById(R.id.tvTotalSpent)).setText(
                             VND.format(totalSpent != null ? Math.round(totalSpent) : 0) + "đ");
                 });
+            } else {
+                // Fallback về Firebase Auth nếu Firestore không có
+                if (user.getPhotoUrl() != null) {
+                    Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatar);
+                }
+            }
+        }).addOnFailureListener(e -> {
+            // Fallback về Firebase Auth nếu Firestore lỗi
+            if (user.getPhotoUrl() != null) {
+                Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatar);
             }
         });
     }
@@ -189,29 +204,50 @@ public class ProfileActivity extends AppCompatActivity {
     private void uploadAvatar(Uri uri) {
         FirebaseUser user = FirebaseHelper.getCurrentUser();
         if (user == null) return;
-        
+
         Toast.makeText(this, "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
-        
+
         String uid = user.getUid();
         StorageReference ref = FirebaseStorage.getInstance().getReference("avatars/" + uid + ".jpg");
-        
+
         try {
             Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
             byte[] data = baos.toByteArray();
-            
+
             ref.putBytes(data)
                     .addOnSuccessListener(task -> ref.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                        String avatarUrl = downloadUri.toString();
+
+                        // 1. Cập nhật Firebase Auth profile
                         user.updateProfile(new com.google.firebase.auth.UserProfileChangeRequest.Builder()
                                 .setPhotoUri(downloadUri)
                                 .build())
                                 .addOnSuccessListener(aVoid -> {
-                                    SessionManager.getInstance(this).updateUserAvatar(downloadUri.toString());
-                                    Glide.with(this).load(downloadUri).circleCrop().into(ivAvatar);
-                                    Toast.makeText(this, "Đổi ảnh thành công!", Toast.LENGTH_SHORT).show();
+                                    // 2. Cập nhật Firestore - QUAN TRỌNG để đồng bộ across devices
+                                    FirebaseFirestore.getInstance().collection("users")
+                                            .document(uid)
+                                            .update("avatarUrl", avatarUrl,
+                                                    "updatedAt", com.google.firebase.Timestamp.now().toString())
+                                            .addOnSuccessListener(v -> {
+                                                // 3. Cập nhật SessionManager (cache local)
+                                                SessionManager.getInstance(this).updateUserAvatar(avatarUrl);
+                                                runOnUiThread(() -> {
+                                                    Glide.with(this).load(downloadUri).circleCrop().into(ivAvatar);
+                                                    Toast.makeText(this, "Đổi ảnh thành công!", Toast.LENGTH_SHORT).show();
+                                                });
+                                            })
+                                            .addOnFailureListener(e -> {
+                                                // Vẫn cập nhật local nếu Firestore lỗi
+                                                SessionManager.getInstance(this).updateUserAvatar(avatarUrl);
+                                                runOnUiThread(() -> {
+                                                    Glide.with(this).load(downloadUri).circleCrop().into(ivAvatar);
+                                                    Toast.makeText(this, "Đổi ảnh thành công!", Toast.LENGTH_SHORT).show();
+                                                });
+                                            });
                                 })
-                                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi cập nhật profile: " + e.getMessage(), Toast.LENGTH_SHORT).show());
                     }))
                     .addOnFailureListener(e -> Toast.makeText(this, "Lỗi tải ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show());
         } catch (IOException e) {

@@ -89,27 +89,44 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
         }
 
         private String formatTime(String timestamp) {
-            if (timestamp == null || timestamp.isEmpty()) return "";
+            if (timestamp == null || timestamp.isEmpty()) return "Vừa xong";
             try {
-                // Handle Firestore Timestamp
+                // Handle Firestore Timestamp format: "Timestamp(seconds=1654321200, nanoseconds=123456789)"
                 if (timestamp.contains("Timestamp")) {
-                    long seconds = Long.parseLong(timestamp.replaceAll("[^0-9]", "").substring(0, 10));
-                    Date d = new Date(seconds * 1000);
-                    return new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(d);
+                    try {
+                        String numberStr = timestamp.replaceAll("[^0-9,]", "");
+                        String[] parts = numberStr.split(",");
+                        if (parts.length > 0) {
+                            long seconds = Long.parseLong(parts[0]);
+                            Date d = new Date(seconds * 1000);
+                            return new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(d);
+                        }
+                    } catch (Exception e) {
+                        android.util.Log.w("NotificationAdapter", "formatTime error parsing Timestamp: " + e.getMessage());
+                        return timestamp;
+                    }
                 }
-                // Handle string date
-                Date d = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                        .parse(timestamp.replace("T", " ").split("\\.")[0]);
-                if (d != null) {
-                    return new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(d);
+                // Handle string date (ISO format or custom)
+                try {
+                    Date d = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                            .parse(timestamp.replace("T", " ").split("\\.")[0]);
+                    if (d != null) {
+                        return new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(d);
+                    }
+                } catch (Exception ignored) {
+                    // Try alternative format
                 }
-            } catch (Exception e) {
-                // Try alternative format
+                
+                // Try dd/MM/yyyy HH:mm format
                 try {
                     Date d = new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
                             .parse(timestamp);
                     if (d != null) return new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(d);
-                } catch (Exception ignored) {}
+                } catch (Exception ignored) {
+                    // Fall through
+                }
+            } catch (Exception e) {
+                android.util.Log.w("NotificationAdapter", "formatTime error: " + e.getMessage());
             }
             return timestamp;
         }

@@ -5,32 +5,69 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.example.petshop.R;
 import com.example.petshop.utils.FirebaseHelper;
 import com.example.petshop.view.dialog.ConfirmDialog;
 import com.example.petshop.view.dialog.DialogUtils;
+import com.example.petshop.viewmodel.AdminViewModel;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.firestore.FirebaseFirestore;
+
 import java.text.NumberFormat;
 import java.util.Locale;
 
 public class AdminActivity extends AppCompatActivity {
 
-    private TextView tvAdminName, tvAdminEmail;
+    private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi", "VN"));
+
+    // Views cho Dashboard Stats
     private TextView tvRevenue, tvTotalOrders, tvTotalUsers, tvPendingOrders;
+    private TextView tvCompletedOrders, tvCancelledOrders, tvRefundedAmount;
+    private TextView tvPreparingOrders, tvShippingOrders, tvDeliveredOrders;
+    private View loadingView;
+
+    // ViewModel
+    private AdminViewModel viewModel;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_admin);
 
+        // Kiểm tra đăng nhập
+        FirebaseUser user = FirebaseHelper.getCurrentUser();
+        if (user == null) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         initViews();
-        loadAdminInfo();
-        loadStats();
+        initViewModel();
+        loadAdminInfo(user);
         setupQuickActions();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        // Bắt đầu lắng nghe real-time updates
+        if (viewModel != null) {
+            viewModel.startListening();
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        // Dừng lắng nghe để tránh memory leak
+        if (viewModel != null) {
+            viewModel.stopListening();
+        }
     }
 
     private void initViews() {
@@ -40,86 +77,164 @@ public class AdminActivity extends AppCompatActivity {
         tvTotalOrders  = findViewById(R.id.tvTotalOrders);
         tvTotalUsers   = findViewById(R.id.tvTotalUsers);
         tvPendingOrders = findViewById(R.id.tvPendingOrders);
+        
+        // Các stat mới
+        tvCompletedOrders = findViewById(R.id.tvCompletedOrders);
+        tvCancelledOrders = findViewById(R.id.tvCancelledOrders);
+        tvRefundedAmount = findViewById(R.id.tvRefundedAmount);
+        tvPreparingOrders = findViewById(R.id.tvPreparingOrders);
+        tvShippingOrders = findViewById(R.id.tvShippingOrders);
+        tvDeliveredOrders = findViewById(R.id.tvDeliveredOrders);
+        loadingView = findViewById(R.id.progressBar);
 
         Button btnLogout = findViewById(R.id.btnAdminLogout);
         btnLogout.setOnClickListener(v -> confirmLogout());
     }
 
-    private void loadAdminInfo() {
-        FirebaseUser user = FirebaseHelper.getCurrentUser();
-        if (user != null) {
-            String name = user.getDisplayName();
-            tvAdminName.setText(name != null && !name.isEmpty() ? "👋 " + name : "Admin Dashboard");
-            tvAdminEmail.setText(user.getEmail());
-        }
+    private void initViewModel() {
+        viewModel = new ViewModelProvider(this).get(AdminViewModel.class);
+
+        // Observe LiveData và cập nhật UI
+        observeStats();
     }
 
-    private void loadStats() {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        
-        // Tạm thời set về 0 hoặc loading
-        tvRevenue.setText("Đang tải...");
-        tvTotalOrders.setText("...");
-        tvTotalUsers.setText("...");
-        tvPendingOrders.setText("...");
-
-        // Load users count
-        db.collection("users").get().addOnSuccessListener(snap -> {
-            tvTotalUsers.setText(String.valueOf(snap.size()));
-        });
-
-        // Load orders
-        db.collection("orders").get().addOnSuccessListener(snap -> {
-            int orders = snap.size();
-            int pending = 0;
-            double revenue = 0;
-            for (var doc : snap.getDocuments()) {
-                String status = doc.getString("status");
-                if ("PENDING".equals(status)) {
-                    pending++;
-                }
-                if ("COMPLETED".equals(status) || "DELIVERED".equals(status)) {
-                    Double amount = doc.getDouble("totalAmount");
-                    if (amount != null) revenue += amount;
-                }
+    private void observeStats() {
+        // Revenue
+        viewModel.getTotalRevenue().observe(this, revenue -> {
+            if (revenue != null) {
+                tvRevenue.setText(VND.format(revenue) + " đ");
             }
-            
-            tvTotalOrders.setText(String.valueOf(orders));
-            tvPendingOrders.setText(String.valueOf(pending));
-            NumberFormat vndFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
-            tvRevenue.setText(vndFormat.format((long) revenue) + " đ");
         });
+
+        // Tổng đơn hàng
+        viewModel.getTotalOrders().observe(this, total -> {
+            if (total != null) {
+                tvTotalOrders.setText(String.valueOf(total));
+            }
+        });
+
+        // Tổng users
+        viewModel.getTotalUsers().observe(this, users -> {
+            if (users != null) {
+                tvTotalUsers.setText(String.valueOf(users));
+            }
+        });
+
+        // Đơn chờ xử lý - CÓ THỂ CLICK ĐƯỢC!
+        viewModel.getPendingOrders().observe(this, pending -> {
+            if (pending != null) {
+                tvPendingOrders.setText(String.valueOf(pending));
+            }
+        });
+
+        // Card pending orders clickable
+        View cardPending = findViewById(R.id.cardPendingOrders);
+        if (cardPending != null) {
+            cardPending.setOnClickListener(v -> {
+                Intent intent = new Intent(AdminActivity.this, AdminOrderListActivity.class);
+                intent.putExtra("filter", "PENDING");
+                startActivity(intent);
+            });
+        }
+
+        // Đơn đang chuẩn bị
+        viewModel.getPreparingOrders().observe(this, preparing -> {
+            if (preparing != null && tvPreparingOrders != null) {
+                tvPreparingOrders.setText(String.valueOf(preparing));
+            }
+        });
+
+        // Đơn đang giao
+        viewModel.getShippingOrders().observe(this, shipping -> {
+            if (shipping != null && tvShippingOrders != null) {
+                tvShippingOrders.setText(String.valueOf(shipping));
+            }
+        });
+
+        // Đơn đã giao
+        viewModel.getDeliveredOrders().observe(this, delivered -> {
+            if (delivered != null && tvDeliveredOrders != null) {
+                tvDeliveredOrders.setText(String.valueOf(delivered));
+            }
+        });
+
+        // Đơn hoàn thành
+        viewModel.getCompletedOrders().observe(this, completed -> {
+            if (completed != null && tvCompletedOrders != null) {
+                tvCompletedOrders.setText(String.valueOf(completed));
+            }
+        });
+
+        // Đơn đã hủy
+        viewModel.getCancelledOrders().observe(this, cancelled -> {
+            if (cancelled != null && tvCancelledOrders != null) {
+                tvCancelledOrders.setText(String.valueOf(cancelled));
+            }
+        });
+
+        // Số tiền hoàn
+        viewModel.getRefundedAmount().observe(this, refunded -> {
+            if (refunded != null && tvRefundedAmount != null) {
+                tvRefundedAmount.setText(VND.format(refunded) + " đ");
+            }
+        });
+
+        // Loading state
+        viewModel.getIsLoading().observe(this, isLoading -> {
+            if (loadingView != null) {
+                loadingView.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+            }
+        });
+
+        // Error state
+        viewModel.getError().observe(this, error -> {
+            if (error != null && !error.isEmpty()) {
+                Toast.makeText(this, error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void loadAdminInfo(FirebaseUser user) {
+        tvAdminName.setText("👋 " + (user.getDisplayName() != null ? user.getDisplayName() : "Admin"));
+        tvAdminEmail.setText(user.getEmail());
     }
 
     private void setupQuickActions() {
-        setupActionItem(R.id.itemManageUsers, "👥", "Quản lý người dùng", v ->
-                startActivity(new Intent(this, ManageUsersActivity.class)));
+        // Quick actions với click listeners rõ ràng
+        View itemManageOrders = findViewById(R.id.itemManageOrders);
+        if (itemManageOrders != null) {
+            itemManageOrders.setOnClickListener(v -> startActivity(new Intent(this, AdminOrderListActivity.class)));
+        }
 
-        setupActionItem(R.id.itemManageCategories, "📂", "Quản lý danh mục", v ->
-                startActivity(new Intent(this, ManageCategoriesActivity.class)));
+        View itemManageUsers = findViewById(R.id.itemManageUsers);
+        if (itemManageUsers != null) {
+            itemManageUsers.setOnClickListener(v -> startActivity(new Intent(this, ManageUsersActivity.class)));
+        }
 
-        setupActionItem(R.id.itemManagePets, "🐾", "Quản lý thú cưng", v ->
-                startActivity(new Intent(this, ManagePetsActivity.class)));
+        View itemManagePets = findViewById(R.id.itemManagePets);
+        if (itemManagePets != null) {
+            itemManagePets.setOnClickListener(v -> startActivity(new Intent(this, ManagePetsActivity.class)));
+        }
 
-        setupActionItem(R.id.itemManageFoods, "🍖", "Quản lý thức ăn", v ->
-                startActivity(new Intent(this, ManageFoodActivity.class)));
+        View itemManageFoods = findViewById(R.id.itemManageFoods);
+        if (itemManageFoods != null) {
+            itemManageFoods.setOnClickListener(v -> startActivity(new Intent(this, ManageFoodActivity.class)));
+        }
 
-        setupActionItem(R.id.itemManageOrders, "🛒", "Quản lý đơn hàng", v ->
-                startActivity(new Intent(this, AdminOrderListActivity.class)));
+        View itemManagePromotions = findViewById(R.id.itemManagePromotions);
+        if (itemManagePromotions != null) {
+            itemManagePromotions.setOnClickListener(v -> startActivity(new Intent(this, ManagePromotionsActivity.class)));
+        }
 
-        setupActionItem(R.id.itemManagePromotions, "🎁", "Quản lý khuyến mãi & voucher", v ->
-                startActivity(new Intent(this, ManagePromotionsActivity.class)));
+        View itemManageCategories = findViewById(R.id.itemManageCategories);
+        if (itemManageCategories != null) {
+            itemManageCategories.setOnClickListener(v -> startActivity(new Intent(this, ManageCategoriesActivity.class)));
+        }
 
-        setupActionItem(R.id.itemManageReturns, "↩️", "Quản lý hoàn trả", v ->
-                startActivity(new Intent(this, AdminReturnListActivity.class)));
-    }
-
-    private void setupActionItem(int viewId, String icon, String title, View.OnClickListener listener) {
-        View item = findViewById(viewId);
-        if (item == null) return;
-        ((TextView) item.findViewById(R.id.tvActionIcon)).setText(icon);
-        ((TextView) item.findViewById(R.id.tvActionTitle)).setText(title);
-        item.setOnClickListener(listener);
+        View itemManageReturns = findViewById(R.id.itemManageReturns);
+        if (itemManageReturns != null) {
+            itemManageReturns.setOnClickListener(v -> startActivity(new Intent(this, AdminReturnListActivity.class)));
+        }
     }
 
     private void confirmLogout() {
@@ -140,4 +255,7 @@ public class AdminActivity extends AppCompatActivity {
                 }
             }, "logoutDialog");
     }
+
+    // Views
+    private TextView tvAdminName, tvAdminEmail;
 }
