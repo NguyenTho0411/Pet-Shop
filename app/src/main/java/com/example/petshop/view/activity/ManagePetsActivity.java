@@ -49,9 +49,9 @@ public class ManagePetsActivity extends AppCompatActivity {
                 Intent intent = new Intent(ManagePetsActivity.this, AddEditPetActivity.class);
                 intent.putExtra(AddEditPetActivity.EXTRA_PET_ID, pet.getId());
                 startActivity(intent);
-            }confirmDeletePet(pet+ "\"? Không thể hoàn tác!")
-                        .setPositiveButton("Xoá", (d, w) -> vm.deletePet(pet.getId()))
-                        .setNegativeButton("Huỷ", null).show();
+            }
+            public void onDelete(Pet pet) {
+                confirmDeletePet(pet);
             }
             public void onChangeStatus(Pet pet, String status) {
                 vm.updateStatus(pet.getId(), status);

@@ -228,9 +228,6 @@ public class OrderHistoryActivity extends AppCompatActivity {
                 }
             }, "cancelOrderDialog");
     }
-                })
-                .setNegativeButton("Không", null).show();
-    }
 
     private void confirmDelete(Order order) {
         new androidx.appcompat.app.AlertDialog.Builder(this)
