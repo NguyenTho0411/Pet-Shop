@@ -60,15 +60,19 @@ public class NotificationActivity extends AppCompatActivity {
         rvNotifications.setVisibility(View.GONE);
         tvEmpty.setVisibility(View.GONE);
 
-        repo.getNotifications(uid, new NotificationRepository.Callback<>() {
+        repo.getNotifications(uid, new NotificationRepository.Callback<List<Notification>>() {
             @Override
             public void onSuccess(List<Notification> list) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (list == null || list.isEmpty()) {
-                        createTestNotification(uid);
+                        rvNotifications.setVisibility(View.VISIBLE);
+                        adapter.updateData(new ArrayList<>());
+                        tvEmpty.setVisibility(View.VISIBLE);
+                        tvEmpty.setText("Chưa có thông báo nào");
                     } else {
                         rvNotifications.setVisibility(View.VISIBLE);
+                        tvEmpty.setVisibility(View.GONE);
                         adapter.updateData(list);
                     }
                 });
@@ -78,7 +82,7 @@ public class NotificationActivity extends AppCompatActivity {
             public void onFailure(String error) {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
-                    showEmpty("Không thể tải thông báo");
+                    showEmpty("Không thể tải thông báo: " + error);
                 });
             }
         });
@@ -88,26 +92,5 @@ public class NotificationActivity extends AppCompatActivity {
         rvNotifications.setVisibility(View.GONE);
         tvEmpty.setVisibility(View.VISIBLE);
         tvEmpty.setText(message);
-    }
-
-    private void createTestNotification(String uid) {
-        Notification test = new Notification();
-        test.setUserId(uid);
-        test.setTitle("Chào mừng đến với Pet Shop 🐾");
-        test.setMessage("Đây là thông báo thử nghiệm. Cảm ơn bạn đã sử dụng ứng dụng!");
-        test.setType("SYSTEM");
-        
-        repo.createNotification(test, new NotificationRepository.Callback<String>() {
-            @Override
-            public void onSuccess(String data) {
-                // Tải lại sau khi tạo
-                runOnUiThread(() -> loadNotifications());
-            }
-
-            @Override
-            public void onFailure(String error) {
-                runOnUiThread(() -> showEmpty("Chưa có thông báo nào"));
-            }
-        });
     }
 }

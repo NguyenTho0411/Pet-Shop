@@ -19,11 +19,6 @@ import com.example.petshop.R;
 import com.example.petshop.utils.Constants;
 import com.example.petshop.utils.SessionManager;
 import com.example.petshop.viewmodel.AuthViewModel;
-import com.facebook.CallbackManager;
-import com.facebook.FacebookCallback;
-import com.facebook.FacebookException;
-import com.facebook.login.LoginManager;
-import com.facebook.login.LoginResult;
 import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
@@ -32,7 +27,7 @@ import com.google.android.gms.common.api.ApiException;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.textfield.TextInputEditText;
 
-import java.util.Arrays;
+import java.util.Locale;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -55,8 +50,6 @@ public class LoginActivity extends AppCompatActivity {
                 }
             });
 
-    // Facebook
-    private CallbackManager facebookCallbackManager;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +60,6 @@ public class LoginActivity extends AppCompatActivity {
 
         initViews();
         initGoogleSignIn();
-        initFacebookLogin();
         observeViewModel();
     }
 
@@ -80,11 +72,8 @@ public class LoginActivity extends AppCompatActivity {
 
         btnLogin.setOnClickListener(v -> attemptEmailLogin());
 
-        LinearLayout btnGoogle   = findViewById(R.id.btnGoogleLogin);
-        LinearLayout btnFacebook = findViewById(R.id.btnFacebookLogin);
-
+        LinearLayout btnGoogle = findViewById(R.id.btnGoogleLogin);
         btnGoogle.setOnClickListener(v -> startGoogleSignIn());
-        btnFacebook.setOnClickListener(v -> startFacebookLogin());
 
         findViewById(R.id.tvGoRegister).setOnClickListener(v ->
                 startActivity(new Intent(this, RegisterActivity.class)));
@@ -121,23 +110,6 @@ public class LoginActivity extends AppCompatActivity {
         }
         
         googleSignInClient = GoogleSignIn.getClient(this, builder.build());
-    }
-
-    private void initFacebookLogin() {
-        facebookCallbackManager = CallbackManager.Factory.create();
-        LoginManager.getInstance().registerCallback(facebookCallbackManager,
-                new FacebookCallback<LoginResult>() {
-                    @Override
-                    public void onSuccess(LoginResult loginResult) {
-                        authViewModel.loginWithFacebook(loginResult.getAccessToken().getToken());
-                    }
-                    @Override
-                    public void onCancel() { /* user cancelled */ }
-                    @Override
-                    public void onError(FacebookException error) {
-                        showError("Facebook sign-in thất bại: " + error.getMessage());
-                    }
-                });
     }
 
     private void observeViewModel() {
@@ -191,11 +163,6 @@ public class LoginActivity extends AppCompatActivity {
                 googleSignInLauncher.launch(googleSignInClient.getSignInIntent()));
     }
 
-    private void startFacebookLogin() {
-        LoginManager.getInstance().logInWithReadPermissions(this,
-                facebookCallbackManager, Arrays.asList("email", "public_profile"));
-    }
-
     private void navigateByRole(String role) {
         Intent intent;
         if (SessionManager.ROLE_ADMIN.equals(role)) {
@@ -219,7 +186,6 @@ public class LoginActivity extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        facebookCallbackManager.onActivityResult(requestCode, resultCode, data);
         super.onActivityResult(requestCode, resultCode, data);
     }
 }

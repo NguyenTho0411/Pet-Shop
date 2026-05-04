@@ -33,6 +33,7 @@ import com.example.petshop.view.activity.LoginActivity;
 import com.example.petshop.view.activity.NotificationActivity;
 import com.example.petshop.view.activity.PetDetailActivity;
 import com.example.petshop.view.activity.ProductListActivity;
+import com.example.petshop.view.activity.PromotionActivity;
 import com.example.petshop.view.adapter.HomeCategoryAdapter;
 import com.example.petshop.view.adapter.HomeFoodAdapter;
 import com.example.petshop.view.adapter.HomePetAdapter;
@@ -91,6 +92,10 @@ public class HomeFragment extends Fragment {
 
         root.findViewById(R.id.btnNotification).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), NotificationActivity.class)));
+
+        root.findViewById(R.id.cardPromo).setOnClickListener(v ->
+                startActivity(new Intent(requireContext(), PromotionActivity.class)));
+
         root.findViewById(R.id.tvSeeAllPets).setOnClickListener(v -> {
                 Intent i = new Intent(requireContext(), ProductListActivity.class);
                 if (currentCategoryName != null && Category.TYPE_PET.equals(currentCategoryType)) {

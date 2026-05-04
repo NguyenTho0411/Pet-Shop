@@ -72,39 +72,26 @@ public class ProfileActivity extends AppCompatActivity {
 
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         
-        // Lấy thông tin user (role)
+        // Lấy thông tin user (role, totalOrders, totalSpent)
         db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
             if (doc.exists()) {
                 String role = doc.getString("role");
                 if (role == null || role.isEmpty()) role = "Khách hàng";
                 String finalRole = role;
+
+                // Lấy totalOrders và totalSpent đã được cập nhật sẵn
+                Long totalOrders = doc.getLong("totalOrders");
+                Double totalSpent = doc.getDouble("totalSpent");
+
                 runOnUiThread(() -> {
                     ((TextView) findViewById(R.id.tvRoleBadge)).setText(finalRole);
+                    ((TextView) findViewById(R.id.tvTotalOrders)).setText(
+                            String.valueOf(totalOrders != null ? totalOrders : 0));
+                    ((TextView) findViewById(R.id.tvTotalSpent)).setText(
+                            VND.format(totalSpent != null ? Math.round(totalSpent) : 0) + "đ");
                 });
             }
         });
-
-        // Tính tổng số đơn hàng và tổng tiền đã chi tiêu
-        db.collection("orders").whereEqualTo("userId", user.getUid()).get()
-            .addOnSuccessListener(snap -> {
-                int totalOrders = snap.size();
-                double totalSpent = 0;
-                
-                for (var doc : snap.getDocuments()) {
-                    String status = doc.getString("status");
-                    if ("COMPLETED".equals(status) || "DELIVERED".equals(status)) {
-                        Double amount = doc.getDouble("totalAmount");
-                        if (amount != null) totalSpent += amount;
-                    }
-                }
-                
-                double finalSpent = totalSpent;
-                runOnUiThread(() -> {
-                    ((TextView) findViewById(R.id.tvTotalOrders)).setText(String.valueOf(totalOrders));
-                    ((TextView) findViewById(R.id.tvTotalSpent)).setText(
-                            VND.format((long) finalSpent) + "đ");
-                });
-            });
     }
 
     private void setupMenuItems(String uid) {

@@ -62,13 +62,13 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <!-- SEARCH BAR -->
+    <!-- Search Bar -->
     <LinearLayout
         android:layout_width="match_parent" android:layout_height="52dp"
         android:orientation="horizontal" android:gravity="center_vertical"
         android:background="@drawable/bg_search_bar"
         android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="12dp"
         android:paddingStart="16dp" android:paddingEnd="12dp">
         <ImageView android:layout_width="20dp" android:layout_height="20dp"
             android:src="@drawable/ic_search" app:tint="@color/text_hint"
@@ -81,6 +81,39 @@
             android:background="@null"
             android:imeOptions="actionSearch" android:inputType="text" />
     </LinearLayout>
+
+    <!-- Promotion Banner -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/cardPromo"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
+        android:layout_marginBottom="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/primary"
+        app:cardElevation="0dp">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical"
+            android:padding="16dp">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="🎁 Ưu đãi đặc biệt"
+                    android:textSize="16sp" android:textStyle="bold"
+                    android:textColor="@color/white" />
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Xem các khuyến mãi hấp dẫn"
+                    android:textSize="13sp"
+                    android:textColor="@color/white" android:alpha="0.9"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Xem ngay →"
+                android:textSize="13sp" android:textStyle="bold"
+                android:textColor="@color/white"
+                android:background="@drawable/bg_white_pill"
+                android:paddingHorizontal="12dp" android:paddingVertical="6dp" />
+        </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
     <!-- Scrollable content -->
     <androidx.core.widget.NestedScrollView

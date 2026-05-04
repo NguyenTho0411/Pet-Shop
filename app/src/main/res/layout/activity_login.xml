@@ -231,35 +231,6 @@
                     android:textColor="@color/text_primary"
                     android:textStyle="bold" />
             </LinearLayout>
-
-            <!-- Facebook -->
-            <LinearLayout
-                android:id="@+id/btnFacebookLogin"
-                android:layout_width="0dp"
-                android:layout_height="52dp"
-                android:layout_weight="1"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:background="#1877F2"
-                android:layout_marginStart="8dp">
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="f"
-                    android:textSize="20sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:layout_marginEnd="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Facebook"
-                    android:textSize="14sp"
-                    android:textColor="@color/white"
-                    android:textStyle="bold" />
-            </LinearLayout>
         </LinearLayout>
 
         <!-- Register link -->

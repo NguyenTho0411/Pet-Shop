@@ -11,7 +11,6 @@
     <string name="full_name">Họ và tên</string>
     <string name="forgot_password">Quên mật khẩu?</string>
     <string name="sign_in_google">Đăng nhập với Google</string>
-    <string name="sign_in_facebook">Đăng nhập với Facebook</string>
     <string name="no_account">Chưa có tài khoản? <b>Đăng ký</b></string>
     <string name="has_account">Đã có tài khoản? <b>Đăng nhập</b></string>
     <string name="or_continue_with">  Hoặc tiếp tục với  </string>
@@ -52,9 +51,4 @@
     <string name="manage_users">Quản lý người dùng</string>
     <string name="manage_promotions">Khuyến mãi</string>
     <string name="statistics">Thống kê</string>
-
-    <!-- Facebook SDK (thay bằng App ID thật của mày) -->
-    <string name="facebook_app_id">YOUR_FACEBOOK_APP_ID</string>
-    <string name="fb_login_protocol_scheme">fbYOUR_FACEBOOK_APP_ID</string>
-    <string name="facebook_client_token">YOUR_FACEBOOK_CLIENT_TOKEN</string>
 </resources>

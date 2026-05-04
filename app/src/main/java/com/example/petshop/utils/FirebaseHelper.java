@@ -2,7 +2,6 @@ package com.example.petshop.utils;
 
 import com.example.petshop.model.entity.User;
 import com.google.firebase.auth.AuthCredential;
-import com.google.firebase.auth.FacebookAuthProvider;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.GoogleAuthProvider;
@@ -93,31 +92,6 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> callback.onFailure("Google: " + parseAuthError(e.getMessage())));
     }
 
-    // Facebook Login
-    public static void loginWithFacebook(String accessToken, OnAuthCallback callback) {
-        AuthCredential credential = FacebookAuthProvider.getCredential(accessToken);
-        auth.signInWithCredential(credential)
-                .addOnSuccessListener(result -> {
-                    FirebaseUser user = result.getUser();
-                    if (user == null) { callback.onFailure("Lỗi đăng nhập Facebook"); return; }
-                    boolean isNewUser = result.getAdditionalUserInfo() != null
-                            && result.getAdditionalUserInfo().isNewUser();
-                    if (isNewUser) {
-                        saveUserToFirestore(
-                                user.getUid(),
-                                user.getDisplayName() != null ? user.getDisplayName() : "",
-                                user.getEmail(),
-                                User.ROLE_CUSTOMER,
-                                User.LOGIN_EMAIL, // Facebook uses email-like login
-                                user.getPhotoUrl() != null ? user.getPhotoUrl().toString() : null,
-                                () -> callback.onSuccess(user.getUid(), User.ROLE_CUSTOMER)
-                        );
-                    } else {
-                        getUserRole(user.getUid(), role -> callback.onSuccess(user.getUid(), role));
-                    }
-                })
-                .addOnFailureListener(e -> callback.onFailure("Facebook: " + parseAuthError(e.getMessage())));
-    }
 
     // Password reset email
     public static void sendPasswordReset(String email, OnAuthCallback callback) {

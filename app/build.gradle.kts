@@ -35,12 +35,6 @@ android {
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID",
             "\"${localProp("GOOGLE_WEB_CLIENT_ID")}\"")
 
-        buildConfigField("String", "FACEBOOK_APP_ID",
-            "\"${localProp("FACEBOOK_APP_ID")}\"")
-
-        buildConfigField("String", "FACEBOOK_CLIENT_TOKEN",
-            "\"${localProp("FACEBOOK_CLIENT_TOKEN")}\"")
-
         buildConfigField("String", "BASE_URL",
             "\"${localProp("BASE_URL", "https://your-api.com/api/v1/")}\"")
 
@@ -59,10 +53,6 @@ android {
         buildConfigField("String", "OPENAI_API_KEY",
             "\"${localProp("OPENAI_API_KEY")}\"")
 
-        // Inject Facebook App ID vào Manifest
-        manifestPlaceholders["facebookAppId"]         = localProp("FACEBOOK_APP_ID")
-        manifestPlaceholders["facebookClientToken"]  = localProp("FACEBOOK_CLIENT_TOKEN")
-        manifestPlaceholders["fbLoginProtocolScheme"] = "fb${localProp("FACEBOOK_APP_ID")}"
     }
 
     buildTypes {
@@ -99,7 +89,6 @@ dependencies {
     implementation(libs.firebase.storage)
 
     implementation(libs.play.services.auth)
-    implementation(libs.facebook.login)
     implementation(libs.glide)
     implementation(libs.lifecycle.viewmodel)
     implementation(libs.lifecycle.livedata)

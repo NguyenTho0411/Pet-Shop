@@ -40,6 +40,12 @@ public class ManagePetsActivity extends AppCompatActivity {
         vm.loadAll();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        vm.loadAll();
+    }
+
     private void initViews() {
         progressBar = findViewById(R.id.progressBar);
 
@@ -66,7 +72,7 @@ public class ManagePetsActivity extends AppCompatActivity {
         });
 
         findViewById(R.id.chipAll).setOnClickListener(v       -> filterPets("ALL"));
-        findViewById(R.id.chipAvailable).setOnClickListener(v -> filterPets("Available"));
+        findViewById(R.id.chipAvailable).setOnClickListener(v -> filterPets("AVAILABLE"));
         findViewById(R.id.chipSold).setOnClickListener(v      -> filterPets("SOLD"));
     }
 

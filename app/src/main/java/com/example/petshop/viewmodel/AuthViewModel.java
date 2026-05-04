@@ -80,22 +80,6 @@ public class AuthViewModel extends AndroidViewModel {
         });
     }
 
-    // ==================== FACEBOOK ====================
-
-    public void loginWithFacebook(String accessToken) {
-        setLoading(true);
-        FirebaseHelper.loginWithFacebook(accessToken, new FirebaseHelper.OnAuthCallback() {
-            @Override
-            public void onSuccess(String uid, String role) {
-                loadUserDataAndSaveSession(uid, role);
-            }
-            @Override
-            public void onFailure(String errorMsg) {
-                setLoading(false);
-                errorMessage.postValue(errorMsg);
-            }
-        });
-    }
 
     // ==================== SESSION MANAGEMENT ====================
 

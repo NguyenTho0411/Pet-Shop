@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Order;
+import com.example.petshop.model.entity.OrderItem;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.ReturnRequest;
 import com.example.petshop.model.entity.User;
@@ -97,7 +98,7 @@ public class StatisticsActivity extends AppCompatActivity {
             Calendar day = (Calendar) cal.clone();
             day.add(Calendar.DAY_OF_YEAR, -i);
             dailyRevenue.add(0L);
-            dailyLabels.add(new SimpleDateFormat("dd/MM", Locale.getDefault()).format(day.getTime()));
+            dailyLabels.add(DATE_FORMAT.format(day.getTime())); // Use yyyy-MM-dd to match Firestore format
         }
     }
 
@@ -145,7 +146,7 @@ public class StatisticsActivity extends AppCompatActivity {
         for (Long rev : dailyRevenue) {
             if (rev > maxRevenue) maxRevenue = rev;
         }
-        if (maxRevenue == 0) maxRevenue = 1000000; // Minimum for visibility
+        if (maxRevenue == 0) maxRevenue = 1000000;
 
         int[] colors = {
                 Color.parseColor("#4CAF50"),
@@ -157,10 +158,12 @@ public class StatisticsActivity extends AppCompatActivity {
                 Color.parseColor("#FF5722")
         };
 
+        SimpleDateFormat displayFormat = new SimpleDateFormat("dd/MM", Locale.getDefault());
+        SimpleDateFormat parseFormat = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+
         for (int i = 0; i < dailyRevenue.size(); i++) {
             long revenue = dailyRevenue.get(i);
 
-            // Create bar
             LinearLayout barContainer = new LinearLayout(this);
             barContainer.setOrientation(LinearLayout.VERTICAL);
             barContainer.setGravity(Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL);
@@ -168,7 +171,6 @@ public class StatisticsActivity extends AppCompatActivity {
             barParams.setMargins(4, 0, 4, 0);
             barContainer.setLayoutParams(barParams);
 
-            // Bar view
             View bar = new View(this);
             int height = (int) ((revenue * 120.0) / maxRevenue);
             if (height < 4) height = 4;
@@ -176,7 +178,6 @@ public class StatisticsActivity extends AppCompatActivity {
             bar.setLayoutParams(params);
             bar.setBackgroundColor(colors[i % colors.length]);
 
-            // Amount label
             TextView amountLabel = new TextView(this);
             amountLabel.setText(VND.format(revenue / 1000) + "k");
             amountLabel.setTextSize(8);
@@ -188,9 +189,13 @@ public class StatisticsActivity extends AppCompatActivity {
 
             chartContainer.addView(barContainer);
 
-            // Day label
             TextView label = new TextView(this);
-            label.setText(dailyLabels.get(i));
+            try {
+                Date date = parseFormat.parse(dailyLabels.get(i));
+                label.setText(displayFormat.format(date));
+            } catch (Exception e) {
+                label.setText(dailyLabels.get(i));
+            }
             label.setTextSize(10);
             label.setTextColor(Color.parseColor("#888888"));
             label.setGravity(Gravity.CENTER);
@@ -270,13 +275,13 @@ public class StatisticsActivity extends AppCompatActivity {
                     for (var doc : snap.getDocuments()) {
                         Order order = doc.toObject(Order.class);
                         if (order != null) {
-                            // Calculate revenue for completed/delivered orders
                             String status = order.getStatus();
-                            if (Order.STATUS_COMPLETED.equals(status) || Order.STATUS_DELIVERED.equals(status)) {
+                            boolean isCompleted = Order.STATUS_COMPLETED.equals(status) || Order.STATUS_DELIVERED.equals(status);
+
+                            if (isCompleted) {
                                 totalRevenue += order.getTotalAmount();
                             }
 
-                            // Count by status
                             if (Order.STATUS_PENDING.equals(status)) pendingOrders++;
                             if (Order.STATUS_CONFIRMED.equals(status) ||
                                 Order.STATUS_PREPARING.equals(status) ||
@@ -284,21 +289,17 @@ public class StatisticsActivity extends AppCompatActivity {
                                 processingOrders++;
                             }
 
-                            // Completed today
                             String createdAt = order.getCreatedAt();
-                            if (createdAt != null && createdAt.startsWith(today)) {
-                                if (Order.STATUS_COMPLETED.equals(status) || Order.STATUS_DELIVERED.equals(status)) {
-                                    completedToday++;
-                                }
-                            }
-
-                            // Daily revenue
                             if (createdAt != null && createdAt.length() >= 10) {
                                 String orderDate = createdAt.substring(0, 10);
+
+                                if (orderDate.equals(today) && isCompleted) {
+                                    completedToday++;
+                                }
+
                                 for (int i = 0; i < dailyLabels.size(); i++) {
-                                    String expectedDate = dailyLabels.get(i);
-                                    if (orderDate.equals(expectedDate)) {
-                                        if (Order.STATUS_COMPLETED.equals(status) || Order.STATUS_DELIVERED.equals(status)) {
+                                    if (orderDate.equals(dailyLabels.get(i))) {
+                                        if (isCompleted) {
                                             long current = dailyRevenue.get(i);
                                             dailyRevenue.set(i, current + (long) order.getTotalAmount());
                                         }
@@ -307,7 +308,6 @@ public class StatisticsActivity extends AppCompatActivity {
                                 }
                             }
 
-                            // Count products in order
                             countOrderProducts(order);
                         }
                     }
@@ -320,8 +320,12 @@ public class StatisticsActivity extends AppCompatActivity {
     }
 
     private void countOrderProducts(Order order) {
-        // This would need to be enhanced to actually count products
-        // For now, we'll just mark it as counted
+        if (order.getItems() == null) return;
+        for (OrderItem item : order.getItems()) {
+            String name = item.getProductName();
+            int qty = item.getQuantity();
+            topProducts.put(name, topProducts.getOrDefault(name, 0) + qty);
+        }
     }
 
     private void loadPets() {

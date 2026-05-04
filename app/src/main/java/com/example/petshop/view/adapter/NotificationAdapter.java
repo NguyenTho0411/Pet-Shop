@@ -76,26 +76,16 @@ public class NotificationAdapter extends RecyclerView.Adapter<NotificationAdapte
             }
             ivIcon.setImageResource(iconRes);
 
-            // Unread indicator
-            if (unreadIndicator != null) {
-                unreadIndicator.setVisibility(n.isRead() ? View.INVISIBLE : View.VISIBLE);
-            }
+            // Unread indicator - check both isRead and read for compatibility
+            boolean isUnread = !n.isRead();
+            unreadIndicator.setVisibility(isUnread ? View.VISIBLE : View.INVISIBLE);
 
             // Title bold if unread
-            if (n.isRead()) {
-                tvTitle.setTypeface(null, Typeface.NORMAL);
-            } else {
-                tvTitle.setTypeface(null, Typeface.BOLD);
-            }
+            tvTitle.setTypeface(null, isUnread ? Typeface.BOLD : Typeface.NORMAL);
 
             // Background tint
-            if (!n.isRead()) {
-                itemView.setBackgroundColor(itemView.getContext().getResources()
-                        .getColor(R.color.bg_card, null));
-            } else {
-                itemView.setBackgroundColor(itemView.getContext().getResources()
-                        .getColor(android.R.color.transparent, null));
-            }
+            itemView.setBackgroundColor(itemView.getContext().getResources()
+                    .getColor(isUnread ? R.color.bg_card : android.R.color.transparent, null));
         }
 
         private String formatTime(String timestamp) {

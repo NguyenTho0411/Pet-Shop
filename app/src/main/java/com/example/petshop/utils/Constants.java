@@ -11,11 +11,7 @@ public final class Constants {
     private Constants() {}
 
     // ===== Google Sign-In =====
-    public static final String GOOGLE_WEB_CLIENT_ID  = BuildConfig.GOOGLE_WEB_CLIENT_ID;
-
-    // ===== Facebook =====
-    public static final String FACEBOOK_APP_ID       = BuildConfig.FACEBOOK_APP_ID;
-    public static final String FACEBOOK_CLIENT_TOKEN = BuildConfig.FACEBOOK_CLIENT_TOKEN;
+    public static final String GOOGLE_WEB_CLIENT_ID = BuildConfig.GOOGLE_WEB_CLIENT_ID;
 
     // ===== Backend API =====
     public static final String BASE_URL              = BuildConfig.BASE_URL;

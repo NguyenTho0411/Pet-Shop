@@ -214,13 +214,37 @@ public class HomeViewModel extends ViewModel {
     private boolean matchesPetCategory(Pet pet, Category category) {
         if (pet == null || category == null) return false;
 
-        return sameText(pet.getCategoryId(), category.getId())
+        if (sameText(pet.getCategoryId(), category.getId())
                 || sameText(pet.getCategoryId(), category.getName())
-                || sameText(pet.getSpecies(), category.getId())
-                || sameText(pet.getSpecies(), category.getName())
-                || sameCategoryKey(pet.getSpecies(), category.getId())
-                || sameCategoryKey(pet.getSpecies(), category.getName())
-                || matchesCategoryObject(pet.getCategory(), category);
+                || matchesCategoryObject(pet.getCategory(), category)) {
+            return true;
+        }
+
+        String petSpecies = pet.getSpecies() != null ? pet.getSpecies().toLowerCase() : "";
+        String catName = category.getName() != null ? category.getName().toLowerCase() : "";
+        String catId = category.getId() != null ? category.getId().toLowerCase() : "";
+
+        if (petSpecies.contains("dog") && (catName.contains("chó") || catName.contains("dog") || catId.contains("dog") || catId.contains("chó"))) {
+            return true;
+        }
+        if (petSpecies.contains("cat") && (catName.contains("mèo") || catName.contains("cat") || catId.contains("cat") || catId.contains("mèo"))) {
+            return true;
+        }
+        if (petSpecies.contains("fish") && (catName.contains("cá") || catName.contains("fish") || catId.contains("fish") || catId.contains("cá"))) {
+            return true;
+        }
+        if (petSpecies.contains("bird") && (catName.contains("chim") || catName.contains("bird") || catId.contains("bird") || catId.contains("chim"))) {
+            return true;
+        }
+        if (petSpecies.contains("rabbit") && (catName.contains("thỏ") || catName.contains("rabbit") || catId.contains("rabbit") || catId.contains("thỏ"))) {
+            return true;
+        }
+        if (petSpecies.contains("hamster") && (catName.contains("hamster") || catId.contains("hamster"))) {
+            return true;
+        }
+
+        return sameCategoryKey(pet.getSpecies(), category.getId())
+                || sameCategoryKey(pet.getSpecies(), category.getName());
     }
 
     private boolean matchesFoodCategory(Food food, Category category) {

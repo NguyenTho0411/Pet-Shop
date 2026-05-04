@@ -27,10 +27,11 @@ public class NotificationRepository {
                     List<Notification> list = new ArrayList<>();
                     for (var doc : snap.getDocuments()) {
                         Notification n = doc.toObject(Notification.class);
-                        n.setId(doc.getId());
-                        list.add(n);
+                        if (n != null) {
+                            n.setId(doc.getId());
+                            list.add(n);
+                        }
                     }
-                    // Sort locally to avoid composite index requirement
                     list.sort((n1, n2) -> {
                         String date1 = n1.getCreatedAt() != null ? n1.getCreatedAt() : "";
                         String date2 = n2.getCreatedAt() != null ? n2.getCreatedAt() : "";
@@ -38,7 +39,11 @@ public class NotificationRepository {
                     });
                     cb.onSuccess(list);
                 })
-                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    // Log error but still return empty list
+                    e.printStackTrace();
+                    cb.onSuccess(new ArrayList<>());
+                });
     }
 
     public void markAsRead(String notificationId, Callback<Void> cb) {
@@ -84,6 +89,9 @@ public class NotificationRepository {
                 .whereEqualTo("isRead", false)
                 .get()
                 .addOnSuccessListener(snap -> cb.onSuccess((long) snap.size()))
-                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                .addOnFailureListener(e -> {
+                    e.printStackTrace();
+                    cb.onSuccess(0L);
+                });
     }
 }

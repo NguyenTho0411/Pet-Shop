@@ -40,6 +40,12 @@ public class ManagePromotionsActivity extends AppCompatActivity {
         vm.loadAll();
     }
 
+    @Override
+    protected void onResume() {
+        super.onResume();
+        vm.loadAll();
+    }
+
     private void initViews() {
         progressBar = findViewById(R.id.progressBar);
 
