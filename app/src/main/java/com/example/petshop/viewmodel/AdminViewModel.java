@@ -164,12 +164,15 @@ public class AdminViewModel extends AndroidViewModel {
             total++;
 
             String status = doc.getString("status");
+            String paymentStatus = doc.getString("paymentStatus"); // ✅ LẤY PAYMENT STATUS
             Double amount = doc.getDouble("totalAmount");
             if (amount == null) amount = 0.0;
 
             // Đếm theo status
             switch (status != null ? status : "") {
                 case Order.STATUS_PENDING:
+                case Order.STATUS_WAIT_PAY:              // ✅ THÊM
+                case Order.STATUS_CONFIRMED:            // ✅ THÊM
                     pending++;
                     break;
                 case Order.STATUS_PREPARING:
@@ -180,16 +183,24 @@ public class AdminViewModel extends AndroidViewModel {
                     break;
                 case Order.STATUS_DELIVERED:
                     delivered++;
-                    // DELIVERED vẫn tính doanh thu
-                    revenue += amount.longValue();
+                    // ✅ CHỈ TÍNH NẾU ĐÃ THANH TOÁN
+                    if ("PAID".equals(paymentStatus)) {
+                        revenue += amount.longValue();
+                    }
                     break;
                 case Order.STATUS_COMPLETED:
                     completed++;
-                    // COMPLETED tính doanh thu
-                    revenue += amount.longValue();
+                    // ✅ CHỈ TÍNH NẾU ĐÃ THANH TOÁN
+                    if ("PAID".equals(paymentStatus)) {
+                        revenue += amount.longValue();
+                    }
                     break;
                 case Order.STATUS_CANCELLED:
                     cancelled++;
+                    break;
+                case Order.STATUS_RETURN_REQUESTED:     // ✅ THÊM - Chờ duyệt hoàn
+                case Order.STATUS_RETURN_APPROVED:      // ✅ THÊM - Đã duyệt hoàn
+                    pending++;
                     break;
                 case Order.STATUS_REFUNDED:
                     refunded += amount.longValue(); // Hoàn tiền
@@ -198,7 +209,9 @@ public class AdminViewModel extends AndroidViewModel {
         }
 
         // Cập nhật LiveData
-        totalOrders.postValue(total);
+        // ✅ Total orders = tất cả ACTIVE orders (không bao gồm CANCELLED + REFUNDED)
+        long activeOrders = total - cancelled - refunded;
+        totalOrders.postValue(activeOrders);
         pendingOrders.postValue(pending);
         preparingOrders.postValue(preparing);
         shippingOrders.postValue(shipping);

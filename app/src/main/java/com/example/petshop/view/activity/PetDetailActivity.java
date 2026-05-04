@@ -191,7 +191,7 @@ public class PetDetailActivity extends AppCompatActivity {
         // Price
         double price = pet.getEffectivePrice();
         tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
-        
+
         if (pet.hasPromotion() && pet.getOriginalPrice() > 0 && pet.getOriginalPrice() > pet.getEffectivePrice()) {
             // Hiển thị giá gốc gạch ngang
             tvOriginalPrice.setVisibility(View.VISIBLE);

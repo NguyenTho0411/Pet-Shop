@@ -200,41 +200,40 @@ public class AdminActivity extends AppCompatActivity {
     }
 
     private void setupQuickActions() {
-        // Quick actions với click listeners rõ ràng
-        View itemManageOrders = findViewById(R.id.itemManageOrders);
-        if (itemManageOrders != null) {
-            itemManageOrders.setOnClickListener(v -> startActivity(new Intent(this, AdminOrderListActivity.class)));
-        }
+        setupActionItem(R.id.itemManageUsers, "👥", "Quản lý người dùng", v ->
+                startActivity(new Intent(this, ManageUsersActivity.class)));
 
-        View itemManageUsers = findViewById(R.id.itemManageUsers);
-        if (itemManageUsers != null) {
-            itemManageUsers.setOnClickListener(v -> startActivity(new Intent(this, ManageUsersActivity.class)));
-        }
+        setupActionItem(R.id.itemManageCategories, "📂", "Quản lý danh mục", v ->
+                startActivity(new Intent(this, ManageCategoriesActivity.class)));
 
-        View itemManagePets = findViewById(R.id.itemManagePets);
-        if (itemManagePets != null) {
-            itemManagePets.setOnClickListener(v -> startActivity(new Intent(this, ManagePetsActivity.class)));
-        }
+        setupActionItem(R.id.itemManagePets, "🐾", "Quản lý thú cưng", v ->
+                startActivity(new Intent(this, ManagePetsActivity.class)));
 
-        View itemManageFoods = findViewById(R.id.itemManageFoods);
-        if (itemManageFoods != null) {
-            itemManageFoods.setOnClickListener(v -> startActivity(new Intent(this, ManageFoodActivity.class)));
-        }
+        setupActionItem(R.id.itemManageFoods, "🍖", "Quản lý thức ăn", v ->
+                startActivity(new Intent(this, ManageFoodActivity.class)));
 
-        View itemManagePromotions = findViewById(R.id.itemManagePromotions);
-        if (itemManagePromotions != null) {
-            itemManagePromotions.setOnClickListener(v -> startActivity(new Intent(this, ManagePromotionsActivity.class)));
-        }
+        setupActionItem(R.id.itemManageOrders, "🛒", "Quản lý đơn hàng", v ->
+                startActivity(new Intent(this, AdminOrderListActivity.class)));
 
-        View itemManageCategories = findViewById(R.id.itemManageCategories);
-        if (itemManageCategories != null) {
-            itemManageCategories.setOnClickListener(v -> startActivity(new Intent(this, ManageCategoriesActivity.class)));
-        }
+        setupActionItem(R.id.itemManagePromotions, "🎁", "Quản lý khuyến mãi & voucher", v ->
+                startActivity(new Intent(this, ManagePromotionsActivity.class)));
 
-        View itemManageReturns = findViewById(R.id.itemManageReturns);
-        if (itemManageReturns != null) {
-            itemManageReturns.setOnClickListener(v -> startActivity(new Intent(this, AdminReturnListActivity.class)));
-        }
+        setupActionItem(R.id.itemManageReturns, "↩️", "Quản lý hoàn trả", v ->
+                startActivity(new Intent(this, AdminReturnListActivity.class)));
+    }
+
+    private void setupActionItem(int viewId, String icon, String title, View.OnClickListener listener) {
+        View item = findViewById(viewId);
+        if (item == null) return;
+        
+        // Lấy nested views từ included layout
+        TextView tvIcon = item.findViewById(R.id.tvActionIcon);
+        TextView tvTitle = item.findViewById(R.id.tvActionTitle);
+        
+        if (tvIcon != null) tvIcon.setText(icon);
+        if (tvTitle != null) tvTitle.setText(title);
+        
+        item.setOnClickListener(listener);
     }
 
     private void confirmLogout() {

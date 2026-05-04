@@ -59,7 +59,7 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
             h.tvSaleBadge.setVisibility(View.VISIBLE);
             int pct = (int) Math.round((1 - pet.getEffectivePrice() / pet.getOriginalPrice()) * 100);
             h.tvSaleBadge.setText("-" + pct + "%");
-            
+
             h.tvOriginalPrice.setVisibility(View.VISIBLE);
             h.tvOriginalPrice.setText(VND.format((long) pet.getOriginalPrice()) + "đ");
             h.tvOriginalPrice.setPaintFlags(h.tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);

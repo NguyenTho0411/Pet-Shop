@@ -21,7 +21,7 @@
             android:id="@+id/tvActionIcon"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:text="📦"
+            android:text=""
             android:textSize="20sp"
             android:gravity="center"
             android:background="@color/bg_main" />
@@ -31,7 +31,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Quản lý sản phẩm"
+            android:text=""
             android:textSize="15sp"
             android:textStyle="bold"
             android:textColor="@color/text_primary"

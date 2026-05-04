@@ -201,7 +201,7 @@ public class FoodDetailActivity extends AppCompatActivity {
         // Price
         double price = food.getEffectivePrice();
         tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
-        
+
         if (food.hasPromotion() && food.getOriginalPrice() > 0 && food.getOriginalPrice() > food.getEffectivePrice()) {
             // Giá gốc gạch ngang
             tvOriginalPrice.setVisibility(View.VISIBLE);

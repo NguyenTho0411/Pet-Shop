@@ -251,37 +251,37 @@
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐕 Chó" />
+                        android:text="DOG" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipCat"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐈 Mèo" />
+                        android:text="CAT" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipFish"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐟 Cá" />
+                        android:text="FISH" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipBird"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐦 Chim" />
+                        android:text="BIRD" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipRabbit"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐰 Thỏ" />
+                        android:text="RABBIT" />
                     <com.google.android.material.chip.Chip
                         android:id="@+id/chipHamster"
                         style="@style/Widget.MaterialComponents.Chip.Filter"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="🐹 Hamster" />
+                        android:text="HAMSTER" />
                 </com.google.android.material.chip.ChipGroup>
             </LinearLayout>
 
