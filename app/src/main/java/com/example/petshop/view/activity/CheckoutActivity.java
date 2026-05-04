@@ -23,9 +23,11 @@ import com.example.petshop.model.entity.Address;
 import com.example.petshop.model.entity.Cart;
 import com.example.petshop.model.entity.CartItem;
 import com.example.petshop.model.entity.Order;
+import com.example.petshop.model.entity.Promotion;
 import com.example.petshop.model.entity.Voucher;
 import com.example.petshop.repository.AddressRepository;
 import com.example.petshop.repository.OrderRepository;
+import com.example.petshop.repository.PromotionRepository;
 import com.example.petshop.repository.VoucherRepository;
 import com.example.petshop.utils.ShippingHelper;
 import com.example.petshop.utils.VNPayHelper;
@@ -36,8 +38,10 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class CheckoutActivity extends AppCompatActivity {
 
@@ -59,6 +63,10 @@ public class CheckoutActivity extends AppCompatActivity {
     private boolean voucherChipsExpanded = false;
 
     private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
+
+    // Holds all available vouchers (from both vouchers collection and promotions collection)
+    private List<Voucher> systemVouchers = new ArrayList<>();
+    private List<Promotion> promotionVouchers = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -221,8 +229,32 @@ public class CheckoutActivity extends AppCompatActivity {
         TextInputEditText etVoucher = findViewById(R.id.etVoucher);
         String code = etVoucher.getText() != null ? etVoucher.getText().toString().trim().toUpperCase() : "";
         if (code.isEmpty()) { Toast.makeText(this, "Nhập mã voucher", Toast.LENGTH_SHORT).show(); return; }
-        
+
         progressBar.setVisibility(View.VISIBLE);
+        // Ưu tiên tìm trong promotions collection (VOUCHER type)
+        new com.example.petshop.repository.PromotionRepository().getByCode(code, new com.example.petshop.repository.PromotionRepository.Callback<com.example.petshop.model.entity.Promotion>() {
+            @Override
+            public void onSuccess(com.example.petshop.model.entity.Promotion promo) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    if (promo != null && promo.isVoucher()) {
+                        validateAndApplyPromotionVoucher(promo);
+                    } else {
+                        // Không phải voucher, thử tìm trong vouchers collection
+                        applyVoucherFromVouchers(code);
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                // Không tìm thấy trong promotions, thử vouchers collection
+                applyVoucherFromVouchers(code);
+            }
+        });
+    }
+
+    private void applyVoucherFromVouchers(String code) {
         new com.example.petshop.repository.VoucherRepository().getByCode(code, new com.example.petshop.repository.VoucherRepository.Callback<com.example.petshop.model.entity.Voucher>() {
             @Override
             public void onSuccess(com.example.petshop.model.entity.Voucher v) {
@@ -240,10 +272,42 @@ public class CheckoutActivity extends AppCompatActivity {
                     voucherDiscount = 0;
                     selectedVoucherId = null;
                     selectedVoucherCode = null;
-                    updatePriceSummary(cart.calculateSubtotal());
+                    if (cart != null) updatePriceSummary(cart.calculateSubtotal());
                 });
             }
         });
+    }
+
+    private void validateAndApplyPromotionVoucher(com.example.petshop.model.entity.Promotion promo) {
+        double subtotal = cart.calculateSubtotal();
+
+        if (!promo.isActive()) {
+            Toast.makeText(this, "Voucher hiện không khả dụng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!promo.isWithinDateRange()) {
+            Toast.makeText(this, "Voucher đã hết hạn sử dụng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (promo.getUsageLimit() > 0 && promo.getUsageCount() >= promo.getUsageLimit()) {
+            Toast.makeText(this, "Voucher đã hết lượt sử dụng", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        // minOrderAmount check nếu có
+        double minOrder = 0;
+        try { minOrder = promo.getMinOrderAmount(); } catch (Exception e) { /* not set */ }
+        if (subtotal < minOrder) {
+            Toast.makeText(this, "Đơn hàng tối thiểu " + VND.format((long) minOrder) + "đ để dùng voucher này", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        // Apply
+        voucherDiscount = promo.calculateDiscount(subtotal);
+        selectedVoucherId = promo.getId();
+        selectedVoucherCode = promo.getVoucherCode();
+
+        updatePriceSummary(subtotal);
+        Toast.makeText(this, "Đã áp dụng mã " + promo.getVoucherCode(), Toast.LENGTH_SHORT).show();
     }
 
     private void validateAndApplyVoucher(com.example.petshop.model.entity.Voucher v) {
@@ -276,58 +340,87 @@ public class CheckoutActivity extends AppCompatActivity {
     }
 
     private void loadSystemVouchers() {
-        new VoucherRepository().getSystemVouchers(new VoucherRepository.Callback<>() {
+        final boolean[] loaded = {false, false};
+
+        new VoucherRepository().getSystemVouchers(new VoucherRepository.Callback<List<Voucher>>() {
             @Override
             public void onSuccess(List<Voucher> vouchers) {
-                runOnUiThread(() -> displayVoucherChips(vouchers));
+                systemVouchers = vouchers != null ? vouchers : new ArrayList<>();
+                loaded[0] = true;
+                if (loaded[1]) runOnUiThread(() -> displayAllVouchers());
             }
             @Override
             public void onFailure(String err) {
-                runOnUiThread(() -> {
-                    llVoucherChips.setVisibility(View.GONE);
-                    tvChooseVoucher.setVisibility(View.GONE);
-                });
+                loaded[0] = true;
+                if (loaded[1]) runOnUiThread(() -> displayAllVouchers());
+            }
+        });
+
+        new PromotionRepository().getSystemVouchers(new PromotionRepository.Callback<List<Promotion>>() {
+            @Override
+            public void onSuccess(List<Promotion> promos) {
+                promotionVouchers = promos != null ? promos : new ArrayList<>();
+                loaded[1] = true;
+                if (loaded[0]) runOnUiThread(() -> displayAllVouchers());
+            }
+            @Override
+            public void onFailure(String err) {
+                loaded[1] = true;
+                if (loaded[0]) runOnUiThread(() -> displayAllVouchers());
             }
         });
     }
 
-    private void displayVoucherChips(List<Voucher> vouchers) {
+    private void displayAllVouchers() {
         llVoucherChips.removeAllViews();
-        if (vouchers == null || vouchers.isEmpty()) {
-            tvChooseVoucher.setVisibility(View.GONE);
-            return;
-        }
-
         String today = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new java.util.Date());
+        int count = 0;
 
-        for (Voucher v : vouchers) {
+        for (Voucher v : systemVouchers) {
+            if (count >= 8) break;
             if (!v.isActive() || v.isExpired(today) || v.isUsageLimitReached()) continue;
-
-            TextView chip = new TextView(this);
-            chip.setText(v.getCode());
-            chip.setTextSize(13);
-            chip.setPadding(dipToPx(12), dipToPx(8), dipToPx(12), dipToPx(8));
-            chip.setTextColor(getResources().getColor(R.color.primary, null));
-            chip.setBackgroundResource(R.drawable.bg_social_btn);
-
-            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            params.setMargins(0, 0, dipToPx(8), 0);
-            chip.setLayoutParams(params);
-
-            chip.setOnClickListener(v2 -> {
+            addVoucherChip(v.getCode(), () -> {
                 TextInputEditText etVoucher = findViewById(R.id.etVoucher);
-                etVoucher.setText(v.getCode());
+                if (etVoucher != null) etVoucher.setText(v.getCode());
                 applyVoucher();
             });
-
-            llVoucherChips.addView(chip);
+            count++;
         }
 
-        if (llVoucherChips.getChildCount() == 0) {
+        for (Promotion p : promotionVouchers) {
+            if (count >= 8) break;
+            if (!p.isActive() || !p.isWithinDateRange()) continue;
+            if (p.getVoucherCode() == null || p.getVoucherCode().isEmpty()) continue;
+            if (p.getUsageLimit() > 0 && p.getUsageCount() >= p.getUsageLimit()) continue;
+            addVoucherChip(p.getVoucherCode(), () -> {
+                TextInputEditText etVoucher = findViewById(R.id.etVoucher);
+                if (etVoucher != null) etVoucher.setText(p.getVoucherCode());
+                applyVoucher();
+            });
+            count++;
+        }
+
+        if (count == 0) {
             tvChooseVoucher.setVisibility(View.GONE);
+            llVoucherChips.setVisibility(View.GONE);
+        } else {
+            tvChooseVoucher.setVisibility(View.VISIBLE);
         }
+    }
+
+    private void addVoucherChip(String code, Runnable onClick) {
+        TextView chip = new TextView(this);
+        chip.setText(code);
+        chip.setTextSize(13);
+        chip.setPadding(dipToPx(12), dipToPx(8), dipToPx(12), dipToPx(8));
+        chip.setTextColor(getResources().getColor(R.color.primary, null));
+        chip.setBackgroundResource(R.drawable.bg_social_btn);
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(0, 0, dipToPx(8), dipToPx(8));
+        chip.setLayoutParams(params);
+        chip.setOnClickListener(v -> onClick.run());
+        llVoucherChips.addView(chip);
     }
 
     private void toggleVoucherChips() {

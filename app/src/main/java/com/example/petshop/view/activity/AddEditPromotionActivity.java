@@ -39,12 +39,12 @@ public class AddEditPromotionActivity extends AppCompatActivity {
     private Promotion currentPromo;
 
     private EditText etName, etDesc, etDiscountValue, etMaxDiscount;
-    private EditText etStartDate, etEndDate, etMaxPerUser, etTotalLimit, etVoucherCode;
+    private EditText etStartDate, etEndDate, etMaxPerUser, etTotalLimit, etVoucherCode, etMinOrder;
     private MaterialButton btnTypePercent, btnTypeFixed;
     private MaterialButton btnTypeVoucher, btnTypeAutomatic;
     private ProgressBar progressBar;
     private TextView tvTitle;
-    private View layoutVoucherCode;
+    private View layoutVoucherCode, layoutMinOrder;
 
     // Apply type buttons
     private MaterialButton btnApplyAll, btnApplyCategory, btnApplySpecies, btnApplyProduct;
@@ -106,7 +106,9 @@ public class AddEditPromotionActivity extends AppCompatActivity {
         btnTypeVoucher = findViewById(R.id.btnTypeVoucher);
         btnTypeAutomatic = findViewById(R.id.btnTypeAutomatic);
         layoutVoucherCode = findViewById(R.id.layoutVoucherCode);
+        layoutMinOrder = findViewById(R.id.layoutMinOrder);
         etVoucherCode = findViewById(R.id.etVoucherCode);
+        etMinOrder = findViewById(R.id.etMinOrder);
 
         // Apply type buttons
         btnApplyAll = findViewById(R.id.btnApplyAll);
@@ -166,8 +168,10 @@ public class AddEditPromotionActivity extends AppCompatActivity {
         updateButtonState(btnTypeVoucher, Promotion.PROMOTION_TYPE_VOUCHER.equals(promoType), activeColor, inactiveColor);
         updateButtonState(btnTypeAutomatic, Promotion.PROMOTION_TYPE_AUTOMATIC.equals(promoType), activeColor, inactiveColor);
 
-        // Show/hide voucher code input
+        // Show/hide voucher code input and min order
         layoutVoucherCode.setVisibility(
+                Promotion.PROMOTION_TYPE_VOUCHER.equals(promoType) ? View.VISIBLE : View.GONE);
+        layoutMinOrder.setVisibility(
                 Promotion.PROMOTION_TYPE_VOUCHER.equals(promoType) ? View.VISIBLE : View.GONE);
     }
 
@@ -392,6 +396,7 @@ public class AddEditPromotionActivity extends AppCompatActivity {
                 String promoType = promo.getPromotionType();
                 setPromotionType(promoType != null ? promoType : Promotion.PROMOTION_TYPE_AUTOMATIC);
                 etVoucherCode.setText(promo.getVoucherCode() != null ? promo.getVoucherCode() : "");
+                etMinOrder.setText(String.valueOf(promo.getMinOrderAmount()));
                 
                 // Restore apply type
                 String applyType = promo.getApplyType();
@@ -502,6 +507,7 @@ public class AddEditPromotionActivity extends AppCompatActivity {
         p.setStartDate(etStartDate.getText().toString());
         p.setEndDate(etEndDate.getText().toString());
         p.setActive(true);
+        try { p.setMinOrderAmount(Double.parseDouble(etMinOrder.getText().toString())); } catch (Exception e) { p.setMinOrderAmount(0); }
         try { p.setPerUserLimit(Integer.parseInt(etMaxPerUser.getText().toString())); } catch (Exception e) { p.setPerUserLimit(999); }
         try { p.setTotalUsageLimit(Integer.parseInt(etTotalLimit.getText().toString())); } catch (Exception e) { p.setTotalUsageLimit(9999); }
 

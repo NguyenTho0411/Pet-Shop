@@ -151,6 +151,19 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
+            <!-- Đơn tối thiểu (chỉ hiện khi là Voucher) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutMinOrder"
+                style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Đơn hàng tối thiểu (đ)"
+                android:layout_marginBottom="12dp"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etMinOrder" android:layout_width="match_parent"
+                    android:layout_height="56dp" android:inputType="numberDecimal" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- ===== ÁP DỤNG CHO ===== -->
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="Áp dụng cho *" android:textSize="13sp" android:textColor="@color/text_secondary"

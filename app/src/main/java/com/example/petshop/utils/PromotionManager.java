@@ -13,24 +13,15 @@ public class PromotionManager {
 
     /**
      * Tìm khuyến mãi tốt nhất áp dụng cho sản phẩm và cập nhật giá đã giảm.
-     * Chỉ xử lý loại AUTOMATIC - VOUCHER cần user nhập mã nên không tự động áp dụng.
+     * Áp dụng tất cả promotions đang active để hiển thị giá khuyến mãi.
      */
     public static void applyPromotions(List<Pet> pets, List<Food> foods, List<Promotion> activePromos) {
         if (activePromos == null || activePromos.isEmpty()) return;
 
-        // Lọc chỉ lấy AUTOMATIC promotions
-        List<Promotion> automaticPromos = new ArrayList<>();
-        for (Promotion p : activePromos) {
-            if (p.isAutomatic()) {
-                automaticPromos.add(p);
-            }
-        }
-        if (automaticPromos.isEmpty()) return;
-
         // Apply for Pets
         if (pets != null) {
             for (Pet p : pets) {
-                Promotion best = findBestPromoForProduct(p, automaticPromos);
+                Promotion best = findBestPromoForProduct(p, activePromos);
                 if (best != null) {
                     p.setPromotionId(best.getId());
                     p.setPromotion(best);
@@ -43,7 +34,7 @@ public class PromotionManager {
         // Apply for Foods
         if (foods != null) {
             for (Food f : foods) {
-                Promotion best = findBestPromoForProduct(f, automaticPromos);
+                Promotion best = findBestPromoForProduct(f, activePromos);
                 if (best != null) {
                     f.setPromotionId(best.getId());
                     f.setPromotion(best);
@@ -56,31 +47,34 @@ public class PromotionManager {
 
     /**
      * Tính lại giá cart items dựa theo promotion đang active.
-     * Chỉ xử lý AUTOMATIC promotions - VOUCHER cần user nhập mã riêng.
+     * Áp dụng tất cả promotions (AUTOMATIC + VOUCHER) để hiển thị giá khuyến mãi.
+     * VOUCHER cần user nhập mã riêng nên chỉ áp dụng nếu voucher đã được chọn.
      * Trả về true nếu có giá nào thay đổi (cần lưu lại Firestore).
      */
-    public static boolean refreshCartPrices(Cart cart, List<Promotion> activePromos) {
+    public static boolean refreshCartPrices(Cart cart, List<Promotion> activePromos, String selectedVoucherId) {
         if (cart == null || cart.getItems() == null) return false;
 
-        // Lọc chỉ lấy AUTOMATIC promotions
-        List<Promotion> automaticPromos = new ArrayList<>();
-        if (activePromos != null) {
-            for (Promotion p : activePromos) {
-                if (p.isAutomatic()) {
-                    automaticPromos.add(p);
+        List<Promotion> promos = activePromos != null ? activePromos : new ArrayList<>();
+        boolean changed = false;
+
+        // Nếu có voucher đang chọn, tìm nó trong danh sách promotions
+        Promotion selectedVoucher = null;
+        if (selectedVoucherId != null) {
+            for (Promotion p : promos) {
+                if (p.isVoucher() && selectedVoucherId.equals(p.getId())) {
+                    selectedVoucher = p;
+                    break;
                 }
             }
         }
-        List<Promotion> promos = automaticPromos;
-        boolean changed = false;
 
         for (CartItem item : cart.getItems()) {
-            if (item.getOriginalPrice() <= 0) continue; // item cũ không có giá gốc, bỏ qua
+            if (item.getOriginalPrice() <= 0) continue;
             String categoryType = item.isPet() ? Promotion.CATEGORY_PET : Promotion.CATEGORY_FOOD;
-            Promotion best = findBestPromoForCartItem(item, categoryType, promos);
+            Promotion best = findBestPromoForCartItem(item, categoryType, promos, selectedVoucher);
             double newPrice = best != null
                     ? best.applyDiscount(item.getOriginalPrice())
-                    : item.getOriginalPrice(); // hết KM → hoàn lại giá gốc
+                    : item.getOriginalPrice();
             if (Math.abs(newPrice - item.getUnitPrice()) > 0.01) {
                 item.setUnitPrice(newPrice);
                 item.recalculateSubtotal();
@@ -114,20 +108,23 @@ public class PromotionManager {
         return best;
     }
 
-    private static Promotion findBestPromoForCartItem(CartItem item, String categoryType, List<Promotion> promos) {
+    private static Promotion findBestPromoForCartItem(CartItem item, String categoryType, List<Promotion> promos, Promotion selectedVoucher) {
         Promotion best = null;
         double maxSaving = 0;
 
-        // Nếu có thông tin chi tiết (snapshot), ưu tiên dùng hàm appliesTo chuẩn
         Object productSnapshot = item.isPet() ? item.getPetInfo() : item.getFoodInfo();
 
         for (Promotion p : promos) {
+            // Skip voucher unless it's the selected one
+            if (p.isVoucher() && (selectedVoucher == null || !p.getId().equals(selectedVoucher.getId()))) {
+                continue;
+            }
+
             boolean applies = false;
 
             if (productSnapshot != null) {
                 applies = p.appliesTo(productSnapshot);
             } else {
-                // Fallback nếu không có snapshot
                 if (!p.isActive() || !p.isWithinDateRange()) continue;
 
                 if (Promotion.APPLY_ALL.equals(p.getApplyType())) {
@@ -137,7 +134,6 @@ public class PromotionManager {
                 } else if (Promotion.APPLY_PRODUCT.equals(p.getApplyType())) {
                     applies = p.getProductIds() != null && p.getProductIds().contains(item.getProductId());
                 }
-                // APPLY_SPECIES không thể xác định nếu không có snapshot (vì CartItem không lưu species)
             }
 
             if (applies) {

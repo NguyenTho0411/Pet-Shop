@@ -108,6 +108,12 @@ public class Promotion {
     @SerializedName("updatedAt")
     private String updatedAt;
 
+    @SerializedName("minOrderAmount")
+    private double minOrderAmount;
+
+    @SerializedName("isSystem")
+    private boolean isSystem;
+
     public Promotion() {
         this.applyType = APPLY_ALL;
     }
@@ -288,5 +294,11 @@ public class Promotion {
     public int getPerUserLimit() { return perUserLimit; }
     public void setPerUserLimit(int perUserLimit) { this.perUserLimit = perUserLimit; }
     public void setMaxUsagePerUser(int limit) { this.perUserLimit = limit; }
+
+    public double getMinOrderAmount() { return minOrderAmount; }
+    public void setMinOrderAmount(double amount) { this.minOrderAmount = amount; }
+
+    public boolean isSystem() { return isSystem; }
+    public void setSystem(boolean system) { this.isSystem = system; }
     // endregion
 }

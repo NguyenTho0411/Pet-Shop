@@ -50,6 +50,42 @@ public class PromotionRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    public void getByCode(String code, Callback<Promotion> cb) {
+        db.collection(COL)
+                .whereEqualTo("voucherCode", code)
+                .limit(1)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (!snap.isEmpty()) {
+                        Promotion p = snap.getDocuments().get(0).toObject(Promotion.class);
+                        if (p != null) p.setId(snap.getDocuments().get(0).getId());
+                        cb.onSuccess(p);
+                    } else {
+                        cb.onFailure("Không tìm thấy mã voucher");
+                    }
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    public void getSystemVouchers(Callback<List<Promotion>> cb) {
+        db.collection(COL)
+                .whereEqualTo("promotionType", "VOUCHER")
+                .whereEqualTo("active", true)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<Promotion> list = new ArrayList<>();
+                    for (var doc : snap.getDocuments()) {
+                        Promotion p = doc.toObject(Promotion.class);
+                        if (p != null && p.isWithinDateRange()) {
+                            p.setId(doc.getId());
+                            list.add(p);
+                        }
+                    }
+                    cb.onSuccess(list);
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     public void getActive(Callback<List<Promotion>> cb) {
         db.collection(COL)
                 .whereEqualTo("active", true)

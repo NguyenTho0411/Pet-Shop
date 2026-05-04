@@ -43,7 +43,7 @@ public class CartViewModel extends ViewModel {
                 // Luôn re-apply promotion hiện tại để đảm bảo giá đúng
                 new PromotionRepository().getActive(new PromotionRepository.Callback<List<Promotion>>() {
                     public void onSuccess(List<Promotion> promos) {
-                        boolean changed = PromotionManager.refreshCartPrices(c, promos);
+                        boolean changed = PromotionManager.refreshCartPrices(c, promos, null);
                         if (changed) {
                             repo.saveCart(uid, c, new CartRepository.Callback<Cart>() {
                                 public void onSuccess(Cart saved) { isLoading.postValue(false); cart.postValue(saved); }
