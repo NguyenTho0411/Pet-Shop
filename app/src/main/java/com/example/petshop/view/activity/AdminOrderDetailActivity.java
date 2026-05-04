@@ -21,7 +21,7 @@ import com.example.petshop.model.entity.Order;
 import com.example.petshop.model.entity.OrderItem;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.repository.OrderRepository;
-import com.example.firebase.FirebaseHelper;
+import com.example.petshop.utils.FirebaseHelper;
 
 import java.text.NumberFormat;
 import java.util.List;

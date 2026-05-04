@@ -53,6 +53,7 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
         private final ImageView ivBanner;
         private final TextView tvName, tvDescription, tvDiscount, tvApplyFor, tvValidDate, tvBadge, tvVoucherCode;
         private final View btnCopy;
+        private final View layoutApplyFor, layoutVoucherCode;
 
         VH(@NonNull View itemView) {
             super(itemView);
@@ -65,6 +66,8 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
             tvBadge = itemView.findViewById(R.id.tvBadge);
             tvVoucherCode = itemView.findViewById(R.id.tvVoucherCode);
             btnCopy = itemView.findViewById(R.id.btnCopy);
+            layoutApplyFor = itemView.findViewById(R.id.layoutApplyFor);
+            layoutVoucherCode = itemView.findViewById(R.id.layoutVoucherCode);
         }
 
         void bind(Promotion p) {
@@ -73,7 +76,7 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
 
             // Hiển thị voucher code nếu là VOUCHER
             if (p.isVoucher() && p.getVoucherCode() != null && !p.getVoucherCode().isEmpty()) {
-                tvVoucherCode.setVisibility(View.VISIBLE);
+                layoutVoucherCode.setVisibility(View.VISIBLE);
                 tvVoucherCode.setText("Mã: " + p.getVoucherCode());
                 btnCopy.setVisibility(View.VISIBLE);
                 btnCopy.setOnClickListener(v -> {
@@ -82,9 +85,13 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
                     if (cm != null) cm.setPrimaryClip(clip);
                     android.widget.Toast.makeText(v.getContext(), "Đã copy mã voucher!", android.widget.Toast.LENGTH_SHORT).show();
                 });
+                // Ẩn phần "Áp dụng cho" khi là VOUCHER
+                layoutApplyFor.setVisibility(View.GONE);
             } else {
-                tvVoucherCode.setVisibility(View.GONE);
-                btnCopy.setVisibility(View.GONE);
+                layoutVoucherCode.setVisibility(View.GONE);
+                // Hiện phần "Áp dụng cho" khi là AUTOMATIC
+                layoutApplyFor.setVisibility(View.VISIBLE);
+                tvApplyFor.setText(getApplyText(p));
             }
 
             // Discount display
@@ -99,14 +106,6 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
             } else {
                 tvDiscount.setText("-" + VND.format((long) p.getDiscountValue()));
                 tvBadge.setVisibility(View.GONE);
-            }
-
-            // Apply for - chỉ hiển thị nếu là AUTOMATIC
-            if (p.isAutomatic()) {
-                tvApplyFor.setVisibility(View.VISIBLE);
-                tvApplyFor.setText(getApplyText(p));
-            } else {
-                tvApplyFor.setVisibility(View.GONE);
             }
 
             // Valid date

@@ -116,8 +116,14 @@ public class Promotion {
     public boolean isFixedType()   { return TYPE_FIXED.equals(discountType); }
 
     // Kiểm tra loại promotion
-    public boolean isVoucher()    { return PROMOTION_TYPE_VOUCHER.equals(promotionType); }
-    public boolean isAutomatic()  { return PROMOTION_TYPE_AUTOMATIC.equals(promotionType) || promotionType == null; }
+    public boolean isVoucher() {
+        return PROMOTION_TYPE_VOUCHER.equals(promotionType)
+                || (promotionType == null && voucherCode != null && !voucherCode.isEmpty());
+    }
+    public boolean isAutomatic() {
+        return PROMOTION_TYPE_AUTOMATIC.equals(promotionType)
+                || (promotionType == null && (voucherCode == null || voucherCode.isEmpty()));
+    }
     
     public double calculateDiscount(double originalPrice) {
         if (isPercentType()) {

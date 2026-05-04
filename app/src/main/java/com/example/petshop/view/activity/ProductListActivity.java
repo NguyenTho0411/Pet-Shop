@@ -121,7 +121,14 @@ public class ProductListActivity extends AppCompatActivity {
         new PetRepository().getAll(new PetRepository.Callback<List<Pet>>() {
             @Override
             public void onSuccess(List<Pet> data) {
-                List<Pet> filtered = filterPets(data, filterKey);
+                // Chỉ lấy pets còn bán được
+                List<Pet> available = new ArrayList<>();
+                for (Pet p : data) {
+                    if (p.getStatus() == null || Pet.STATUS_AVAILABLE.equals(p.getStatus())) {
+                        available.add(p);
+                    }
+                }
+                List<Pet> filtered = filterPets(available, filterKey);
                 applyPromotionsAndDisplay(filtered, null);
             }
 
@@ -157,7 +164,14 @@ public class ProductListActivity extends AppCompatActivity {
             public void onSuccess(List<Pet> data) {
                 synchronized (loadedPets) {
                     if (data != null) {
-                        loadedPets.addAll(filterPets(data, filterKey));
+                        // Chỉ lấy pets còn bán được
+                        List<Pet> available = new ArrayList<>();
+                        for (Pet p : data) {
+                            if (p.getStatus() == null || Pet.STATUS_AVAILABLE.equals(p.getStatus())) {
+                                available.add(p);
+                            }
+                        }
+                        loadedPets.addAll(filterPets(available, filterKey));
                     }
                 }
                 checkAllLoaded(loadedCount, loadedPets, loadedFoods);
@@ -189,13 +203,20 @@ public class ProductListActivity extends AppCompatActivity {
     }
 
     private List<Pet> filterPets(List<Pet> pets, String filterKey) {
-        if (filterKey == null || filterKey.trim().isEmpty() || pets == null) return pets != null ? new ArrayList<>(pets) : new ArrayList<>();
+        if (pets == null) return new ArrayList<>();
+        if (filterKey == null || filterKey.trim().isEmpty()) {
+            // Không filter → trả về tất cả pets (chỉ lọc pet còn bán được)
+            return new ArrayList<>(pets);
+        }
 
         String key = filterKey.toLowerCase(java.util.Locale.ROOT);
 
         // Dịch tiếng Việt sang tiếng Anh để so sánh với species
         String translatedKey = translateVietnameseToEnglish(key);
         final String searchKey = !translatedKey.isEmpty() ? translatedKey : key;
+
+        // Các từ chung không nên lọc theo species
+        boolean isGeneralCategory = isGeneralCategory(key);
 
         List<Pet> result = new ArrayList<>();
         for (Pet p : pets) {
@@ -205,29 +226,47 @@ public class ProductListActivity extends AppCompatActivity {
             if (p.getCategoryId() != null && p.getCategoryId().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
             if (p.getCategory() != null && p.getCategory().getName() != null && p.getCategory().getName().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
 
-            // So sánh với species (dùng translated key)
-            if (p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(searchKey)) matches = true;
+            // Nếu là category cụ thể (chó, mèo...) thì lọc theo species
+            if (!isGeneralCategory && !searchKey.isEmpty()) {
+                if (p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(searchKey)) matches = true;
 
-            // So sánh với category name đã dịch
-            if (p.getCategory() != null && p.getCategory().getName() != null) {
-                String catNameNormalized = p.getCategory().getName().toLowerCase(java.util.Locale.ROOT);
-                String translatedCatName = translateVietnameseToEnglish(catNameNormalized);
-                if (translatedCatName.contains(searchKey) || catNameNormalized.contains(key)) matches = true;
+                // So sánh với category name đã dịch
+                if (p.getCategory() != null && p.getCategory().getName() != null) {
+                    String catNameNormalized = p.getCategory().getName().toLowerCase(java.util.Locale.ROOT);
+                    String translatedCatName = translateVietnameseToEnglish(catNameNormalized);
+                    if (translatedCatName.contains(searchKey) || catNameNormalized.contains(key)) matches = true;
+                }
             }
+
+            // Nếu là category chung (Thú cưng) → match tất cả pets
+            if (isGeneralCategory) matches = true;
 
             if (matches) result.add(p);
         }
         return result;
     }
 
+    private boolean isGeneralCategory(String key) {
+        if (key == null || key.isEmpty()) return true;
+        // Các từ chung cho pet category
+        return key.contains("thú cưng")
+                || key.contains("thu cung")
+                || key.equals("pet")
+                || key.equals("pets")
+                || key.equals("all")
+                || key.contains("danh sách")
+                || key.equals("cho")
+                || key.equals("meo");
+    }
+
     private String translateVietnameseToEnglish(String text) {
         if (text == null || text.isEmpty()) return "";
         String t = text.toLowerCase(java.util.Locale.ROOT);
-        if (t.contains("chó") || t.contains("cho") || t.equals("dog")) return "dog";
-        if (t.contains("mèo") || t.contains("meo") || t.equals("cat")) return "cat";
+        if (t.contains("chó") || t.contains("cho ") || t.contains("cho,") || t.equals("dog")) return "dog";
+        if (t.contains("mèo") || t.contains("meo ") || t.contains("meo,") || t.equals("cat")) return "cat";
         if (t.contains("cá") || t.equals("fish")) return "fish";
         if (t.contains("chim") || t.equals("bird")) return "bird";
-        if (t.contains("thỏ") || t.contains("tho") || t.equals("rabbit")) return "rabbit";
+        if (t.contains("thỏ") || t.contains("tho ") || t.contains("tho,") || t.equals("rabbit")) return "rabbit";
         if (t.contains("hamster")) return "hamster";
         return "";
     }
