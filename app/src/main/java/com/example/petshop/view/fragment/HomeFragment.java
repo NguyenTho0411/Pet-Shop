@@ -96,29 +96,6 @@ public class HomeFragment extends Fragment {
         root.findViewById(R.id.cardPromo).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PromotionActivity.class)));
 
-        root.findViewById(R.id.tvSeeAllPets).setOnClickListener(v -> {
-                Intent i = new Intent(requireContext(), ProductListActivity.class);
-                if (currentCategoryName != null && Category.TYPE_PET.equals(currentCategoryType)) {
-                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Danh sách " + currentCategoryName);
-                    i.putExtra(ProductListActivity.EXTRA_FILTER_KEY, currentCategoryName);
-                } else {
-                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Thú cưng");
-                }
-                i.putExtra(ProductListActivity.EXTRA_CATEGORY, ProductListActivity.CATEGORY_PET);
-                startActivity(i);
-        });
-        root.findViewById(R.id.tvSeeAllFood).setOnClickListener(v -> {
-                Intent i = new Intent(requireContext(), ProductListActivity.class);
-                if (currentCategoryName != null && Category.TYPE_FOOD.equals(currentCategoryType)) {
-                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Danh sách " + currentCategoryName);
-                    i.putExtra(ProductListActivity.EXTRA_FILTER_KEY, currentCategoryName);
-                } else {
-                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Đồ ăn thú cưng");
-                }
-                i.putExtra(ProductListActivity.EXTRA_CATEGORY, ProductListActivity.CATEGORY_FOOD);
-                startActivity(i);
-        });
-
         etSearch = root.findViewById(R.id.etSearch);
         etSearch.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
