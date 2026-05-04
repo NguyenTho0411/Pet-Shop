@@ -91,7 +91,6 @@
             <include layout="@layout/item_admin_action" android:id="@+id/itemEditProfile" />
             <include layout="@layout/item_admin_action" android:id="@+id/itemManageAddress" />
             <include layout="@layout/item_admin_action" android:id="@+id/itemOrderHistory" />
-            <include layout="@layout/item_admin_action" android:id="@+id/itemFavorites" />
 
             <View android:layout_width="match_parent" android:layout_height="1dp"
                 android:background="@color/divider" android:layout_marginVertical="12dp"

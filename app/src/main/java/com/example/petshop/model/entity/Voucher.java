@@ -54,6 +54,9 @@ public class Voucher {
     @SerializedName("isActive")
     private boolean isActive;
 
+    @SerializedName("isSystem")
+    private boolean isSystem;              // voucher hiển thị cho tất cả user
+
     @SerializedName("createdAt")
     private String createdAt;
 
@@ -121,6 +124,9 @@ public class Voucher {
 
     public boolean isActive() { return isActive; }
     public void setActive(boolean active) { isActive = active; }
+
+    public boolean isSystem() { return isSystem; }
+    public void setSystem(boolean system) { isSystem = system; }
 
     public String getCreatedAt() { return createdAt; }
     public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }

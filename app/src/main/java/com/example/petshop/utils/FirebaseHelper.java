@@ -206,8 +206,11 @@ public class FirebaseHelper {
         if (error.contains("EMAIL_EXISTS") || error.contains("email address is already"))
             return "Email đã được sử dụng";
         if (error.contains("WEAK_PASSWORD"))      return "Mật khẩu quá yếu (tối thiểu 6 ký tự)";
-        if (error.contains("TOO_MANY_REQUESTS"))  return "Quá nhiều lần thử. Vui lòng thử lại sau";
+        if (error.contains("TOO_MANY_REQUESTS") || error.contains("too many attempts"))
+            return "Quá nhiều lần thử. Vui lòng thử lại sau";
         if (error.contains("NETWORK_ERROR"))      return "Lỗi mạng. Vui lòng kiểm tra kết nối";
+        if (error.contains("USER_NOT_FOUND") || error.contains("user not found"))
+            return "Tài khoản không tồn tại";
         return "Có lỗi xảy ra. Vui lòng thử lại";
     }
 }

@@ -33,7 +33,7 @@ public class FoodDetailActivity extends AppCompatActivity {
 
     private final NumberFormat VND = NumberFormat.getInstance(new Locale("vi", "VN"));
 
-    private ImageView ivHero, ivFavoriteIcon;
+    private ImageView ivHero;
     private ViewPager2 vpFoodImages;
     private LinearLayout llDotIndicator;
     private ImageSliderAdapter sliderAdapter;
@@ -45,7 +45,6 @@ public class FoodDetailActivity extends AppCompatActivity {
 
     private Food currentFood;
     private int  qty = 1;
-    private boolean isFavorite = false;
     private CartViewModel cartVm;
 
     @Override
@@ -74,7 +73,6 @@ public class FoodDetailActivity extends AppCompatActivity {
 
     private void bindViews() {
         ivHero          = findViewById(R.id.ivFoodHero);
-        ivFavoriteIcon  = findViewById(R.id.ivFavoriteIcon);
         vpFoodImages    = findViewById(R.id.vpFoodImages);
         llDotIndicator  = findViewById(R.id.llDotIndicator);
 
@@ -102,7 +100,6 @@ public class FoodDetailActivity extends AppCompatActivity {
         btnIncQty       = findViewById(R.id.btnIncQty);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-        findViewById(R.id.btnFavorite).setOnClickListener(v -> toggleFavorite());
 
         btnDecQty.setOnClickListener(v -> { if (qty > 1) { qty--; tvQty.setText(String.valueOf(qty)); } });
         btnIncQty.setOnClickListener(v -> {
@@ -239,16 +236,6 @@ public class FoodDetailActivity extends AppCompatActivity {
         tvUsageGuide.setText(orEmpty(food.getUsageGuide()));
         tvStorageGuide.setText(food.getStorageGuide() != null
                 ? "🗄 Bảo quản: " + food.getStorageGuide() : "");
-    }
-
-    private void toggleFavorite() {
-        if (FirebaseHelper.getCurrentUser() == null) {
-            startActivity(new Intent(this, LoginActivity.class));
-            return;
-        }
-        isFavorite = !isFavorite;
-        ivFavoriteIcon.setColorFilter(isFavorite ? getColor(R.color.badge_red) : getColor(R.color.text_hint));
-        Toast.makeText(this, isFavorite ? "Đã yêu thích ❤️" : "Đã bỏ yêu thích", Toast.LENGTH_SHORT).show();
     }
 
     private String targetPetVi(String t) {

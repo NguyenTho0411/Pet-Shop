@@ -9,10 +9,27 @@ public class Promotion {
     public static final String TYPE_PERCENT = "PERCENT";   // giảm theo %
     public static final String TYPE_FIXED   = "FIXED";     // giảm số tiền cố định
 
-    public static final String APPLY_ALL   = "ALL";        // áp dụng tất cả sản phẩm
-    public static final String APPLY_PET   = "PET";        // chỉ thú cưng
-    public static final String APPLY_FOOD  = "FOOD";       // chỉ thức ăn
-    public static final String APPLY_SPECIFIC = "SPECIFIC"; // sản phẩm cụ thể
+    // Loại áp dụng (phân cấp)
+    public static final String APPLY_ALL       = "ALL";       // tất cả sản phẩm
+    public static final String APPLY_CATEGORY  = "CATEGORY";  // theo danh mục (thú cưng/thức ăn)
+    public static final String APPLY_SPECIES   = "SPECIES";   // theo giống (chó, mèo, cá...)
+    public static final String APPLY_PRODUCT   = "PRODUCT";   // sản phẩm cụ thể
+
+    // Danh mục (áp dụng khi APPLY_CATEGORY)
+    public static final String CATEGORY_PET  = "PET";
+    public static final String CATEGORY_FOOD = "FOOD";
+
+    // Các loại giống phổ biến
+    public static final String SPECIES_DOG     = "DOG";
+    public static final String SPECIES_CAT     = "CAT";
+    public static final String SPECIES_FISH    = "FISH";
+    public static final String SPECIES_BIRD    = "BIRD";
+    public static final String SPECIES_RABBIT  = "RABBIT";
+    public static final String SPECIES_HAMSTER = "HAMSTER";
+
+    // Loại sản phẩm (để xác định collection trong Firestore)
+    public static final String PRODUCT_TYPE_PET = "PET";
+    public static final String PRODUCT_TYPE_FOOD = "FOOD";
 
     @SerializedName("id")
     private String id;
@@ -24,25 +41,36 @@ public class Promotion {
     private String description;
 
     @SerializedName("bannerUrl")
-    private String bannerUrl;            // ảnh banner promotion
+    private String bannerUrl;
 
     @SerializedName("discountType")
-    private String discountType;         // PERCENT | FIXED
+    private String discountType;
 
     @SerializedName("discountValue")
-    private double discountValue;        // % hoặc số tiền
+    private double discountValue;
 
     @SerializedName("maxDiscountAmount")
-    private double maxDiscountAmount;    // giảm tối đa (cho loại PERCENT)
+    private double maxDiscountAmount;
 
-    @SerializedName("applyTo")
-    private String applyTo;              // ALL | PET | FOOD | SPECIFIC
+    // --- Nâng cấp: phân cấp áp dụng ---
+    @SerializedName("applyType")
+    private String applyType;              // ALL | CATEGORY | SPECIES | PRODUCT
+
+    @SerializedName("applyCategory")
+    private String applyCategory;          // PET | FOOD (khi applyType = CATEGORY)
+
+    @SerializedName("applySpecies")
+    private List<String> applySpecies;    // ["DOG", "CAT"] (khi applyType = SPECIES)
 
     @SerializedName("productIds")
-    private List<String> productIds;     // khi applyTo = SPECIFIC
+    private List<String> productIds;       // danh sách product ID cụ thể
+
+    @SerializedName("productTypes")
+    private List<String> productTypes;    // ["PET", "FOOD"] khi áp dụng nhiều loại
+    // ----------------------------------
 
     @SerializedName("startDate")
-    private String startDate;            // yyyy-MM-dd HH:mm:ss
+    private String startDate;
 
     @SerializedName("endDate")
     private String endDate;
@@ -52,16 +80,16 @@ public class Promotion {
     private boolean isActive;
 
     @SerializedName("usageCount")
-    private int usageCount;              // số lần đã dùng
+    private int usageCount;
 
     @SerializedName("usageLimit")
-    private int usageLimit;              // giới hạn tổng lượt dùng (0 = không giới hạn)
+    private int usageLimit;
 
     @SerializedName("perUserLimit")
-    private int perUserLimit;            // giới hạn mỗi user
+    private int perUserLimit;
 
     @SerializedName("createdBy")
-    private String createdBy;            // adminId
+    private String createdBy;
 
     @SerializedName("createdAt")
     private String createdAt;
@@ -69,7 +97,9 @@ public class Promotion {
     @SerializedName("updatedAt")
     private String updatedAt;
 
-    public Promotion() {}
+    public Promotion() {
+        this.applyType = APPLY_ALL;
+    }
 
     public boolean isPercentType() { return TYPE_PERCENT.equals(discountType); }
     public boolean isFixedType()   { return TYPE_FIXED.equals(discountType); }
@@ -84,6 +114,80 @@ public class Promotion {
 
     public double applyDiscount(double originalPrice) {
         return Math.max(0, originalPrice - calculateDiscount(originalPrice));
+    }
+
+    // Kiểm tra khuyến mãi có áp dụng cho sản phẩm không
+    public boolean appliesTo(Object product) {
+        if (!isActive) return false;
+        if (!isWithinDateRange()) return false;
+
+        switch (applyType) {
+            case APPLY_ALL:
+                return true;
+
+            case APPLY_CATEGORY:
+                if (product instanceof Pet) {
+                    return CATEGORY_PET.equals(applyCategory);
+                } else if (product instanceof Food) {
+                    return CATEGORY_FOOD.equals(applyCategory);
+                }
+                return false;
+
+            case APPLY_SPECIES:
+                if (product instanceof Pet) {
+                    Pet pet = (Pet) product;
+                    if (applySpecies == null || applySpecies.isEmpty()) return false;
+                    return applySpecies.contains(pet.getSpecies());
+                }
+                return false;
+
+            case APPLY_PRODUCT:
+                if (productIds == null || productIds.isEmpty()) return false;
+                if (product instanceof Pet) {
+                    return productIds.contains(((Pet) product).getId());
+                } else if (product instanceof Food) {
+                    return productIds.contains(((Food) product).getId());
+                }
+                return false;
+
+            default:
+                return false;
+        }
+    }
+
+    public boolean isWithinDateRange() {
+        if (startDate == null && endDate == null) return true;
+        try {
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault());
+            java.util.Date now = new java.util.Date();
+            if (startDate != null && !startDate.isEmpty()) {
+                java.util.Date start = sdf.parse(startDate);
+                if (start != null && now.before(start)) return false;
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                java.util.Date end = sdf.parse(endDate);
+                if (end != null && now.after(end)) return false;
+            }
+            return true;
+        } catch (Exception e) {
+            return true;
+        }
+    }
+
+    public String getApplyDescription() {
+        switch (applyType) {
+            case APPLY_ALL:
+                return "Tất cả sản phẩm";
+            case APPLY_CATEGORY:
+                return CATEGORY_PET.equals(applyCategory) ? "Thú cưng" : "Thức ăn";
+            case APPLY_SPECIES:
+                if (applySpecies == null || applySpecies.isEmpty()) return "Các giống";
+                return String.join(", ", applySpecies);
+            case APPLY_PRODUCT:
+                return productIds != null ? productIds.size() + " sản phẩm" : "Sản phẩm cụ thể";
+            default:
+                return "Không xác định";
+        }
     }
 
     // region Getters & Setters
@@ -108,11 +212,24 @@ public class Promotion {
     public double getMaxDiscountAmount() { return maxDiscountAmount; }
     public void setMaxDiscountAmount(double maxDiscountAmount) { this.maxDiscountAmount = maxDiscountAmount; }
 
-    public String getApplyTo() { return applyTo; }
-    public void setApplyTo(String applyTo) { this.applyTo = applyTo; }
+    public String getApplyType() { return applyType; }
+    public void setApplyType(String applyType) { this.applyType = applyType; }
+
+    // Legacy getter/setter để tương thích ngược
+    public String getApplyTo() { return applyType; }
+    public void setApplyTo(String applyTo) { this.applyType = applyTo; }
+
+    public String getApplyCategory() { return applyCategory; }
+    public void setApplyCategory(String category) { this.applyCategory = category; }
+
+    public List<String> getApplySpecies() { return applySpecies; }
+    public void setApplySpecies(List<String> species) { this.applySpecies = species; }
 
     public List<String> getProductIds() { return productIds; }
     public void setProductIds(List<String> productIds) { this.productIds = productIds; }
+
+    public List<String> getProductTypes() { return productTypes; }
+    public void setProductTypes(List<String> types) { this.productTypes = types; }
 
     public String getStartDate() { return startDate; }
     public void setStartDate(String startDate) { this.startDate = startDate; }

@@ -36,7 +36,7 @@ public class PetDetailActivity extends AppCompatActivity {
     private final NumberFormat VND = NumberFormat.getInstance(new Locale("vi", "VN"));
 
     // Views
-    private ImageView ivHero, ivFavoriteIcon;
+    private ImageView ivHero;
     private ViewPager2 vpPetImages;
     private LinearLayout llDotIndicator;
     private ImageSliderAdapter sliderAdapter;
@@ -46,7 +46,6 @@ public class PetDetailActivity extends AppCompatActivity {
     private TextView  tvAboutTitle, tvDescription, tvCareGuide, tvDietInfo;
     private TextView  tvVaccine, tvDewormed, tvMicrochip, tvCertificate;
 
-    private boolean isFavorite = false;
     private Pet     currentPet;
     private CartViewModel cartVm;
 
@@ -76,7 +75,6 @@ public class PetDetailActivity extends AppCompatActivity {
 
     private void bindViews() {
         ivHero           = findViewById(R.id.ivPetHero);
-        ivFavoriteIcon   = findViewById(R.id.ivFavoriteIcon);
         vpPetImages      = findViewById(R.id.vpPetImages);
         llDotIndicator   = findViewById(R.id.llDotIndicator);
 
@@ -104,8 +102,6 @@ public class PetDetailActivity extends AppCompatActivity {
         tvCertificate    = findViewById(R.id.tvCertificate);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-
-        findViewById(R.id.btnFavorite).setOnClickListener(v -> toggleFavorite());
 
         findViewById(R.id.btnCall).setOnClickListener(v -> {
             if (FirebaseHelper.getCurrentUser() == null) {
@@ -234,13 +230,6 @@ public class PetDetailActivity extends AppCompatActivity {
             startActivity(new Intent(this, LoginActivity.class));
             return;
         }
-        isFavorite = !isFavorite;
-        ivFavoriteIcon.setColorFilter(isFavorite
-                ? getColor(R.color.badge_red)
-                : getColor(R.color.text_hint));
-        Toast.makeText(this,
-                isFavorite ? "Đã thêm vào yêu thích ❤️" : "Đã bỏ khỏi yêu thích",
-                Toast.LENGTH_SHORT).show();
     }
 
     private String genderVi(String g) {

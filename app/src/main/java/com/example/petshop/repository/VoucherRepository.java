@@ -33,6 +33,22 @@ public class VoucherRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    // Get system vouchers (visible to all users)
+    public void getSystemVouchers(Callback<List<Voucher>> cb) {
+        db.collection(COL)
+                .whereEqualTo("isSystem", true)
+                .whereEqualTo("isActive", true)
+                .limit(5)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<Voucher> list = new ArrayList<>();
+                    for (var doc : snap.getDocuments())
+                        list.add(doc.toObject(Voucher.class));
+                    cb.onSuccess(list);
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     public void getByCode(String code, Callback<Voucher> cb) {
         db.collection(COL)
                 .whereEqualTo("code", code)

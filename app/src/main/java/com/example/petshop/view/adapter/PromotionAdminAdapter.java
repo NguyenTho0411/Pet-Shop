@@ -50,8 +50,10 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
             : String.format("₫%,d", (long)p.getDiscountValue());
         h.tvDiscount.setText("Giảm: " + discountText);
         
-        h.tvApplyTo.setText("Áp dụng: " + formatApplyTo(p.getApplyTo()));
-        h.tvDateRange.setText(String.format("📅 %s → %s", p.getStartDate(), p.getEndDate()));
+        h.tvApplyTo.setText("Áp dụng: " + formatApplyTo(p));
+        h.tvDateRange.setText(String.format("📅 %s → %s", 
+                p.getStartDate() != null ? p.getStartDate() : "N/A", 
+                p.getEndDate() != null ? p.getEndDate() : "N/A"));
         h.tvUsage.setText(String.format("Đã dùng: %d", p.getUsageCount()));
         
         h.switchActive.setOnCheckedChangeListener(null); // clear trước để tránh fire khi setChecked
@@ -63,13 +65,46 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
         h.btnMore.setOnClickListener(v -> showPopup(v.getContext(), v, p));
     }
 
-    private String formatApplyTo(String applyTo) {
-        switch (applyTo) {
-            case "PET": return "🐾 Thú cưng";
-            case "FOOD": return "🍖 Thức ăn";
-            case "SPECIFIC": return "📦 Sản phẩm cụ thể";
-            default: return "Tất cả";
+    private String formatApplyTo(Promotion p) {
+        String applyType = p.getApplyType();
+        
+        if (applyType == null || Promotion.APPLY_ALL.equals(applyType)) {
+            return "Tất cả sản phẩm";
         }
+        
+        if (Promotion.APPLY_CATEGORY.equals(applyType)) {
+            String cat = p.getApplyCategory();
+            if (Promotion.CATEGORY_PET.equals(cat)) return "🐾 Thú cưng";
+            if (Promotion.CATEGORY_FOOD.equals(cat)) return "🍖 Thức ăn";
+            return "📂 " + cat;
+        }
+        
+        if (Promotion.APPLY_SPECIES.equals(applyType)) {
+            List<String> species = p.getApplySpecies();
+            if (species == null || species.isEmpty()) return "🐾 Các giống";
+            
+            StringBuilder sb = new StringBuilder();
+            for (String s : species) {
+                switch (s) {
+                    case Promotion.SPECIES_DOG: sb.append("🐕 Chó "); break;
+                    case Promotion.SPECIES_CAT: sb.append("🐈 Mèo "); break;
+                    case Promotion.SPECIES_FISH: sb.append("🐟 Cá "); break;
+                    case Promotion.SPECIES_BIRD: sb.append("🐦 Chim "); break;
+                    case Promotion.SPECIES_RABBIT: sb.append("🐰 Thỏ "); break;
+                    case Promotion.SPECIES_HAMSTER: sb.append("🐹 Hamster "); break;
+                    default: sb.append(s).append(" ");
+                }
+            }
+            return sb.toString().trim();
+        }
+        
+        if (Promotion.APPLY_PRODUCT.equals(applyType)) {
+            List<String> ids = p.getProductIds();
+            if (ids == null || ids.isEmpty()) return "📦 Sản phẩm cụ thể";
+            return "📦 " + ids.size() + " sản phẩm";
+        }
+        
+        return "Tất cả";
     }
 
     private void showPopup(android.content.Context ctx, View anchor, Promotion p) {

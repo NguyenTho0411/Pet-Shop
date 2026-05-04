@@ -3,6 +3,7 @@ package com.example.petshop.view.activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.LinearLayout;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.cardview.widget.CardView;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -21,8 +23,10 @@ import com.example.petshop.model.entity.Address;
 import com.example.petshop.model.entity.Cart;
 import com.example.petshop.model.entity.CartItem;
 import com.example.petshop.model.entity.Order;
+import com.example.petshop.model.entity.Voucher;
 import com.example.petshop.repository.AddressRepository;
 import com.example.petshop.repository.OrderRepository;
+import com.example.petshop.repository.VoucherRepository;
 import com.example.petshop.utils.ShippingHelper;
 import com.example.petshop.utils.VNPayHelper;
 import com.example.petshop.view.adapter.CartItemAdapter;
@@ -46,10 +50,13 @@ public class CheckoutActivity extends AppCompatActivity {
 
     private TextView tvReceiverName, tvReceiverPhone, tvAddressDetail;
     private TextView tvSubtotal, tvShipping, tvTotal, tvShipEta, tvDiscount;
-    private LinearLayout llDiscountRow;
+    private TextView tvSelectedVoucher, tvChooseVoucher;
+    private LinearLayout llDiscountRow, llVoucherChips;
+    private CardView cvSelectedVoucher;
     private RadioButton  rbCod, rbVnpay;
     private ProgressBar  progressBar;
     private double       voucherDiscount = 0;
+    private boolean voucherChipsExpanded = false;
 
     private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
 
@@ -84,6 +91,10 @@ public class CheckoutActivity extends AppCompatActivity {
         tvShipEta        = findViewById(R.id.tvShipEta);
         tvDiscount       = findViewById(R.id.tvSummaryDiscount);
         llDiscountRow    = findViewById(R.id.llDiscountRow);
+        tvSelectedVoucher = findViewById(R.id.tvSelectedVoucher);
+        tvChooseVoucher  = findViewById(R.id.tvChooseVoucher);
+        llVoucherChips   = findViewById(R.id.llVoucherChips);
+        cvSelectedVoucher = findViewById(R.id.cvSelectedVoucher);
         rbCod            = findViewById(R.id.rbCod);
         rbVnpay          = findViewById(R.id.rbVnpay);
 
@@ -97,6 +108,12 @@ public class CheckoutActivity extends AppCompatActivity {
 
         // Voucher
         ((Button) findViewById(R.id.btnApplyVoucher)).setOnClickListener(v -> applyVoucher());
+        tvChooseVoucher.setOnClickListener(v -> toggleVoucherChips());
+        if (cvSelectedVoucher != null) {
+            cvSelectedVoucher.findViewById(R.id.btnRemoveVoucher).setOnClickListener(v -> removeVoucher());
+        }
+
+        loadSystemVouchers();
 
         // Change address
         View.OnClickListener changeAddressListener = v -> {
@@ -256,6 +273,83 @@ public class CheckoutActivity extends AppCompatActivity {
         
         updatePriceSummary(subtotal);
         Toast.makeText(this, "Đã áp dụng mã " + v.getCode(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void loadSystemVouchers() {
+        new VoucherRepository().getSystemVouchers(new VoucherRepository.Callback<>() {
+            @Override
+            public void onSuccess(List<Voucher> vouchers) {
+                runOnUiThread(() -> displayVoucherChips(vouchers));
+            }
+            @Override
+            public void onFailure(String err) {
+                runOnUiThread(() -> {
+                    llVoucherChips.setVisibility(View.GONE);
+                    tvChooseVoucher.setVisibility(View.GONE);
+                });
+            }
+        });
+    }
+
+    private void displayVoucherChips(List<Voucher> vouchers) {
+        llVoucherChips.removeAllViews();
+        if (vouchers == null || vouchers.isEmpty()) {
+            tvChooseVoucher.setVisibility(View.GONE);
+            return;
+        }
+
+        String today = new java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new java.util.Date());
+
+        for (Voucher v : vouchers) {
+            if (!v.isActive() || v.isExpired(today) || v.isUsageLimitReached()) continue;
+
+            TextView chip = new TextView(this);
+            chip.setText(v.getCode());
+            chip.setTextSize(13);
+            chip.setPadding(dipToPx(12), dipToPx(8), dipToPx(12), dipToPx(8));
+            chip.setTextColor(getResources().getColor(R.color.primary, null));
+            chip.setBackgroundResource(R.drawable.bg_social_btn);
+
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT);
+            params.setMargins(0, 0, dipToPx(8), 0);
+            chip.setLayoutParams(params);
+
+            chip.setOnClickListener(v2 -> {
+                TextInputEditText etVoucher = findViewById(R.id.etVoucher);
+                etVoucher.setText(v.getCode());
+                applyVoucher();
+            });
+
+            llVoucherChips.addView(chip);
+        }
+
+        if (llVoucherChips.getChildCount() == 0) {
+            tvChooseVoucher.setVisibility(View.GONE);
+        }
+    }
+
+    private void toggleVoucherChips() {
+        voucherChipsExpanded = !voucherChipsExpanded;
+        tvChooseVoucher.setText(voucherChipsExpanded ? "Ẩn mã giảm giá ▲" : "Chọn mã giảm giá có sẵn ▼");
+        llVoucherChips.setVisibility(voucherChipsExpanded ? View.VISIBLE : View.GONE);
+    }
+
+    private void removeVoucher() {
+        voucherDiscount = 0;
+        selectedVoucherId = null;
+        selectedVoucherCode = null;
+        TextInputEditText etVoucher = findViewById(R.id.etVoucher);
+        if (etVoucher != null) etVoucher.setText("");
+        if (cvSelectedVoucher != null) cvSelectedVoucher.setVisibility(View.GONE);
+        if (llDiscountRow != null) llDiscountRow.setVisibility(View.GONE);
+        if (tvDiscount != null) tvDiscount.setText("-0đ");
+        if (cart != null) updatePriceSummary(cart.calculateSubtotal());
+    }
+
+    private int dipToPx(int dp) {
+        return (int) (dp * getResources().getDisplayMetrics().density);
     }
 
     private void placeOrder() {

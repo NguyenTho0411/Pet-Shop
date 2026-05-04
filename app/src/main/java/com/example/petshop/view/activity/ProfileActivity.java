@@ -1,11 +1,21 @@
 package com.example.petshop.view.activity;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.bumptech.glide.Glide;
 import com.example.petshop.R;
@@ -14,7 +24,11 @@ import com.example.petshop.utils.FirebaseHelper;
 import com.example.petshop.view.dialog.ConfirmDialog;
 import com.example.petshop.view.dialog.DialogUtils;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Locale;
 
@@ -23,6 +37,10 @@ import de.hdodenhof.circleimageview.CircleImageView;
 public class ProfileActivity extends AppCompatActivity {
 
     private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
+    private static final int REQUEST_IMAGE_PERMISSION = 101;
+    
+    private CircleImageView ivAvatar;
+    private Uri selectedImageUri;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +63,7 @@ public class ProfileActivity extends AppCompatActivity {
                 user.getDisplayName() != null ? user.getDisplayName() : "Người dùng");
         ((TextView) findViewById(R.id.tvUserEmail)).setText(user.getEmail());
 
-        CircleImageView ivAvatar = findViewById(R.id.ivAvatar);
+        ivAvatar = findViewById(R.id.ivAvatar);
         if (user.getPhotoUrl() != null) {
             Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatar);
         }
@@ -71,8 +89,10 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void setupMenuItems(String uid) {
-        setupItem(R.id.itemEditProfile,    "✏️", "Chỉnh sửa thông tin", v ->
-                startActivity(new Intent(this, EditProfileActivity.class)));
+        setupItem(R.id.itemEditProfile,    "✏️", "Chỉnh sửa thông tin", v -> {
+                Intent i = new Intent(this, EditProfileActivity.class);
+                startActivityForResult(i, 100);
+        });
 
         setupItem(R.id.itemManageAddress,  "📍", "Địa chỉ giao hàng", v ->
                 startActivity(new Intent(this, ManageAddressActivity.class)));
@@ -80,14 +100,127 @@ public class ProfileActivity extends AppCompatActivity {
         setupItem(R.id.itemOrderHistory,   "📦", "Lịch sử đơn hàng", v ->
                 startActivity(new Intent(this, OrderHistoryActivity.class)));
 
-        setupItem(R.id.itemFavorites,      "❤️", "Yêu thích", v ->
-                Toast.makeText(this, "Sắp ra mắt", Toast.LENGTH_SHORT).show());
-
         setupItem(R.id.itemLogout,         "🚪", "Đăng xuất", v -> confirmLogout());
 
         // Change avatar
-        findViewById(R.id.btnChangeAvatar).setOnClickListener(v ->
-                Toast.makeText(this, "Chức năng đổi ảnh đại diện — sắp ra mắt", Toast.LENGTH_SHORT).show());
+        findViewById(R.id.btnChangeAvatar).setOnClickListener(v -> showImagePickerDialog());
+    }
+    
+    private void showImagePickerDialog() {
+        DialogUtils.showConfirmDialog(this, "Đổi ảnh đại diện", "Chọn nguồn ảnh",
+                "Chụp ảnh", "Chọn từ thư viện",
+                new ConfirmDialog.OnConfirmListener() {
+                    @Override public void onConfirm() { openCamera(); }
+                    @Override public void onCancel() {}
+                }, "cameraDialog");
+        
+        // Show second option
+        new android.os.Handler().postDelayed(() -> {
+            try {
+                android.app.Dialog d = ((android.app.Dialog) java.lang.reflect.Method.class
+                        .getDeclaredMethod("getDialog").invoke(new DialogUtils().getClass()));
+            } catch (Exception e) {}
+        }, 100);
+        
+        // Simple approach: show options directly
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Đổi ảnh đại diện")
+                .setItems(new String[]{"📷 Chụp ảnh mới", "🖼️ Chọn từ thư viện"}, (d, which) -> {
+                    if (which == 0) openCamera();
+                    else openGallery();
+                })
+                .setNegativeButton("Huỷ", null)
+                .show();
+    }
+    
+    private final ActivityResultLauncher<Intent> cameraLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && selectedImageUri != null) {
+                    uploadAvatar(selectedImageUri);
+                }
+            });
+    
+    private final ActivityResultLauncher<Intent> galleryLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(), result -> {
+                if (result.getResultCode() == RESULT_OK && result.getData() != null) {
+                    Uri uri = result.getData().getData();
+                    if (uri != null) {
+                        uploadAvatar(uri);
+                    }
+                }
+            });
+    
+    private void openCamera() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) 
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.CAMERA}, REQUEST_IMAGE_PERMISSION);
+            return;
+        }
+        Intent i = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        selectedImageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, 
+                new android.content.ContentValues());
+        i.putExtra(MediaStore.EXTRA_OUTPUT, selectedImageUri);
+        cameraLauncher.launch(i);
+    }
+    
+    private void openGallery() {
+        Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        galleryLauncher.launch(i);
+    }
+    
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQUEST_IMAGE_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                openCamera();
+            } else {
+                Toast.makeText(this, "Cần cấp quyền camera để chụp ảnh", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+    
+    private void uploadAvatar(Uri uri) {
+        FirebaseUser user = FirebaseHelper.getCurrentUser();
+        if (user == null) return;
+        
+        Toast.makeText(this, "Đang tải ảnh lên...", Toast.LENGTH_SHORT).show();
+        
+        String uid = user.getUid();
+        StorageReference ref = FirebaseStorage.getInstance().getReference("avatars/" + uid + ".jpg");
+        
+        try {
+            Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            byte[] data = baos.toByteArray();
+            
+            ref.putBytes(data)
+                    .addOnSuccessListener(task -> ref.getDownloadUrl().addOnSuccessListener(downloadUri -> {
+                        user.updateProfile(new com.google.firebase.auth.UserProfileChangeRequest.Builder()
+                                .setPhotoUri(downloadUri)
+                                .build())
+                                .addOnSuccessListener(aVoid -> {
+                                    Glide.with(this).load(downloadUri).circleCrop().into(ivAvatar);
+                                    Toast.makeText(this, "Đổi ảnh thành công!", Toast.LENGTH_SHORT).show();
+                                })
+                                .addOnFailureListener(e -> Toast.makeText(this, "Lỗi: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                    }))
+                    .addOnFailureListener(e -> Toast.makeText(this, "Lỗi tải ảnh: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+        } catch (IOException e) {
+            Toast.makeText(this, "Lỗi đọc ảnh", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == 100 && resultCode == EditProfileActivity.RESULT_PROFILE_UPDATED) {
+            FirebaseUser user = FirebaseHelper.getCurrentUser();
+            if (user != null) {
+                bindUserInfo(user);
+            }
+        }
     }
 
     private void setupItem(int viewId, String icon, String title, android.view.View.OnClickListener listener) {

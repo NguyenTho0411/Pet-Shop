@@ -45,9 +45,15 @@
 
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="horizontal" android:gravity="end">
+            <Button android:id="@+id/btnEdit"
+                android:layout_width="wrap_content" android:layout_height="32dp"
+                android:text="Sửa" android:textSize="11sp"
+                android:layout_marginEnd="8dp"
+                style="@style/Widget.Petshop.Button.Outline"
+                android:paddingStart="10dp" android:paddingEnd="10dp" />
             <Button android:id="@+id/btnSetDefault"
                 android:layout_width="wrap_content" android:layout_height="32dp"
-                android:text="Đặt mặc định" android:textSize="11sp"
+                android:text="Mặc định" android:textSize="11sp"
                 android:layout_marginEnd="8dp"
                 style="@style/Widget.Petshop.Button.Outline"
                 android:paddingStart="10dp" android:paddingEnd="10dp" />

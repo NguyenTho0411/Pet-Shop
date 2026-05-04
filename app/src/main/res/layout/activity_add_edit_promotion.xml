@@ -47,6 +47,7 @@
         <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
             android:orientation="vertical" android:padding="16dp">
 
+            <!-- Tên khuyến mãi -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.Petshop.TextInput"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -56,6 +57,7 @@
                     android:layout_height="56dp" android:inputType="textCapSentences" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Mô tả -->
             <com.google.android.material.textfield.TextInputLayout
                 style="@style/Widget.Petshop.TextInput"
                 android:layout_width="match_parent" android:layout_height="wrap_content"
@@ -66,6 +68,7 @@
                     android:gravity="top" android:inputType="textMultiLine" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Loại giảm giá -->
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="Loại giảm giá *" android:textSize="13sp"
                 android:textColor="@color/text_secondary" android:layout_marginBottom="6dp" />
@@ -90,6 +93,7 @@
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
             </LinearLayout>
 
+            <!-- Mức giảm -->
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:layout_marginBottom="12dp">
                 <com.google.android.material.textfield.TextInputLayout
@@ -110,38 +114,156 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
+            <!-- ===== ÁP DỤNG CHO ===== -->
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="Áp dụng cho *" android:textSize="13sp" android:textColor="@color/text_secondary"
                 android:layout_marginBottom="6dp" android:layout_marginTop="8dp" />
 
+            <!-- Bước 1: Chọn loại áp dụng -->
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                android:orientation="horizontal" android:layout_marginBottom="14dp">
+                android:orientation="horizontal" android:layout_marginBottom="8dp">
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnApplyAll"
-                    android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_width="0dp" android:layout_height="44dp"
                     android:layout_weight="1" android:text="TẤT CẢ"
-                    android:layout_marginEnd="4dp" android:textSize="11sp"
+                    android:layout_marginEnd="4dp" android:textSize="10sp"
                     android:insetTop="0dp" android:insetBottom="0dp"
                     app:cornerRadius="8dp"
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnApplyPet"
-                    android:layout_width="0dp" android:layout_height="48dp"
-                    android:layout_weight="1" android:text="THÚ CƯNG"
-                    android:layout_marginEnd="4dp" android:textSize="11sp"
+                    android:id="@+id/btnApplyCategory"
+                    android:layout_width="0dp" android:layout_height="44dp"
+                    android:layout_weight="1" android:text="THEO DANH MỤC"
+                    android:layout_marginEnd="4dp" android:textSize="10sp"
+                    android:insetTop="0dp" android:insetBottom="0dp"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
+            </LinearLayout>
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="8dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnApplySpecies"
+                    android:layout_width="0dp" android:layout_height="44dp"
+                    android:layout_weight="1" android:text="THEO GIỐNG"
+                    android:layout_marginEnd="4dp" android:textSize="10sp"
                     android:insetTop="0dp" android:insetBottom="0dp"
                     app:cornerRadius="8dp"
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnApplyFood"
-                    android:layout_width="0dp" android:layout_height="48dp"
-                    android:layout_weight="1" android:text="THỨC ĂN"
-                    android:textSize="11sp"
+                    android:id="@+id/btnApplyProduct"
+                    android:layout_width="0dp" android:layout_height="44dp"
+                    android:layout_weight="1" android:text="SẢN PHẨM CỤ THỂ"
+                    android:textSize="10sp"
                     android:insetTop="0dp" android:insetBottom="0dp"
                     app:cornerRadius="8dp"
                     style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
             </LinearLayout>
 
+            <!-- Bước 2: Chọn danh mục (khi chọn THEO DANH MỤC) -->
+            <LinearLayout android:id="@+id/layoutCategoryChoice"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="12dp"
+                android:visibility="gone">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCatPet"
+                    android:layout_width="0dp" android:layout_height="44dp"
+                    android:layout_weight="1" android:text="🐾 THÚ CƯNG"
+                    android:layout_marginEnd="8dp" android:textSize="11sp"
+                    android:insetTop="0dp" android:insetBottom="0dp"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCatFood"
+                    android:layout_width="0dp" android:layout_height="44dp"
+                    android:layout_weight="1" android:text="🍖 THỨC ĂN"
+                    android:textSize="11sp"
+                    android:insetTop="0dp" android:insetBottom="0dp"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+            </LinearLayout>
+
+            <!-- Bước 2: Chọn giống (khi chọn THEO GIỐNG) -->
+            <LinearLayout android:id="@+id/layoutSpeciesChoice"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="12dp"
+                android:visibility="gone">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Chọn giống áp dụng:" android:textSize="12sp"
+                    android:textColor="@color/text_secondary" android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupSpecies"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipDog"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐕 Chó" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipCat"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐈 Mèo" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipFish"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐟 Cá" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipBird"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐦 Chim" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipRabbit"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐰 Thỏ" />
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chipHamster"
+                        style="@style/Widget.MaterialComponents.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🐹 Hamster" />
+                </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
+
+            <!-- Bước 2: Chọn sản phẩm cụ thể -->
+            <LinearLayout android:id="@+id/layoutProductChoice"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="vertical" android:layout_marginBottom="12dp"
+                android:visibility="gone">
+
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="Chọn sản phẩm áp dụng:" android:textSize="12sp"
+                    android:textColor="@color/text_secondary" android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSelectProducts"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="+ Chọn sản phẩm"
+                    android:textSize="13sp"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
+                <TextView android:id="@+id/tvSelectedProducts"
+                    android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:text="Chưa chọn sản phẩm nào"
+                    android:textSize="12sp"
+                    android:textColor="@color/text_hint"
+                    android:layout_marginTop="4dp"
+                    android:padding="8dp" />
+            </LinearLayout>
+
+            <!-- Ngày áp dụng -->
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:layout_marginBottom="12dp">
                 <com.google.android.material.textfield.TextInputLayout
@@ -162,6 +284,7 @@
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
 
+            <!-- Giới hạn sử dụng -->
             <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
                 android:orientation="horizontal" android:layout_marginBottom="24dp">
                 <com.google.android.material.textfield.TextInputLayout

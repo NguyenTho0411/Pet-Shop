@@ -45,7 +45,7 @@
         <TextView android:id="@+id/tvReason"
             android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textSize="13sp" android:textColor="@color/text_primary"
-            android:maxLines="2" android:ellipsize="end"
+            android:maxLines="3" android:ellipsize="end"
             android:layout_marginBottom="6dp" />
 
         <!-- Row 4: Payment + bank info (COD only) -->
@@ -90,30 +90,39 @@
             android:orientation="horizontal" android:gravity="end">
 
             <!-- Reject button (only PENDING) -->
-            <Button android:id="@+id/btnReject"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReject"
                 android:layout_width="wrap_content" android:layout_height="36dp"
                 android:text="Từ chối"
-                android:textSize="13sp" android:textColor="@color/text_secondary"
-                android:backgroundTint="#F0F0F0"
-                android:layout_marginEnd="8dp"
+                android:textSize="12sp"
+                app:strokeColor="@color/text_hint"
+                app:cornerRadius="8dp"
+                android:textColor="@color/text_secondary"
                 android:visibility="gone"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
             <!-- Approve button (only PENDING) -->
-            <Button android:id="@+id/btnApprove"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnApprove"
                 android:layout_width="wrap_content" android:layout_height="36dp"
                 android:text="Duyệt yêu cầu"
-                android:textSize="13sp" android:textColor="@color/white"
-                android:background="@drawable/bg_orange_pill"
-                android:visibility="gone" />
+                android:textSize="12sp"
+                app:cornerRadius="8dp"
+                android:textColor="@color/white"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button" />
 
             <!-- Refunded button (only APPROVED) -->
-            <Button android:id="@+id/btnMarkRefunded"
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMarkRefunded"
                 android:layout_width="wrap_content" android:layout_height="36dp"
-                android:text="✓ Đã hoàn tiền"
-                android:textSize="13sp" android:textColor="@color/white"
-                android:backgroundTint="#4CAF50"
-                android:visibility="gone" />
+                android:text="Đã hoàn tiền"
+                android:textSize="12sp"
+                app:cornerRadius="8dp"
+                android:textColor="@color/white"
+                android:visibility="gone"
+                app:backgroundTint="#4CAF50"
+                style="@style/Widget.MaterialComponents.Button" />
 
         </LinearLayout>
 

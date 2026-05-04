@@ -89,8 +89,24 @@ public class LoginActivity extends AppCompatActivity {
         findViewById(R.id.tvGoRegister).setOnClickListener(v ->
                 startActivity(new Intent(this, RegisterActivity.class)));
 
-        findViewById(R.id.tvForgotPassword).setOnClickListener(v ->
-                authViewModel.sendPasswordReset(getEmail()));
+        findViewById(R.id.tvForgotPassword).setOnClickListener(v -> {
+            String email = getEmail();
+            if (TextUtils.isEmpty(email)) {
+                tvError.setText("Vui lòng nhập email để đặt lại mật khẩu");
+                tvError.setVisibility(View.VISIBLE);
+                etEmail.requestFocus();
+                return;
+            }
+            if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+                tvError.setText("Email không hợp lệ");
+                tvError.setVisibility(View.VISIBLE);
+                etEmail.requestFocus();
+                return;
+            }
+            tvError.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
+            authViewModel.sendPasswordReset(email);
+        });
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
     }
@@ -128,7 +144,20 @@ public class LoginActivity extends AppCompatActivity {
         });
 
         authViewModel.getErrorMessage().observe(this, error -> {
-            if (!TextUtils.isEmpty(error)) showError(error);
+            if (!TextUtils.isEmpty(error)) {
+                showError(error);
+                progressBar.setVisibility(View.GONE);
+            }
+        });
+
+        authViewModel.getResetEmailSent().observe(this, msg -> {
+            if (msg != null && !msg.isEmpty()) {
+                progressBar.setVisibility(View.GONE);
+                Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+                // Clear email field after success
+                etEmail.setText("");
+                etPassword.setText("");
+            }
         });
 
         authViewModel.getUserRole().observe(this, role -> {

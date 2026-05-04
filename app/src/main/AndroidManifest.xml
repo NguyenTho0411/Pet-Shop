@@ -92,9 +92,11 @@
         <activity android:name=".view.activity.OrderDetailActivity" android:exported="false" />
         <activity android:name=".view.activity.ReturnRequestActivity" android:exported="false" />
         <activity android:name=".view.activity.ProfileActivity" android:exported="false" />
+        <activity android:name=".view.activity.ProductListActivity" android:exported="false" />
         <activity android:name=".view.activity.EditProfileActivity" android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity android:name=".view.activity.ManageAddressActivity" android:exported="false" />
+        <activity android:name=".view.activity.NotificationActivity" android:exported="false" />
 
         <!-- Admin Order screens -->
         <activity android:name=".view.activity.AdminOrderListActivity" android:exported="false" />

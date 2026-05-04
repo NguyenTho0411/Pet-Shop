@@ -36,9 +36,8 @@ public class OrderRepository {
     // ====== CREATE ORDER (atomic) ======
     public void createOrder(Order order, List<CartItem> cartItems, Callback<String> cb) {
         String orderId   = UUID.randomUUID().toString();
-        String orderCode = "ORD-"
-                + new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date())
-                + "-" + orderId.substring(0, 4).toUpperCase();
+        String orderCode = "ORD" + new SimpleDateFormat("MMddHHmmss", Locale.getDefault()).format(new Date())
+                        + orderId.substring(0, 6).toUpperCase();
         order.setId(orderId);
         order.setOrderCode(orderCode);
         

@@ -26,6 +26,7 @@ import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.Category;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.utils.SessionManager;
 import com.example.petshop.view.activity.CartActivity;
 import com.example.petshop.view.activity.FoodDetailActivity;
 import com.example.petshop.view.activity.LoginActivity;
@@ -35,7 +36,6 @@ import com.example.petshop.view.adapter.HomeFoodAdapter;
 import com.example.petshop.view.adapter.HomePetAdapter;
 import com.example.petshop.viewmodel.CartViewModel;
 import com.example.petshop.viewmodel.HomeViewModel;
-import com.google.firebase.auth.FirebaseUser;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -88,11 +88,19 @@ public class HomeFragment extends Fragment {
                 startActivity(new Intent(requireContext(), CartActivity.class)));
 
         root.findViewById(R.id.btnNotification).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Thông báo — sắp ra mắt", Toast.LENGTH_SHORT).show());
-        root.findViewById(R.id.tvSeeAllPets).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Xem tất cả thú cưng", Toast.LENGTH_SHORT).show());
-        root.findViewById(R.id.tvSeeAllFood).setOnClickListener(v ->
-                Toast.makeText(requireContext(), "Xem tất cả đồ ăn", Toast.LENGTH_SHORT).show());
+                startActivity(new Intent(requireContext(), NotificationActivity.class)));
+        root.findViewById(R.id.tvSeeAllPets).setOnClickListener(v -> {
+                Intent i = new Intent(requireContext(), ProductListActivity.class);
+                i.putExtra(ProductListActivity.EXTRA_TITLE, "Thú cưng");
+                i.putExtra(ProductListActivity.EXTRA_CATEGORY, ProductListActivity.CATEGORY_PET);
+                startActivity(i);
+        });
+        root.findViewById(R.id.tvSeeAllFood).setOnClickListener(v -> {
+                Intent i = new Intent(requireContext(), ProductListActivity.class);
+                i.putExtra(ProductListActivity.EXTRA_TITLE, "Đồ ăn thú cưng");
+                i.putExtra(ProductListActivity.EXTRA_CATEGORY, ProductListActivity.CATEGORY_FOOD);
+                startActivity(i);
+        });
 
         etSearch = root.findViewById(R.id.etSearch);
         etSearch.addTextChangedListener(new TextWatcher() {
@@ -154,17 +162,25 @@ public class HomeFragment extends Fragment {
 
     private void updateTopBar() {
         if (tvGreeting == null) return;
-        tvTimeGreeting.setText(getTimeGreeting());
-        FirebaseUser user = FirebaseHelper.getCurrentUser();
-        if (user != null) {
-            String name = user.getDisplayName();
-            if (name == null || name.isEmpty()) name = "bạn";
-            else name = name.split(" ")[0];
-            tvGreeting.setText("Hi, " + name + " 🐾");
-            btnLoginTopBar.setVisibility(View.GONE);
-        } else {
-            tvGreeting.setText("Hi, bạn ơi 🐾");
-            btnLoginTopBar.setVisibility(View.VISIBLE);
+
+        // Initialize SessionManager if needed
+        if (getContext() != null) {
+            SessionManager session = SessionManager.getInstance(requireContext());
+            tvTimeGreeting.setText(getTimeGreeting());
+
+            if (session.isLoggedIn()) {
+                String name = session.getUserName();
+                if (name == null || name.isEmpty() || name.isBlank()) {
+                    name = "bạn";
+                } else {
+                    name = name.split(" ")[0];
+                }
+                tvGreeting.setText("Hi, " + name + " 🐾");
+                btnLoginTopBar.setVisibility(View.GONE);
+            } else {
+                tvGreeting.setText("Hi, bạn ơi 🐾");
+                btnLoginTopBar.setVisibility(View.VISIBLE);
+            }
         }
     }
 

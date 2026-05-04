@@ -94,6 +94,8 @@ public class ManageAddressActivity extends AppCompatActivity {
                     }
                 });
 
+                v.findViewById(R.id.btnEdit).setOnClickListener(x -> showDialog(addr));
+
                 v.findViewById(R.id.btnSetDefault).setOnClickListener(x ->
                         repo.setDefault(uid(), addr.getId(), new AddressRepository.Callback<>() {
                             public void onSuccess(Void vv) { runOnUiThread(() -> loadAddresses()); }

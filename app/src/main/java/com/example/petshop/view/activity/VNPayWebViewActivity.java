@@ -44,6 +44,13 @@ public class VNPayWebViewActivity extends AppCompatActivity {
         setupWebView();
         webView.loadUrl(paymentUrl);
 
+        findViewById(R.id.btnBack).setOnClickListener(v -> {
+            if (webView.canGoBack()) {
+                webView.goBack();
+            } else {
+                confirmClose();
+            }
+        });
         findViewById(R.id.btnClose).setOnClickListener(v -> confirmClose());
     }
 

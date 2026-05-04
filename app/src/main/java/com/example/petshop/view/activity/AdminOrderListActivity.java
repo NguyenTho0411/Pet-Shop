@@ -18,6 +18,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.repository.OrderRepository;
+import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 
 import java.text.NumberFormat;
 import java.util.ArrayList;
@@ -27,83 +29,117 @@ import java.util.stream.Collectors;
 
 public class AdminOrderListActivity extends AppCompatActivity {
 
-    private List<Order>  allOrders = new ArrayList<>();
+    private List<Order> allOrders = new ArrayList<>();
+    private List<Order> filteredOrders = new ArrayList<>();
     private RecyclerView rv;
-    private ProgressBar  pb;
+    private ProgressBar pb;
+    private TextView tvEmpty;
+    private ChipGroup chipGroup;
 
-    private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
-
-    private static final String[] STATUS_OPTIONS = {
-            Order.STATUS_CONFIRMED, Order.STATUS_PREPARING,
-            Order.STATUS_SHIPPING,  Order.STATUS_DELIVERED,
-            Order.STATUS_COMPLETED, Order.STATUS_CANCELLED,
-            Order.STATUS_REFUNDED
-    };
-
-    private static final String[] STATUS_LABELS = {
-            "✅ Xác nhận", "📦 Đang chuẩn bị", "🚚 Đang giao",
-            "📬 Đã giao", "🏁 Hoàn thành", "❌ Huỷ đơn", "💸 Hoàn tiền"
-    };
+    private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi", "VN"));
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_manage_users);
-        ((TextView) findViewById(R.id.tvUserCount)).setText("đơn hàng");
+        setContentView(R.layout.activity_admin_order_list);
 
-        rv = findViewById(R.id.rvUsers);
-        rv.setLayoutManager(new LinearLayoutManager(this));
-        pb = findViewById(R.id.progressBar);
-
-        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
-        setFilter(R.id.chipAll,      null);
-        setFilter(R.id.chipCustomer, Order.STATUS_PENDING);
-        setFilter(R.id.chipAdmin,    Order.STATUS_SHIPPING);
-
+        initViews();
+        setupFilterChips();
         loadOrders();
     }
 
-    private void setFilter(int id, String status) {
-        View chip = findViewById(id);
-        if (chip == null) return;
-        chip.setOnClickListener(v -> renderList(
-                status == null ? allOrders
-                        : allOrders.stream().filter(o -> status.equals(o.getStatus())).collect(Collectors.toList())));
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadOrders();
+    }
+
+    private void initViews() {
+        rv = findViewById(R.id.rvOrders);
+        pb = findViewById(R.id.progressBar);
+        tvEmpty = findViewById(R.id.tvEmpty);
+        chipGroup = findViewById(R.id.chipGroup);
+
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        findViewById(R.id.btnBack).setOnClickListener(v -> finish());
+    }
+
+    private void setupFilterChips() {
+        findViewById(R.id.chipAll).setOnClickListener(v -> filterByStatus(null));
+        findViewById(R.id.chipPending).setOnClickListener(v -> filterByStatus(Order.STATUS_PENDING));
+        findViewById(R.id.chipConfirmed).setOnClickListener(v -> filterByStatus(Order.STATUS_CONFIRMED));
+        findViewById(R.id.chipPreparing).setOnClickListener(v -> filterByStatus(Order.STATUS_PREPARING));
+        findViewById(R.id.chipShipping).setOnClickListener(v -> filterByStatus(Order.STATUS_SHIPPING));
+        findViewById(R.id.chipDelivered).setOnClickListener(v -> filterByStatus(Order.STATUS_DELIVERED));
+        findViewById(R.id.chipCancelled).setOnClickListener(v -> filterByStatus(Order.STATUS_CANCELLED));
+    }
+
+    private void filterByStatus(String status) {
+        if (status == null) {
+            filteredOrders = new ArrayList<>(allOrders);
+        } else {
+            filteredOrders = allOrders.stream()
+                    .filter(o -> status.equals(o.getStatus()))
+                    .collect(Collectors.toList());
+        }
+        renderList();
     }
 
     private void loadOrders() {
         pb.setVisibility(View.VISIBLE);
+        tvEmpty.setVisibility(View.GONE);
+        rv.setVisibility(View.GONE);
+
         new OrderRepository().getAllOrders(new OrderRepository.Callback<>() {
+            @Override
             public void onSuccess(List<Order> orders) {
                 allOrders = orders != null ? orders : new ArrayList<>();
-                runOnUiThread(() -> { pb.setVisibility(View.GONE); renderList(allOrders); });
+                filteredOrders = new ArrayList<>(allOrders);
+                runOnUiThread(() -> {
+                    pb.setVisibility(View.GONE);
+                    renderList();
+                });
             }
-            public void onFailure(String err) {
-                runOnUiThread(() -> { pb.setVisibility(View.GONE); Toast.makeText(AdminOrderListActivity.this, err, Toast.LENGTH_SHORT).show(); });
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> {
+                    pb.setVisibility(View.GONE);
+                    Toast.makeText(AdminOrderListActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show();
+                });
             }
         });
     }
 
-    private void renderList(List<Order> list) {
+    private void renderList() {
+        if (filteredOrders.isEmpty()) {
+            tvEmpty.setVisibility(View.VISIBLE);
+            rv.setVisibility(View.GONE);
+        } else {
+            tvEmpty.setVisibility(View.GONE);
+            rv.setVisibility(View.VISIBLE);
+        }
+
         rv.setAdapter(new RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             @Override
-            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup p, int t) {
-                View v = LayoutInflater.from(p.getContext()).inflate(R.layout.item_order_card, p, false);
+            public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+                View v = LayoutInflater.from(parent.getContext())
+                        .inflate(R.layout.item_order_card, parent, false);
                 return new RecyclerView.ViewHolder(v) {};
             }
+
             @Override
-            public void onBindViewHolder(RecyclerView.ViewHolder h, int pos) {
-                Order order = list.get(pos);
-                View v = h.itemView;
+            public void onBindViewHolder(RecyclerView.ViewHolder holder, int position) {
+                Order order = filteredOrders.get(position);
+                View v = holder.itemView;
+
                 ((TextView) v.findViewById(R.id.tvOrderCode)).setText(order.getOrderCode());
                 ((TextView) v.findViewById(R.id.tvTotal)).setText(VND.format((long) order.getTotalAmount()) + "đ");
-                
+
                 String dateStr = order.getCreatedAt();
                 String displayDate = "";
                 if (dateStr != null) {
-                    if (dateStr.startsWith("Timestamp(")) {
-                        displayDate = "N/A";
-                    } else if (dateStr.length() >= 10) {
+                    if (dateStr.length() >= 10) {
                         displayDate = dateStr.substring(0, 10);
                     } else {
                         displayDate = dateStr;
@@ -113,47 +149,71 @@ public class AdminOrderListActivity extends AppCompatActivity {
                         displayDate + " · " + (order.getReceiverName() != null ? order.getReceiverName() : ""));
 
                 TextView tvStatus = v.findViewById(R.id.tvStatus);
-                tvStatus.setText(order.getStatus());
-                tvStatus.getBackground().setTint(statusColor(order.getStatus()));
+                tvStatus.setText(getStatusLabel(order.getStatus()));
+                tvStatus.getBackground().setTint(getStatusColor(order.getStatus()));
 
                 v.findViewById(R.id.btnCancel).setVisibility(View.GONE);
                 v.findViewById(R.id.btnReturn).setVisibility(View.GONE);
-                
+
                 Button btnUpdate = v.findViewById(R.id.btnUpdate);
                 btnUpdate.setVisibility(View.VISIBLE);
+                btnUpdate.setText("Cập nhật");
                 btnUpdate.setOnClickListener(x -> showStatusPicker(order));
 
                 v.setOnClickListener(x -> {
                     Intent i = new Intent(AdminOrderListActivity.this, AdminOrderDetailActivity.class);
-                    i.putExtra(OrderDetailActivity.EXTRA_ORDER_ID, order.getId());
+                    i.putExtra("order_id", order.getId());
                     startActivity(i);
                 });
             }
-            @Override public int getItemCount() { return list.size(); }
+
+            @Override
+            public int getItemCount() {
+                return filteredOrders.size();
+            }
         });
     }
 
     private void showStatusPicker(Order order) {
+        String[] statusLabels = {
+                "⏳ Chờ xác nhận",
+                "✅ Đã xác nhận",
+                "📦 Đang chuẩn bị",
+                "🚚 Đang giao hàng",
+                "📬 Đã giao hàng",
+                "🏁 Hoàn thành",
+                "❌ Huỷ đơn"
+        };
+
+        String[] statusValues = {
+                Order.STATUS_PENDING,
+                Order.STATUS_CONFIRMED,
+                Order.STATUS_PREPARING,
+                Order.STATUS_SHIPPING,
+                Order.STATUS_DELIVERED,
+                Order.STATUS_COMPLETED,
+                Order.STATUS_CANCELLED
+        };
+
         new AlertDialog.Builder(this)
-                .setTitle("Cập nhật: " + order.getOrderCode())
-                .setItems(STATUS_LABELS, (dialog, which) -> {
-                    String newStatus = STATUS_OPTIONS[which];
-                    updateOrderStatus(order, newStatus);
+                .setTitle("Cập nhật trạng thái: " + order.getOrderCode())
+                .setItems(statusLabels, (dialog, which) -> {
+                    updateOrderStatus(order, statusValues[which]);
                 })
                 .setNegativeButton("Đóng", null)
                 .show();
     }
 
     private void updateOrderStatus(Order order, String newStatus) {
-        new OrderRepository().updateStatus(order.getId(), newStatus, null, new OrderRepository.Callback<>() {
+        new OrderRepository().updateStatus(order.getId(), newStatus, null, new OrderRepository.Callback<Void>() {
             @Override
             public void onSuccess(Void data) {
                 runOnUiThread(() -> {
-                    order.setStatus(newStatus);
-                    loadOrders(); // Refresh list
                     Toast.makeText(AdminOrderListActivity.this, "Đã cập nhật trạng thái!", Toast.LENGTH_SHORT).show();
+                    loadOrders();
                 });
             }
+
             @Override
             public void onFailure(String error) {
                 runOnUiThread(() -> Toast.makeText(AdminOrderListActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show());
@@ -161,14 +221,34 @@ public class AdminOrderListActivity extends AppCompatActivity {
         });
     }
 
-    private int statusColor(String s) {
-        if (s == null) return 0xFF888888;
-        switch (s) {
-            case Order.STATUS_PENDING:   return 0xFFF5A623;
-            case Order.STATUS_SHIPPING:  return 0xFF34AADC;
+    private String getStatusLabel(String status) {
+        if (status == null) return "N/A";
+        switch (status) {
+            case Order.STATUS_PENDING: return "Chờ xác nhận";
+            case Order.STATUS_CONFIRMED: return "Đã xác nhận";
+            case Order.STATUS_PREPARING: return "Đang chuẩn bị";
+            case Order.STATUS_SHIPPING: return "Đang giao";
+            case Order.STATUS_DELIVERED: return "Đã giao";
+            case Order.STATUS_COMPLETED: return "Hoàn thành";
+            case Order.STATUS_CANCELLED: return "Đã huỷ";
+            case Order.STATUS_REFUNDED: return "Hoàn tiền";
+            case Order.STATUS_WAIT_PAY: return "Chờ thanh toán";
+            default: return status;
+        }
+    }
+
+    private int getStatusColor(String status) {
+        if (status == null) return 0xFF888888;
+        switch (status) {
+            case Order.STATUS_PENDING:
+            case Order.STATUS_WAIT_PAY: return 0xFFF5A623;
+            case Order.STATUS_CONFIRMED: return 0xFF5856D6;
+            case Order.STATUS_PREPARING: return 0xFFFF9500;
+            case Order.STATUS_SHIPPING: return 0xFF34AADC;
             case Order.STATUS_DELIVERED:
             case Order.STATUS_COMPLETED: return 0xFF34C759;
             case Order.STATUS_CANCELLED: return 0xFFFF3B30;
+            case Order.STATUS_REFUNDED: return 0xFFFF2D55;
             default: return 0xFF007AFF;
         }
     }

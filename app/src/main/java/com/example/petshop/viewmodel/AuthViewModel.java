@@ -16,6 +16,7 @@ public class AuthViewModel extends AndroidViewModel {
     private final MutableLiveData<String>  errorMessage = new MutableLiveData<>("");
     private final MutableLiveData<String>  userRole     = new MutableLiveData<>(null);
     private final MutableLiveData<String>  resetEmailSent = new MutableLiveData<>(null);
+    private final MutableLiveData<String>  userName     = new MutableLiveData<>(null);
 
     private SessionManager sessionManager;
 
@@ -28,6 +29,7 @@ public class AuthViewModel extends AndroidViewModel {
     public LiveData<String>  getErrorMessage()  { return errorMessage; }
     public LiveData<String>  getUserRole()      { return userRole; }
     public LiveData<String>  getResetEmailSent(){ return resetEmailSent; }
+    public LiveData<String>  getUserName()      { return userName; }
 
     // ==================== EMAIL / PASSWORD ====================
 
@@ -101,22 +103,24 @@ public class AuthViewModel extends AndroidViewModel {
         FirebaseHelper.getUserData(uid, new FirebaseHelper.OnUserDataCallback() {
             @Override
             public void onSuccess(User user) {
+                String fullName = user.getFullName() != null ? user.getFullName() : "";
                 sessionManager.saveSession(
                         uid,
-                        user.getFullName() != null ? user.getFullName() : "",
+                        fullName,
                         user.getEmail() != null ? user.getEmail() : "",
                         role,
                         user.getAvatarUrl()
                 );
                 setLoading(false);
                 userRole.postValue(role);
+                userName.postValue(fullName); // Notify UI with user's name
             }
             @Override
             public void onFailure(String error) {
-                // Vẫn lưu session với dữ liệu cơ bản
                 sessionManager.saveSession(uid, "", "", role, null);
                 setLoading(false);
                 userRole.postValue(role);
+                userName.postValue("");
             }
         });
     }
