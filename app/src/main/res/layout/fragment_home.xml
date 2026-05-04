@@ -141,12 +141,20 @@
                 android:layout_marginBottom="24dp" />
 
             <!-- FEATURED PETS -->
-            <TextView android:id="@+id/tvFeaturedPetsTitle"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/featured_pets"
-                android:textSize="17sp" android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginStart="20dp" android:layout_marginBottom="14dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="14dp">
+                <TextView android:id="@+id/tvFeaturedPetsTitle"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="@string/featured_pets"
+                    android:textSize="17sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+                <TextView android:id="@+id/tvSeeAllPets"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/see_all" android:textSize="13sp"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvFeaturedPets"
                 android:layout_width="match_parent"
@@ -169,12 +177,20 @@
                 android:layout_marginBottom="24dp" />
 
             <!-- PET FOOD -->
-            <TextView android:id="@+id/tvFeaturedFoodTitle"
-                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="@string/pet_food"
-                android:textSize="17sp" android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginStart="20dp" android:layout_marginBottom="14dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:gravity="center_vertical"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="14dp">
+                <TextView android:id="@+id/tvFeaturedFoodTitle"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:text="@string/pet_food"
+                    android:textSize="17sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+                <TextView android:id="@+id/tvSeeAllFood"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="@string/see_all" android:textSize="13sp"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvFeaturedFood"
                 android:layout_width="match_parent"

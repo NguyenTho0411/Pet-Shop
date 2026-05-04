@@ -96,6 +96,29 @@ public class HomeFragment extends Fragment {
         root.findViewById(R.id.cardPromo).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PromotionActivity.class)));
 
+        root.findViewById(R.id.tvSeeAllPets).setOnClickListener(v -> {
+                Intent i = new Intent(requireContext(), ProductListActivity.class);
+                if (currentCategoryName != null && Category.TYPE_PET.equals(currentCategoryType)) {
+                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Danh sách " + currentCategoryName);
+                    i.putExtra(ProductListActivity.EXTRA_FILTER_KEY, currentCategoryName);
+                } else {
+                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Thú cưng");
+                }
+                i.putExtra(ProductListActivity.EXTRA_CATEGORY, ProductListActivity.CATEGORY_PET);
+                startActivity(i);
+        });
+        root.findViewById(R.id.tvSeeAllFood).setOnClickListener(v -> {
+                Intent i = new Intent(requireContext(), ProductListActivity.class);
+                if (currentCategoryName != null && Category.TYPE_FOOD.equals(currentCategoryType)) {
+                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Danh sách " + currentCategoryName);
+                    i.putExtra(ProductListActivity.EXTRA_FILTER_KEY, currentCategoryName);
+                } else {
+                    i.putExtra(ProductListActivity.EXTRA_TITLE, "Đồ ăn thú cưng");
+                }
+                i.putExtra(ProductListActivity.EXTRA_CATEGORY, ProductListActivity.CATEGORY_FOOD);
+                startActivity(i);
+        });
+
         etSearch = root.findViewById(R.id.etSearch);
         etSearch.addTextChangedListener(new TextWatcher() {
             public void beforeTextChanged(CharSequence s, int st, int c, int a) {}
@@ -236,6 +259,8 @@ public class HomeFragment extends Fragment {
     private void updateSectionTitles() {
         TextView tvPetTitle = rootView.findViewById(R.id.tvFeaturedPetsTitle);
         TextView tvFoodTitle = rootView.findViewById(R.id.tvFeaturedFoodTitle);
+        TextView tvSeeAllPets = rootView.findViewById(R.id.tvSeeAllPets);
+        TextView tvSeeAllFood = rootView.findViewById(R.id.tvSeeAllFood);
 
         if (Category.TYPE_PET.equals(currentCategoryType)) {
             if (tvPetTitle != null) {
@@ -243,6 +268,7 @@ public class HomeFragment extends Fragment {
                         ? "Danh sách " + currentCategoryName
                         : "Danh sách thú cưng");
             }
+            if (tvSeeAllPets != null) tvSeeAllPets.setVisibility(View.GONE);
             return;
         }
 
@@ -252,8 +278,13 @@ public class HomeFragment extends Fragment {
                         ? "Danh sách " + currentCategoryName
                         : "Danh sách đồ ăn");
             }
+            if (tvSeeAllFood != null) tvSeeAllFood.setVisibility(View.GONE);
             return;
         }
+
+        // Hiện lại nút Xem tất cả khi không chọn danh mục cụ thể
+        if (tvSeeAllPets != null) tvSeeAllPets.setVisibility(View.VISIBLE);
+        if (tvSeeAllFood != null) tvSeeAllFood.setVisibility(View.VISIBLE);
 
         Boolean isSearching = vm.getIsSearching().getValue();
 
