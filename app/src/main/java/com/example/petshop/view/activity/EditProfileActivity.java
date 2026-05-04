@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.petshop.R;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.utils.SessionManager;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.auth.UserProfileChangeRequest;
@@ -58,6 +59,7 @@ public class EditProfileActivity extends AppCompatActivity {
             String phone = etPhone.getText() != null ? etPhone.getText().toString().trim() : null;
             FirebaseHelper.updateUserProfile(user.getUid(), name, phone, null, () ->
                     runOnUiThread(() -> {
+                        SessionManager.getInstance(EditProfileActivity.this).updateUserName(name);
                         progressBar.setVisibility(View.GONE);
                         Toast.makeText(this, "Cập nhật thành công ✓", Toast.LENGTH_SHORT).show();
                         setResult(RESULT_PROFILE_UPDATED);

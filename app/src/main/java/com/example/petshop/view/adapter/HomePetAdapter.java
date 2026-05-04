@@ -54,13 +54,18 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
         double price = pet.getEffectivePrice();
         h.tvPrice.setText(price > 0 ? VND.format((long) price) + "đ" : "Liên hệ");
 
-        // Sale badge
+        // Sale badge and original price
         if (pet.hasPromotion() && pet.getOriginalPrice() > 0 && pet.getOriginalPrice() > pet.getEffectivePrice()) {
             h.tvSaleBadge.setVisibility(View.VISIBLE);
             int pct = (int) Math.round((1 - pet.getEffectivePrice() / pet.getOriginalPrice()) * 100);
             h.tvSaleBadge.setText("-" + pct + "%");
+            
+            h.tvOriginalPrice.setVisibility(View.VISIBLE);
+            h.tvOriginalPrice.setText(VND.format((long) pet.getOriginalPrice()) + "đ");
+            h.tvOriginalPrice.setPaintFlags(h.tvOriginalPrice.getPaintFlags() | android.graphics.Paint.STRIKE_THRU_TEXT_FLAG);
         } else {
             h.tvSaleBadge.setVisibility(View.GONE);
+            h.tvOriginalPrice.setVisibility(View.GONE);
         }
 
         // Breed info line: "Species · AgeUnit · Gender"
@@ -148,7 +153,7 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         ImageView ivPet, ivAddToCart;
-        TextView  tvPetName, tvPrice, tvBreedInfo, tvTag1, tvTag2, tvTag3, tvStatusBadge, tvSaleBadge;
+        TextView  tvPetName, tvPrice, tvOriginalPrice, tvBreedInfo, tvTag1, tvTag2, tvTag3, tvStatusBadge, tvSaleBadge;
 
         VH(View v) {
             super(v);
@@ -158,6 +163,7 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
             tvSaleBadge = v.findViewById(R.id.tvSaleBadge);
             tvPetName   = v.findViewById(R.id.tvPetName);
             tvPrice     = v.findViewById(R.id.tvPrice);
+            tvOriginalPrice = v.findViewById(R.id.tvOriginalPrice);
             tvBreedInfo = v.findViewById(R.id.tvBreedInfo);
             tvTag1      = v.findViewById(R.id.tvTag1);
             tvTag2      = v.findViewById(R.id.tvTag2);

@@ -41,6 +41,14 @@ public class SessionManager {
                 .apply();
     }
 
+    public void updateUserName(String name) {
+        prefs.edit().putString(KEY_NAME, name).apply();
+    }
+
+    public void updateUserAvatar(String avatarUrl) {
+        prefs.edit().putString(KEY_AVATAR, avatarUrl).apply();
+    }
+
     public void clearSession() {
         prefs.edit().clear().apply();
     }

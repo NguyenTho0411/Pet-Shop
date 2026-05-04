@@ -13,6 +13,9 @@ import com.example.petshop.utils.FirebaseHelper;
 import com.example.petshop.view.dialog.ConfirmDialog;
 import com.example.petshop.view.dialog.DialogUtils;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
+import java.text.NumberFormat;
+import java.util.Locale;
 
 public class AdminActivity extends AppCompatActivity {
 
@@ -52,12 +55,40 @@ public class AdminActivity extends AppCompatActivity {
     }
 
     private void loadStats() {
-        // TODO: Load từ Firestore
-        // Placeholder data
-        tvRevenue.setText("12,500,000 đ");
-        tvTotalOrders.setText("48");
-        tvTotalUsers.setText("156");
-        tvPendingOrders.setText("7");
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        // Tạm thời set về 0 hoặc loading
+        tvRevenue.setText("Đang tải...");
+        tvTotalOrders.setText("...");
+        tvTotalUsers.setText("...");
+        tvPendingOrders.setText("...");
+
+        // Load users count
+        db.collection("users").get().addOnSuccessListener(snap -> {
+            tvTotalUsers.setText(String.valueOf(snap.size()));
+        });
+
+        // Load orders
+        db.collection("orders").get().addOnSuccessListener(snap -> {
+            int orders = snap.size();
+            int pending = 0;
+            double revenue = 0;
+            for (var doc : snap.getDocuments()) {
+                String status = doc.getString("status");
+                if ("PENDING".equals(status)) {
+                    pending++;
+                }
+                if ("COMPLETED".equals(status) || "DELIVERED".equals(status)) {
+                    Double amount = doc.getDouble("totalAmount");
+                    if (amount != null) revenue += amount;
+                }
+            }
+            
+            tvTotalOrders.setText(String.valueOf(orders));
+            tvPendingOrders.setText(String.valueOf(pending));
+            NumberFormat vndFormat = NumberFormat.getInstance(new Locale("vi", "VN"));
+            tvRevenue.setText(vndFormat.format((long) revenue) + " đ");
+        });
     }
 
     private void setupQuickActions() {

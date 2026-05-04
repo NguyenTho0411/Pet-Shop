@@ -66,7 +66,7 @@ public class NotificationActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (list == null || list.isEmpty()) {
-                        showEmpty("Chưa có thông báo nào");
+                        createTestNotification(uid);
                     } else {
                         rvNotifications.setVisibility(View.VISIBLE);
                         adapter.updateData(list);
@@ -88,5 +88,26 @@ public class NotificationActivity extends AppCompatActivity {
         rvNotifications.setVisibility(View.GONE);
         tvEmpty.setVisibility(View.VISIBLE);
         tvEmpty.setText(message);
+    }
+
+    private void createTestNotification(String uid) {
+        Notification test = new Notification();
+        test.setUserId(uid);
+        test.setTitle("Chào mừng đến với Pet Shop 🐾");
+        test.setMessage("Đây là thông báo thử nghiệm. Cảm ơn bạn đã sử dụng ứng dụng!");
+        test.setType("SYSTEM");
+        
+        repo.createNotification(test, new NotificationRepository.Callback<String>() {
+            @Override
+            public void onSuccess(String data) {
+                // Tải lại sau khi tạo
+                runOnUiThread(() -> loadNotifications());
+            }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> showEmpty("Chưa có thông báo nào"));
+            }
+        });
     }
 }

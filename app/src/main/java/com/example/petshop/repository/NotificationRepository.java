@@ -21,7 +21,6 @@ public class NotificationRepository {
     public void getNotifications(String userId, Callback<List<Notification>> cb) {
         db.collection(COL)
                 .whereEqualTo("userId", userId)
-                .orderBy("createdAt", Query.Direction.DESCENDING)
                 .limit(50)
                 .get()
                 .addOnSuccessListener(snap -> {
@@ -31,6 +30,12 @@ public class NotificationRepository {
                         n.setId(doc.getId());
                         list.add(n);
                     }
+                    // Sort locally to avoid composite index requirement
+                    list.sort((n1, n2) -> {
+                        String date1 = n1.getCreatedAt() != null ? n1.getCreatedAt() : "";
+                        String date2 = n2.getCreatedAt() != null ? n2.getCreatedAt() : "";
+                        return date2.compareTo(date1);
+                    });
                     cb.onSuccess(list);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));

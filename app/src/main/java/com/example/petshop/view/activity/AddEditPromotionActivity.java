@@ -15,7 +15,12 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.example.petshop.R;
+
+import com.example.petshop.model.entity.Food;
+import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.Promotion;
+import com.example.petshop.repository.FoodRepository;
+import com.example.petshop.repository.PetRepository;
 import com.example.petshop.viewmodel.PromotionManageViewModel;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
@@ -182,10 +187,79 @@ public class AddEditPromotionActivity extends AppCompatActivity {
 
     private void setupProductChoice() {
         btnSelectProducts.setOnClickListener(v -> {
-            // TODO: Mở dialog chọn sản phẩm
-            // Tạm thời show thông báo
-            Toast.makeText(this, "Chọn sản phẩm cụ thể - Cần triển khai thêm dialog chọn sản phẩm", Toast.LENGTH_SHORT).show();
+            progressBar.setVisibility(View.VISIBLE);
+            
+            // Tải danh sách thú cưng và thức ăn
+            new PetRepository().getAll(new PetRepository.Callback<List<Pet>>() {
+                @Override
+                public void onSuccess(List<Pet> pets) {
+                    new FoodRepository().getAll(new FoodRepository.Callback<List<Food>>() {
+                        @Override
+                        public void onSuccess(List<Food> foods) {
+                            runOnUiThread(() -> {
+                                progressBar.setVisibility(View.GONE);
+                                showProductSelectionDialog(pets, foods);
+                            });
+                        }
+                        @Override
+                        public void onFailure(String error) {
+                            runOnUiThread(() -> {
+                                progressBar.setVisibility(View.GONE);
+                                Toast.makeText(AddEditPromotionActivity.this, "Lỗi tải thức ăn", Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                    });
+                }
+                @Override
+                public void onFailure(String error) {
+                    runOnUiThread(() -> {
+                        progressBar.setVisibility(View.GONE);
+                        Toast.makeText(AddEditPromotionActivity.this, "Lỗi tải thú cưng", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            });
         });
+    }
+
+    private void showProductSelectionDialog(List<Pet> pets, List<Food> foods) {
+        List<String> productIds = new ArrayList<>();
+        List<String> productNames = new ArrayList<>();
+
+        for (Pet p : pets) {
+            productIds.add(p.getId());
+            productNames.add("[Thú cưng] " + p.getName());
+        }
+        for (Food f : foods) {
+            productIds.add(f.getId());
+            productNames.add("[Thức ăn] " + f.getName());
+        }
+
+        String[] itemsArray = productNames.toArray(new String[0]);
+        boolean[] checkedItems = new boolean[itemsArray.length];
+
+        // Khôi phục trạng thái đã chọn
+        for (int i = 0; i < productIds.size(); i++) {
+            if (selectedProductIds.contains(productIds.get(i))) {
+                checkedItems[i] = true;
+            }
+        }
+
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Chọn sản phẩm áp dụng")
+                .setMultiChoiceItems(itemsArray, checkedItems, (dialog, which, isChecked) -> {
+                    checkedItems[which] = isChecked;
+                })
+                .setPositiveButton("Xác nhận", (dialog, which) -> {
+                    selectedProductIds.clear();
+                    for (int i = 0; i < checkedItems.length; i++) {
+                        if (checkedItems[i]) {
+                            selectedProductIds.add(productIds.get(i));
+                        }
+                    }
+                    updateProductSelection();
+                })
+                .setNegativeButton("Huỷ", null)
+                .show();
     }
 
     private String getSpeciesFromChip(int chipId) {

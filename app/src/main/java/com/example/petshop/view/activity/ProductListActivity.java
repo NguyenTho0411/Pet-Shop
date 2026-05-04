@@ -17,6 +17,8 @@ import com.example.petshop.model.entity.Food;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.repository.FoodRepository;
 import com.example.petshop.repository.PetRepository;
+import com.example.petshop.repository.PromotionRepository;
+import com.example.petshop.utils.PromotionManager;
 import com.example.petshop.view.adapter.ProductAdapter;
 import com.example.petshop.viewmodel.CartViewModel;
 
@@ -30,6 +32,7 @@ public class ProductListActivity extends AppCompatActivity {
     public static final String CATEGORY_ALL = "all";
     public static final String CATEGORY_PET = "pet";
     public static final String CATEGORY_FOOD = "food";
+    public static final String EXTRA_FILTER_KEY = "filter_key";
 
     private RecyclerView rvProducts;
     private ProgressBar progressBar;
@@ -44,11 +47,12 @@ public class ProductListActivity extends AppCompatActivity {
 
         String title = getIntent().getStringExtra(EXTRA_TITLE);
         String category = getIntent().getStringExtra(EXTRA_CATEGORY);
+        String filterKey = getIntent().getStringExtra(EXTRA_FILTER_KEY);
 
         cartViewModel = new ViewModelProvider(this).get(CartViewModel.class);
 
         initViews(title);
-        loadProducts(category);
+        loadProducts(category, filterKey);
         observeCart();
     }
 
@@ -99,25 +103,26 @@ public class ProductListActivity extends AppCompatActivity {
         });
     }
 
-    private void loadProducts(String category) {
+    private void loadProducts(String category, String filterKey) {
         progressBar.setVisibility(View.VISIBLE);
         rvProducts.setVisibility(View.GONE);
         tvEmpty.setVisibility(View.GONE);
 
         if (CATEGORY_PET.equals(category)) {
-            loadPets();
+            loadPets(filterKey);
         } else if (CATEGORY_FOOD.equals(category)) {
-            loadFoods();
+            loadFoods(filterKey);
         } else {
-            loadAllProducts();
+            loadAllProducts(filterKey);
         }
     }
 
-    private void loadPets() {
+    private void loadPets(String filterKey) {
         new PetRepository().getAll(new PetRepository.Callback<List<Pet>>() {
             @Override
             public void onSuccess(List<Pet> data) {
-                runOnUiThread(() -> displayProducts(new ArrayList<>(data)));
+                List<Pet> filtered = filterPets(data, filterKey);
+                applyPromotionsAndDisplay(filtered, null);
             }
 
             @Override
@@ -127,11 +132,12 @@ public class ProductListActivity extends AppCompatActivity {
         });
     }
 
-    private void loadFoods() {
+    private void loadFoods(String filterKey) {
         new FoodRepository().getAll(new FoodRepository.Callback<List<Food>>() {
             @Override
             public void onSuccess(List<Food> data) {
-                runOnUiThread(() -> displayProducts(new ArrayList<>(data)));
+                List<Food> filtered = filterFoods(data, filterKey);
+                applyPromotionsAndDisplay(null, filtered);
             }
 
             @Override
@@ -141,62 +147,135 @@ public class ProductListActivity extends AppCompatActivity {
         });
     }
 
-    private void loadAllProducts() {
-        List<Object> allProducts = new ArrayList<>();
+    private void loadAllProducts(String filterKey) {
+        List<Pet> loadedPets = new ArrayList<>();
+        List<Food> loadedFoods = new ArrayList<>();
         final int[] loadedCount = {0};
 
         PetRepository.Callback<List<Pet>> petCallback = new PetRepository.Callback<List<Pet>>() {
             @Override
             public void onSuccess(List<Pet> data) {
-                synchronized (allProducts) {
-                    if (data != null) allProducts.addAll(data);
-                }
-                synchronized (loadedCount) {
-                    loadedCount[0]++;
-                    if (loadedCount[0] >= 2) {
-                        runOnUiThread(() -> displayProducts(allProducts));
+                synchronized (loadedPets) {
+                    if (data != null) {
+                        loadedPets.addAll(filterPets(data, filterKey));
                     }
                 }
+                checkAllLoaded(loadedCount, loadedPets, loadedFoods);
             }
-
             @Override
             public void onFailure(String error) {
-                synchronized (loadedCount) {
-                    loadedCount[0]++;
-                    if (loadedCount[0] >= 2) {
-                        runOnUiThread(() -> displayProducts(allProducts));
-                    }
-                }
+                checkAllLoaded(loadedCount, loadedPets, loadedFoods);
             }
         };
 
         FoodRepository.Callback<List<Food>> foodCallback = new FoodRepository.Callback<List<Food>>() {
             @Override
             public void onSuccess(List<Food> data) {
-                synchronized (allProducts) {
-                    if (data != null) allProducts.addAll(data);
-                }
-                synchronized (loadedCount) {
-                    loadedCount[0]++;
-                    if (loadedCount[0] >= 2) {
-                        runOnUiThread(() -> displayProducts(allProducts));
+                synchronized (loadedFoods) {
+                    if (data != null) {
+                        loadedFoods.addAll(filterFoods(data, filterKey));
                     }
                 }
+                checkAllLoaded(loadedCount, loadedPets, loadedFoods);
             }
-
             @Override
             public void onFailure(String error) {
-                synchronized (loadedCount) {
-                    loadedCount[0]++;
-                    if (loadedCount[0] >= 2) {
-                        runOnUiThread(() -> displayProducts(allProducts));
-                    }
-                }
+                checkAllLoaded(loadedCount, loadedPets, loadedFoods);
             }
         };
 
         new PetRepository().getAll(petCallback);
         new FoodRepository().getAll(foodCallback);
+    }
+
+    private List<Pet> filterPets(List<Pet> pets, String filterKey) {
+        if (filterKey == null || filterKey.trim().isEmpty() || pets == null) return pets != null ? new ArrayList<>(pets) : new ArrayList<>();
+        
+        String key = filterKey.toLowerCase(java.util.Locale.ROOT);
+        List<Pet> result = new ArrayList<>();
+        for (Pet p : pets) {
+            boolean matches = false;
+            if (p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+            if (p.getCategoryId() != null && p.getCategoryId().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+            if (p.getCategory() != null && p.getCategory().getName() != null && p.getCategory().getName().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+            
+            // Dịch ngầm từ tiếng Việt sang tiếng Anh cho các loài phổ biến
+            if (!matches) {
+                String translated = "";
+                if (key.contains("chó")) translated = "dog";
+                else if (key.contains("mèo")) translated = "cat";
+                else if (key.contains("cá")) translated = "fish";
+                else if (key.contains("chim")) translated = "bird";
+                else if (key.contains("thỏ")) translated = "rabbit";
+                
+                if (!translated.isEmpty() && p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(translated)) {
+                    matches = true;
+                }
+            }
+            
+            if (matches) result.add(p);
+        }
+        return result;
+    }
+
+    private List<Food> filterFoods(List<Food> foods, String filterKey) {
+        if (filterKey == null || filterKey.trim().isEmpty() || foods == null) return foods != null ? new ArrayList<>(foods) : new ArrayList<>();
+        
+        String key = filterKey.toLowerCase(java.util.Locale.ROOT);
+        List<Food> result = new ArrayList<>();
+        for (Food f : foods) {
+            boolean matches = false;
+            if (f.getTargetPetType() != null && f.getTargetPetType().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+            if (f.getCategoryId() != null && f.getCategoryId().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+            if (f.getCategory() != null && f.getCategory().getName() != null && f.getCategory().getName().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+            
+            // Dịch ngầm
+            if (!matches) {
+                String translated = "";
+                if (key.contains("chó")) translated = "dog";
+                else if (key.contains("mèo")) translated = "cat";
+                
+                if (!translated.isEmpty() && f.getTargetPetType() != null && f.getTargetPetType().toLowerCase(java.util.Locale.ROOT).contains(translated)) {
+                    matches = true;
+                }
+            }
+            
+            if (matches) result.add(f);
+        }
+        return result;
+    }
+
+    private void checkAllLoaded(int[] loadedCount, List<Pet> pets, List<Food> foods) {
+        synchronized (loadedCount) {
+            loadedCount[0]++;
+            if (loadedCount[0] >= 2) {
+                applyPromotionsAndDisplay(pets, foods);
+            }
+        }
+    }
+
+    private void applyPromotionsAndDisplay(List<Pet> pets, List<Food> foods) {
+        new PromotionRepository().getActive(new PromotionRepository.Callback<>() {
+            @Override
+            public void onSuccess(java.util.List<com.example.petshop.model.entity.Promotion> activePromos) {
+                PromotionManager.applyPromotions(pets, foods, activePromos);
+                
+                List<Object> allProducts = new ArrayList<>();
+                if (pets != null) allProducts.addAll(pets);
+                if (foods != null) allProducts.addAll(foods);
+                
+                runOnUiThread(() -> displayProducts(allProducts));
+            }
+
+            @Override
+            public void onFailure(String error) {
+                List<Object> allProducts = new ArrayList<>();
+                if (pets != null) allProducts.addAll(pets);
+                if (foods != null) allProducts.addAll(foods);
+                
+                runOnUiThread(() -> displayProducts(allProducts));
+            }
+        });
     }
 
     private void displayProducts(List<Object> data) {

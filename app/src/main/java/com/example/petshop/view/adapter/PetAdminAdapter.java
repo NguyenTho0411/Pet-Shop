@@ -62,6 +62,7 @@ public class PetAdminAdapter extends RecyclerView.Adapter<PetAdminAdapter.VH> {
         }
 
         h.btnMore.setOnClickListener(v -> showPopup(v.getContext(), v, p));
+        h.itemView.setOnClickListener(v -> listener.onEdit(p));
     }
 
     private void showPopup(android.content.Context ctx, View anchor, Pet p) {

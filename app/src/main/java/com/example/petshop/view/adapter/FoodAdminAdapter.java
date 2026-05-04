@@ -59,6 +59,7 @@ public class FoodAdminAdapter extends RecyclerView.Adapter<FoodAdminAdapter.VH> 
         }
 
         h.btnMore.setOnClickListener(v -> showPopup(v.getContext(), v, f));
+        h.itemView.setOnClickListener(v -> listener.onEdit(f));
     }
 
     private void showPopup(android.content.Context ctx, View anchor, Food f) {

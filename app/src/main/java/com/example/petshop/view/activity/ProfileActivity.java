@@ -21,9 +21,11 @@ import com.bumptech.glide.Glide;
 import com.example.petshop.R;
 import com.example.petshop.repository.UserRepository;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.utils.SessionManager;
 import com.example.petshop.view.dialog.ConfirmDialog;
 import com.example.petshop.view.dialog.DialogUtils;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 
@@ -68,24 +70,41 @@ public class ProfileActivity extends AppCompatActivity {
             Glide.with(this).load(user.getPhotoUrl()).circleCrop().into(ivAvatar);
         }
 
-        // Load order stats from Firestore
-        new UserRepository().getAllUsers(new UserRepository.Callback<>() {
-            public void onSuccess(java.util.List<com.example.petshop.model.entity.User> list) {
-                // find current user in list
-                for (var u : list) {
-                    if (user.getUid().equals(u.getId())) {
-                        runOnUiThread(() -> {
-                            ((TextView) findViewById(R.id.tvTotalOrders)).setText(String.valueOf(u.getTotalOrders()));
-                            ((TextView) findViewById(R.id.tvTotalSpent)).setText(
-                                    VND.format((long) u.getTotalSpent()) + "đ");
-                            ((TextView) findViewById(R.id.tvRoleBadge)).setText(u.getRole());
-                        });
-                        break;
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        
+        // Lấy thông tin user (role)
+        db.collection("users").document(user.getUid()).get().addOnSuccessListener(doc -> {
+            if (doc.exists()) {
+                String role = doc.getString("role");
+                if (role == null || role.isEmpty()) role = "Khách hàng";
+                String finalRole = role;
+                runOnUiThread(() -> {
+                    ((TextView) findViewById(R.id.tvRoleBadge)).setText(finalRole);
+                });
+            }
+        });
+
+        // Tính tổng số đơn hàng và tổng tiền đã chi tiêu
+        db.collection("orders").whereEqualTo("userId", user.getUid()).get()
+            .addOnSuccessListener(snap -> {
+                int totalOrders = snap.size();
+                double totalSpent = 0;
+                
+                for (var doc : snap.getDocuments()) {
+                    String status = doc.getString("status");
+                    if ("COMPLETED".equals(status) || "DELIVERED".equals(status)) {
+                        Double amount = doc.getDouble("totalAmount");
+                        if (amount != null) totalSpent += amount;
                     }
                 }
-            }
-            public void onFailure(String err) {}
-        });
+                
+                double finalSpent = totalSpent;
+                runOnUiThread(() -> {
+                    ((TextView) findViewById(R.id.tvTotalOrders)).setText(String.valueOf(totalOrders));
+                    ((TextView) findViewById(R.id.tvTotalSpent)).setText(
+                            VND.format((long) finalSpent) + "đ");
+                });
+            });
     }
 
     private void setupMenuItems(String uid) {
@@ -201,6 +220,7 @@ public class ProfileActivity extends AppCompatActivity {
                                 .setPhotoUri(downloadUri)
                                 .build())
                                 .addOnSuccessListener(aVoid -> {
+                                    SessionManager.getInstance(this).updateUserAvatar(downloadUri.toString());
                                     Glide.with(this).load(downloadUri).circleCrop().into(ivAvatar);
                                     Toast.makeText(this, "Đổi ảnh thành công!", Toast.LENGTH_SHORT).show();
                                 })

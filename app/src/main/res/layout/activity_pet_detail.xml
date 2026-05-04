@@ -468,13 +468,14 @@
             android:id="@+id/btnCall"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_circle_dark"
+            android:background="@drawable/bg_circle_light_orange"
             android:layout_marginEnd="12dp">
             <ImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:layout_gravity="center"
-                android:src="@drawable/ic_phone" />
+                android:src="@drawable/ic_phone"
+                app:tint="@color/primary" />
         </FrameLayout>
 
         <!-- Chat button -->
@@ -482,14 +483,15 @@
             android:id="@+id/btnChat"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:background="@drawable/bg_circle_dark"
+            android:background="@drawable/bg_circle_light_orange"
             android:layout_marginEnd="16dp">
             <ImageView
                 android:layout_width="22dp"
                 android:layout_height="22dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_chat"
-                android:padding="1dp" />
+                android:padding="1dp"
+                app:tint="@color/primary" />
         </FrameLayout>
 
         <!-- "I Want It" main CTA -->
