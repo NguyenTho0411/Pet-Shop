@@ -19,7 +19,9 @@ import com.bumptech.glide.Glide;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.model.entity.OrderItem;
+import com.example.petshop.model.entity.Pet;
 import com.example.petshop.repository.OrderRepository;
+import com.example.firebase.FirebaseHelper;
 
 import java.text.NumberFormat;
 import java.util.List;
@@ -162,20 +164,75 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     }
 
     private void updateOrderStatus(String newStatus) {
-        new OrderRepository().updateStatus(currentOrder.getId(), newStatus, null,
-                new OrderRepository.Callback<>() {
-                    public void onSuccess(Void v) {
-                        currentOrder.setStatus(newStatus);
-                        runOnUiThread(() -> {
-                            ((TextView) findViewById(R.id.tvStatusBadge)).setText(newStatus);
-                            Toast.makeText(AdminOrderDetailActivity.this,
-                                    "Đã cập nhật → " + newStatus, Toast.LENGTH_SHORT).show();
-                        });
-                    }
-                    public void onFailure(String err) {
-                        runOnUiThread(() -> Toast.makeText(AdminOrderDetailActivity.this,
-                                "Lỗi: " + err, Toast.LENGTH_LONG).show());
-                    }
-                });
+        ProgressBar pb = findViewById(R.id.progressBar);
+        pb.setVisibility(View.VISIBLE);
+
+        // Cập nhật pet status khi admin xác nhận đơn
+        updatePetStatusForOrder(currentOrder, newStatus, () -> {
+            new OrderRepository().updateStatus(currentOrder.getId(), newStatus, null,
+                    new OrderRepository.Callback<>() {
+                        public void onSuccess(Void v) {
+                            currentOrder.setStatus(newStatus);
+                            runOnUiThread(() -> {
+                                pb.setVisibility(View.GONE);
+                                ((TextView) findViewById(R.id.tvStatusBadge)).setText(newStatus);
+                                Toast.makeText(AdminOrderDetailActivity.this,
+                                        "Đã cập nhật → " + newStatus, Toast.LENGTH_SHORT).show();
+                            });
+                        }
+                        public void onFailure(String err) {
+                            runOnUiThread(() -> {
+                                pb.setVisibility(View.GONE);
+                                Toast.makeText(AdminOrderDetailActivity.this,
+                                        "Lỗi: " + err, Toast.LENGTH_LONG).show();
+                            });
+                        }
+                    });
+        });
+    }
+
+    /**
+     * Cập nhật trạng thái pet theo trạng thái đơn hàng:
+     * - Khi admin xác nhận (CONFIRMED) hoặc các trạng thái tiếp theo → pet = SOLD
+     * - Khi hủy đơn → pet = AVAILABLE
+     */
+    private void updatePetStatusForOrder(Order order, String newStatus, Runnable onComplete) {
+        if (order.getItems() == null) {
+            onComplete.run();
+            return;
+        }
+
+        // Nếu hủy đơn → hoàn trạng thái pet về AVAILABLE
+        if (Order.STATUS_CANCELLED.equals(newStatus) || Order.STATUS_REFUNDED.equals(newStatus)) {
+            for (OrderItem item : order.getItems()) {
+                if ("PET".equals(item.getProductType())) {
+                    FirebaseHelper.db()
+                            .collection("pets")
+                            .document(item.getProductId())
+                            .update("status", Pet.STATUS_AVAILABLE)
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Lỗi cập nhật pet: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                }
+            }
+        }
+        // Nếu xác nhận đơn hoặc các trạng thái tiếp theo → pet = SOLD
+        else if (Order.STATUS_CONFIRMED.equals(newStatus) || Order.STATUS_PREPARING.equals(newStatus)
+                || Order.STATUS_SHIPPING.equals(newStatus) || Order.STATUS_DELIVERED.equals(newStatus)
+                || Order.STATUS_COMPLETED.equals(newStatus)) {
+            for (OrderItem item : order.getItems()) {
+                if ("PET".equals(item.getProductType())) {
+                    FirebaseHelper.db()
+                            .collection("pets")
+                            .document(item.getProductId())
+                            .update("status", Pet.STATUS_SOLD)
+                            .addOnFailureListener(e -> {
+                                Toast.makeText(this, "Lỗi cập nhật pet: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                            });
+                }
+            }
+        }
+
+        onComplete.run();
     }
 }

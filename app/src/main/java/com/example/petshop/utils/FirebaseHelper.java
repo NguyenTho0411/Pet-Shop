@@ -18,6 +18,8 @@ public class FirebaseHelper {
     private static final FirebaseAuth  auth      = FirebaseAuth.getInstance();
     private static final FirebaseFirestore db     = FirebaseFirestore.getInstance();
 
+    public static FirebaseFirestore db() { return db; }
+
     // Callback interfaces
     public interface OnRoleCallback { void onResult(String role); }
     public interface OnSuccessCallback { void onSuccess(); }

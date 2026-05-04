@@ -68,6 +68,43 @@
                     android:gravity="top" android:inputType="textMultiLine" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <!-- Loại promotion: Voucher vs Automatic -->
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Loại khuyến mãi *" android:textSize="13sp"
+                android:textColor="@color/text_secondary" android:layout_marginBottom="6dp" />
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="14dp">
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTypeVoucher"
+                    android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:text="🎟️ VOUCHER"
+                    android:layout_marginEnd="8dp" android:textSize="12sp"
+                    android:insetTop="0dp" android:insetBottom="0dp"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnTypeAutomatic"
+                    android:layout_width="0dp" android:layout_height="48dp"
+                    android:layout_weight="1" android:text="⚡ TỰ ĐỘNG"
+                    android:textSize="12sp"
+                    android:insetTop="0dp" android:insetBottom="0dp"
+                    app:cornerRadius="8dp"
+                    style="@style/Widget.MaterialComponents.Button.UnelevatedButton" />
+            </LinearLayout>
+
+            <!-- Mã voucher (chỉ hiện khi chọn VOUCHER) -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/layoutVoucherCode"
+                style="@style/Widget.Petshop.TextInput"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:hint="Mã voucher *" android:layout_marginBottom="12dp"
+                android:visibility="gone">
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etVoucherCode" android:layout_width="match_parent"
+                    android:layout_height="56dp" android:inputType="textCapCharacters" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <!-- Loại giảm giá -->
             <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                 android:text="Loại giảm giá *" android:textSize="13sp"

@@ -190,32 +190,46 @@ public class ProductListActivity extends AppCompatActivity {
 
     private List<Pet> filterPets(List<Pet> pets, String filterKey) {
         if (filterKey == null || filterKey.trim().isEmpty() || pets == null) return pets != null ? new ArrayList<>(pets) : new ArrayList<>();
-        
+
         String key = filterKey.toLowerCase(java.util.Locale.ROOT);
+
+        // Dịch tiếng Việt sang tiếng Anh để so sánh với species
+        String translatedKey = translateVietnameseToEnglish(key);
+        final String searchKey = !translatedKey.isEmpty() ? translatedKey : key;
+
         List<Pet> result = new ArrayList<>();
         for (Pet p : pets) {
             boolean matches = false;
-            if (p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
+
+            // So sánh trực tiếp với filterKey (cho categoryId, category name)
             if (p.getCategoryId() != null && p.getCategoryId().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
             if (p.getCategory() != null && p.getCategory().getName() != null && p.getCategory().getName().toLowerCase(java.util.Locale.ROOT).contains(key)) matches = true;
-            
-            // Dịch ngầm từ tiếng Việt sang tiếng Anh cho các loài phổ biến
-            if (!matches) {
-                String translated = "";
-                if (key.contains("chó")) translated = "dog";
-                else if (key.contains("mèo")) translated = "cat";
-                else if (key.contains("cá")) translated = "fish";
-                else if (key.contains("chim")) translated = "bird";
-                else if (key.contains("thỏ")) translated = "rabbit";
-                
-                if (!translated.isEmpty() && p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(translated)) {
-                    matches = true;
-                }
+
+            // So sánh với species (dùng translated key)
+            if (p.getSpecies() != null && p.getSpecies().toLowerCase(java.util.Locale.ROOT).contains(searchKey)) matches = true;
+
+            // So sánh với category name đã dịch
+            if (p.getCategory() != null && p.getCategory().getName() != null) {
+                String catNameNormalized = p.getCategory().getName().toLowerCase(java.util.Locale.ROOT);
+                String translatedCatName = translateVietnameseToEnglish(catNameNormalized);
+                if (translatedCatName.contains(searchKey) || catNameNormalized.contains(key)) matches = true;
             }
-            
+
             if (matches) result.add(p);
         }
         return result;
+    }
+
+    private String translateVietnameseToEnglish(String text) {
+        if (text == null || text.isEmpty()) return "";
+        String t = text.toLowerCase(java.util.Locale.ROOT);
+        if (t.contains("chó") || t.contains("cho") || t.equals("dog")) return "dog";
+        if (t.contains("mèo") || t.contains("meo") || t.equals("cat")) return "cat";
+        if (t.contains("cá") || t.equals("fish")) return "fish";
+        if (t.contains("chim") || t.equals("bird")) return "bird";
+        if (t.contains("thỏ") || t.contains("tho") || t.equals("rabbit")) return "rabbit";
+        if (t.contains("hamster")) return "hamster";
+        return "";
     }
 
     private List<Food> filterFoods(List<Food> foods, String filterKey) {

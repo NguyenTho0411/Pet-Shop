@@ -9,6 +9,10 @@ public class Promotion {
     public static final String TYPE_PERCENT = "PERCENT";   // giảm theo %
     public static final String TYPE_FIXED   = "FIXED";     // giảm số tiền cố định
 
+    // Loại promotion: Voucher (user copy code) vs Automatic (auto apply to products)
+    public static final String PROMOTION_TYPE_VOUCHER    = "VOUCHER";
+    public static final String PROMOTION_TYPE_AUTOMATIC  = "AUTOMATIC";
+
     // Loại áp dụng (phân cấp)
     public static final String APPLY_ALL       = "ALL";       // tất cả sản phẩm
     public static final String APPLY_CATEGORY  = "CATEGORY";  // theo danh mục (thú cưng/thức ăn)
@@ -67,6 +71,13 @@ public class Promotion {
 
     @SerializedName("productTypes")
     private List<String> productTypes;    // ["PET", "FOOD"] khi áp dụng nhiều loại
+
+    // Loại promotion: VOUCHER (user copy code) vs AUTOMATIC (auto apply)
+    @SerializedName("promotionType")
+    private String promotionType;        // VOUCHER | AUTOMATIC
+
+    @SerializedName("voucherCode")
+    private String voucherCode;           // Mã voucher để copy (khi là VOUCHER)
     // ----------------------------------
 
     @SerializedName("startDate")
@@ -104,6 +115,10 @@ public class Promotion {
     public boolean isPercentType() { return TYPE_PERCENT.equals(discountType); }
     public boolean isFixedType()   { return TYPE_FIXED.equals(discountType); }
 
+    // Kiểm tra loại promotion
+    public boolean isVoucher()    { return PROMOTION_TYPE_VOUCHER.equals(promotionType); }
+    public boolean isAutomatic()  { return PROMOTION_TYPE_AUTOMATIC.equals(promotionType) || promotionType == null; }
+    
     public double calculateDiscount(double originalPrice) {
         if (isPercentType()) {
             double discount = originalPrice * discountValue / 100;
@@ -230,6 +245,12 @@ public class Promotion {
 
     public List<String> getProductTypes() { return productTypes; }
     public void setProductTypes(List<String> types) { this.productTypes = types; }
+
+    public String getPromotionType() { return promotionType; }
+    public void setPromotionType(String type) { this.promotionType = type; }
+
+    public String getVoucherCode() { return voucherCode; }
+    public void setVoucherCode(String code) { this.voucherCode = code; }
 
     public String getStartDate() { return startDate; }
     public void setStartDate(String startDate) { this.startDate = startDate; }

@@ -39,10 +39,12 @@ public class AddEditPromotionActivity extends AppCompatActivity {
     private Promotion currentPromo;
 
     private EditText etName, etDesc, etDiscountValue, etMaxDiscount;
-    private EditText etStartDate, etEndDate, etMaxPerUser, etTotalLimit;
+    private EditText etStartDate, etEndDate, etMaxPerUser, etTotalLimit, etVoucherCode;
     private MaterialButton btnTypePercent, btnTypeFixed;
+    private MaterialButton btnTypeVoucher, btnTypeAutomatic;
     private ProgressBar progressBar;
     private TextView tvTitle;
+    private View layoutVoucherCode;
 
     // Apply type buttons
     private MaterialButton btnApplyAll, btnApplyCategory, btnApplySpecies, btnApplyProduct;
@@ -64,6 +66,7 @@ public class AddEditPromotionActivity extends AppCompatActivity {
     private String selectedType = Promotion.TYPE_PERCENT;
     private String selectedApplyType = Promotion.APPLY_ALL;
     private String selectedCategory = null;
+    private String selectedPromotionType = Promotion.PROMOTION_TYPE_AUTOMATIC;
     private Set<String> selectedSpecies = new HashSet<>();
     private List<String> selectedProductIds = new ArrayList<>();
 
@@ -100,6 +103,10 @@ public class AddEditPromotionActivity extends AppCompatActivity {
 
         btnTypePercent = findViewById(R.id.btnTypePercent);
         btnTypeFixed = findViewById(R.id.btnTypeFixed);
+        btnTypeVoucher = findViewById(R.id.btnTypeVoucher);
+        btnTypeAutomatic = findViewById(R.id.btnTypeAutomatic);
+        layoutVoucherCode = findViewById(R.id.layoutVoucherCode);
+        etVoucherCode = findViewById(R.id.etVoucherCode);
 
         // Apply type buttons
         btnApplyAll = findViewById(R.id.btnApplyAll);
@@ -133,6 +140,10 @@ public class AddEditPromotionActivity extends AppCompatActivity {
         btnTypePercent.setOnClickListener(v -> setType(Promotion.TYPE_PERCENT));
         btnTypeFixed.setOnClickListener(v -> setType(Promotion.TYPE_FIXED));
 
+        // Promotion type buttons (Voucher vs Automatic)
+        btnTypeVoucher.setOnClickListener(v -> setPromotionType(Promotion.PROMOTION_TYPE_VOUCHER));
+        btnTypeAutomatic.setOnClickListener(v -> setPromotionType(Promotion.PROMOTION_TYPE_AUTOMATIC));
+
         etStartDate.setOnClickListener(v -> showDatePicker(etStartDate));
         etEndDate.setOnClickListener(v -> showDatePicker(etEndDate));
 
@@ -144,6 +155,20 @@ public class AddEditPromotionActivity extends AppCompatActivity {
 
         setType(Promotion.TYPE_PERCENT);
         setApplyType(Promotion.APPLY_ALL);
+        setPromotionType(Promotion.PROMOTION_TYPE_AUTOMATIC);
+    }
+
+    private void setPromotionType(String promoType) {
+        selectedPromotionType = promoType;
+        int activeColor = Color.parseColor("#F5A623");
+        int inactiveColor = Color.parseColor("#F5F5F5");
+
+        updateButtonState(btnTypeVoucher, Promotion.PROMOTION_TYPE_VOUCHER.equals(promoType), activeColor, inactiveColor);
+        updateButtonState(btnTypeAutomatic, Promotion.PROMOTION_TYPE_AUTOMATIC.equals(promoType), activeColor, inactiveColor);
+
+        // Show/hide voucher code input
+        layoutVoucherCode.setVisibility(
+                Promotion.PROMOTION_TYPE_VOUCHER.equals(promoType) ? View.VISIBLE : View.GONE);
     }
 
     private void setupApplyTypeButtons() {
@@ -362,6 +387,11 @@ public class AddEditPromotionActivity extends AppCompatActivity {
                 etMaxPerUser.setText(String.valueOf(promo.getPerUserLimit()));
                 etTotalLimit.setText(String.valueOf(promo.getUsageLimit()));
                 setType(promo.getDiscountType());
+
+                // Restore promotion type (Voucher vs Automatic)
+                String promoType = promo.getPromotionType();
+                setPromotionType(promoType != null ? promoType : Promotion.PROMOTION_TYPE_AUTOMATIC);
+                etVoucherCode.setText(promo.getVoucherCode() != null ? promo.getVoucherCode() : "");
                 
                 // Restore apply type
                 String applyType = promo.getApplyType();
@@ -445,10 +475,21 @@ public class AddEditPromotionActivity extends AppCompatActivity {
             return;
         }
 
+        // Validate voucher code
+        if (Promotion.PROMOTION_TYPE_VOUCHER.equals(selectedPromotionType)) {
+            String voucherCode = etVoucherCode.getText().toString().trim();
+            if (voucherCode.isEmpty()) {
+                Toast.makeText(this, "Mã voucher không được để trống", Toast.LENGTH_SHORT).show();
+                return;
+            }
+        }
+
         Promotion p = currentPromo != null ? currentPromo : new Promotion();
         p.setName(name);
         p.setDescription(etDesc.getText().toString().trim());
         p.setDiscountType(selectedType);
+        p.setPromotionType(selectedPromotionType);
+        p.setVoucherCode(etVoucherCode.getText().toString().trim());
         try { p.setDiscountValue(Double.parseDouble(discountStr)); } catch (Exception e) { p.setDiscountValue(0); }
         try { p.setMaxDiscountAmount(Double.parseDouble(etMaxDiscount.getText().toString())); } catch (Exception e) { p.setMaxDiscountAmount(0); }
         

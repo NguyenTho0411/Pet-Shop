@@ -75,9 +75,12 @@ public class OrderRepository {
                 
                 // Collect food references
                 Map<String, DocumentReference> foodRefs = new HashMap<>();
+                Map<String, DocumentReference> petRefs = new HashMap<>();
                 for (OrderItem item : orderItems) {
                     if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
                         foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
+                    } else if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                        petRefs.put(item.getProductId(), db.collection(COL_PETS).document(item.getProductId()));
                     }
                 }
                 
@@ -87,19 +90,20 @@ public class OrderRepository {
                 for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
                     foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
                 }
+                Map<String, DocumentSnapshot> petSnaps = new HashMap<>();
+                for (Map.Entry<String, DocumentReference> entry : petRefs.entrySet()) {
+                    petSnaps.put(entry.getKey(), tx.get(entry.getValue()));
+                }
 
                 // 2. PERFORM ALL WRITES
-                // Subtract stock
+                // Reserve pets (chờ admin xác nhận mới thành SOLD)
                 for (OrderItem item : orderItems) {
                     if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                        tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_SOLD);
+                        tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_RESERVED);
                     } else {
                         DocumentSnapshot snap = foodSnaps.get(item.getProductId());
                         long stock = (snap != null && snap.getLong("stock") != null) ? snap.getLong("stock") : 0;
-                        long sold  = (snap != null && snap.getLong("sold") != null) ? snap.getLong("sold") : 0;
-                        tx.update(foodRefs.get(item.getProductId()),
-                                "stock", Math.max(0, stock - item.getQuantity()),
-                                "sold",  sold + item.getQuantity());
+                        tx.update(foodRefs.get(item.getProductId()), "stock", Math.max(0, stock - item.getQuantity()));
                     }
                 }
 
@@ -181,7 +185,17 @@ public class OrderRepository {
             if (order == null || !Order.STATUS_WAIT_PAY.equals(order.getStatus())) return null;
 
             try {
-                subtractStockInTx(tx, order.getItems());
+                // Reserve pets (chờ admin xác nhận mới thành SOLD)
+                for (OrderItem item : order.getItems()) {
+                    if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                        tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_RESERVED);
+                    } else {
+                        DocumentReference foodRef = db.collection(COL_FOODS).document(item.getProductId());
+                        DocumentSnapshot foodSnap = tx.get(foodRef);
+                        long stock = (foodSnap != null && foodSnap.getLong("stock") != null) ? foodSnap.getLong("stock") : 0;
+                        tx.update(foodRef, "stock", Math.max(0, stock - item.getQuantity()));
+                    }
+                }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

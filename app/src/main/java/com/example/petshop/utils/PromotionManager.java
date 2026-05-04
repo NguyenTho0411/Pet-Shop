@@ -13,14 +13,24 @@ public class PromotionManager {
 
     /**
      * Tìm khuyến mãi tốt nhất áp dụng cho sản phẩm và cập nhật giá đã giảm.
+     * Chỉ xử lý loại AUTOMATIC - VOUCHER cần user nhập mã nên không tự động áp dụng.
      */
     public static void applyPromotions(List<Pet> pets, List<Food> foods, List<Promotion> activePromos) {
         if (activePromos == null || activePromos.isEmpty()) return;
 
+        // Lọc chỉ lấy AUTOMATIC promotions
+        List<Promotion> automaticPromos = new ArrayList<>();
+        for (Promotion p : activePromos) {
+            if (p.isAutomatic()) {
+                automaticPromos.add(p);
+            }
+        }
+        if (automaticPromos.isEmpty()) return;
+
         // Apply for Pets
         if (pets != null) {
             for (Pet p : pets) {
-                Promotion best = findBestPromoForProduct(p, activePromos);
+                Promotion best = findBestPromoForProduct(p, automaticPromos);
                 if (best != null) {
                     p.setPromotionId(best.getId());
                     p.setPromotion(best);
@@ -33,7 +43,7 @@ public class PromotionManager {
         // Apply for Foods
         if (foods != null) {
             for (Food f : foods) {
-                Promotion best = findBestPromoForProduct(f, activePromos);
+                Promotion best = findBestPromoForProduct(f, automaticPromos);
                 if (best != null) {
                     f.setPromotionId(best.getId());
                     f.setPromotion(best);
@@ -46,12 +56,22 @@ public class PromotionManager {
 
     /**
      * Tính lại giá cart items dựa theo promotion đang active.
-     * Chỉ xử lý item có originalPrice > 0 (được lưu từ phiên trước).
+     * Chỉ xử lý AUTOMATIC promotions - VOUCHER cần user nhập mã riêng.
      * Trả về true nếu có giá nào thay đổi (cần lưu lại Firestore).
      */
     public static boolean refreshCartPrices(Cart cart, List<Promotion> activePromos) {
         if (cart == null || cart.getItems() == null) return false;
-        List<Promotion> promos = activePromos != null ? activePromos : new ArrayList<>();
+
+        // Lọc chỉ lấy AUTOMATIC promotions
+        List<Promotion> automaticPromos = new ArrayList<>();
+        if (activePromos != null) {
+            for (Promotion p : activePromos) {
+                if (p.isAutomatic()) {
+                    automaticPromos.add(p);
+                }
+            }
+        }
+        List<Promotion> promos = automaticPromos;
         boolean changed = false;
 
         for (CartItem item : cart.getItems()) {
