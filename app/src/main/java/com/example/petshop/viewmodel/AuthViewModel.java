@@ -1,17 +1,28 @@
 package com.example.petshop.viewmodel;
 
+import android.app.Application;
+
+import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
-import androidx.lifecycle.ViewModel;
 
+import com.example.petshop.model.entity.User;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.utils.SessionManager;
 
-public class AuthViewModel extends ViewModel {
+public class AuthViewModel extends AndroidViewModel {
 
     private final MutableLiveData<Boolean> isLoading    = new MutableLiveData<>(false);
     private final MutableLiveData<String>  errorMessage = new MutableLiveData<>("");
     private final MutableLiveData<String>  userRole     = new MutableLiveData<>(null);
     private final MutableLiveData<String>  resetEmailSent = new MutableLiveData<>(null);
+
+    private SessionManager sessionManager;
+
+    public AuthViewModel(Application application) {
+        super(application);
+        sessionManager = SessionManager.getInstance(application);
+    }
 
     public LiveData<Boolean> getIsLoading()     { return isLoading; }
     public LiveData<String>  getErrorMessage()  { return errorMessage; }
@@ -25,8 +36,7 @@ public class AuthViewModel extends ViewModel {
         FirebaseHelper.loginWithEmail(email, password, new FirebaseHelper.OnAuthCallback() {
             @Override
             public void onSuccess(String uid, String role) {
-                setLoading(false);
-                userRole.postValue(role);
+                loadUserDataAndSaveSession(uid, role);
             }
             @Override
             public void onFailure(String errorMsg) {
@@ -41,8 +51,7 @@ public class AuthViewModel extends ViewModel {
         FirebaseHelper.registerWithEmail(email, password, fullName, new FirebaseHelper.OnAuthCallback() {
             @Override
             public void onSuccess(String uid, String role) {
-                setLoading(false);
-                userRole.postValue(role);
+                loadUserDataAndSaveSession(uid, role);
             }
             @Override
             public void onFailure(String errorMsg) {
@@ -59,8 +68,7 @@ public class AuthViewModel extends ViewModel {
         FirebaseHelper.loginWithGoogle(idToken, new FirebaseHelper.OnAuthCallback() {
             @Override
             public void onSuccess(String uid, String role) {
-                setLoading(false);
-                userRole.postValue(role);
+                loadUserDataAndSaveSession(uid, role);
             }
             @Override
             public void onFailure(String errorMsg) {
@@ -77,8 +85,7 @@ public class AuthViewModel extends ViewModel {
         FirebaseHelper.loginWithFacebook(accessToken, new FirebaseHelper.OnAuthCallback() {
             @Override
             public void onSuccess(String uid, String role) {
-                setLoading(false);
-                userRole.postValue(role);
+                loadUserDataAndSaveSession(uid, role);
             }
             @Override
             public void onFailure(String errorMsg) {
@@ -86,6 +93,37 @@ public class AuthViewModel extends ViewModel {
                 errorMessage.postValue(errorMsg);
             }
         });
+    }
+
+    // ==================== SESSION MANAGEMENT ====================
+
+    private void loadUserDataAndSaveSession(String uid, String role) {
+        FirebaseHelper.getUserData(uid, new FirebaseHelper.OnUserDataCallback() {
+            @Override
+            public void onSuccess(User user) {
+                sessionManager.saveSession(
+                        uid,
+                        user.getFullName() != null ? user.getFullName() : "",
+                        user.getEmail() != null ? user.getEmail() : "",
+                        role,
+                        user.getAvatarUrl()
+                );
+                setLoading(false);
+                userRole.postValue(role);
+            }
+            @Override
+            public void onFailure(String error) {
+                // Vẫn lưu session với dữ liệu cơ bản
+                sessionManager.saveSession(uid, "", "", role, null);
+                setLoading(false);
+                userRole.postValue(role);
+            }
+        });
+    }
+
+    public void logout() {
+        sessionManager.clearSession();
+        FirebaseHelper.logout();
     }
 
     // ==================== RESET PASSWORD ====================

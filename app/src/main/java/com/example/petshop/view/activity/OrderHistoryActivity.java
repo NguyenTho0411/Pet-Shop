@@ -12,7 +12,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -20,6 +19,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.repository.OrderRepository;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.google.android.material.chip.Chip;
 import com.google.firebase.auth.FirebaseAuth;
 
@@ -210,14 +211,23 @@ public class OrderHistoryActivity extends AppCompatActivity {
     }
 
     private void confirmCancel(Order order) {
-        new AlertDialog.Builder(this)
-                .setTitle("Huỷ đơn hàng")
-                .setMessage("Bạn có chắc muốn huỷ đơn " + order.getOrderCode() + "?")
-                .setPositiveButton("Huỷ đơn", (d, w) -> {
+        DialogUtils.showConfirmDialog(this, "Huỷ đơn hàng", "Bạn có chắc muốn huỷ đơn " + order.getOrderCode() + "?",
+            "Huỷ đơn", "Không",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
                     new OrderRepository().cancelOrder(order.getId(), "Khách huỷ", new OrderRepository.Callback<>() {
                         public void onSuccess(Void v) { runOnUiThread(() -> { Toast.makeText(OrderHistoryActivity.this, "Đã huỷ đơn hàng", Toast.LENGTH_SHORT).show(); loadOrders(); }); }
                         public void onFailure(String err) { runOnUiThread(() -> Toast.makeText(OrderHistoryActivity.this, err, Toast.LENGTH_LONG).show()); }
                     });
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            }, "cancelOrderDialog");
+    }
                 })
                 .setNegativeButton("Không", null).show();
     }

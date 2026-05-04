@@ -10,7 +10,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.ReturnRequest;
 import com.example.petshop.repository.ReturnRepository;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
@@ -106,10 +107,12 @@ public class AdminReturnListActivity extends AppCompatActivity {
     }
 
     private void onApprove(ReturnRequest r) {
-        new AlertDialog.Builder(this)
-                .setTitle("Duyệt yêu cầu hoàn trả")
-                .setMessage("Xác nhận duyệt yêu cầu hoàn trả cho đơn " + r.getOrderCode() + "?")
-                .setPositiveButton("Duyệt", (d, w) -> {
+        DialogUtils.showConfirmDialog(this, "Duyệt yêu cầu hoàn trả", 
+            "Xác nhận duyệt yêu cầu hoàn trả cho đơn " + r.getOrderCode() + "?",
+            "Duyệt", "Huỷ",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
                     repo.approve(r.getId(), r.getOrderId(), new ReturnRepository.Callback<Void>() {
                         public void onSuccess(Void v) {
                             runOnUiThread(() -> {
@@ -123,9 +126,13 @@ public class AdminReturnListActivity extends AppCompatActivity {
                                     "Lỗi: " + err, Toast.LENGTH_LONG).show());
                         }
                     });
-                })
-                .setNegativeButton("Huỷ", null)
-                .show();
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            }, "approveReturnDialog");
     }
 
     private void onReject(ReturnRequest r) {
@@ -160,10 +167,12 @@ public class AdminReturnListActivity extends AppCompatActivity {
     }
 
     private void onMarkRefunded(ReturnRequest r) {
-        new AlertDialog.Builder(this)
-                .setTitle("Xác nhận đã hoàn tiền")
-                .setMessage("Xác nhận đã chuyển tiền hoàn trả cho đơn " + r.getOrderCode() + "?")
-                .setPositiveButton("Đã hoàn tiền", (d, w) -> {
+        DialogUtils.showConfirmDialog(this, "Xác nhận đã hoàn tiền", 
+            "Xác nhận đã chuyển tiền hoàn trả cho đơn " + r.getOrderCode() + "?",
+            "Đã hoàn tiền", "Huỷ",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
                     repo.markRefunded(r.getId(), r.getOrderId(), new ReturnRepository.Callback<Void>() {
                         public void onSuccess(Void v) {
                             runOnUiThread(() -> {
@@ -177,9 +186,13 @@ public class AdminReturnListActivity extends AppCompatActivity {
                                     "Lỗi: " + err, Toast.LENGTH_LONG).show());
                         }
                     });
-                })
-                .setNegativeButton("Huỷ", null)
-                .show();
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            }, "markRefundedDialog");
     }
 
     // ── Adapter ──────────────────────────────────────────────────────────────

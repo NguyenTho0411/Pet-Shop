@@ -140,6 +140,29 @@ public class FirebaseHelper {
                 .addOnFailureListener(e -> callback.onResult(User.ROLE_CUSTOMER));
     }
 
+    public interface OnUserDataCallback {
+        void onSuccess(User user);
+        void onFailure(String error);
+    }
+
+    public static void getUserData(String uid, OnUserDataCallback callback) {
+        db.collection(COLLECTION_USERS).document(uid).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        User user = doc.toObject(User.class);
+                        if (user != null) {
+                            user.setId(uid);
+                            callback.onSuccess(user);
+                        } else {
+                            callback.onFailure("Không đọc được dữ liệu user");
+                        }
+                    } else {
+                        callback.onFailure("Không tìm thấy user");
+                    }
+                })
+                .addOnFailureListener(e -> callback.onFailure(e.getMessage()));
+    }
+
     private static void saveUserToFirestore(String uid, String fullName, String email,
                                              String role, String loginType, String avatarUrl,
                                              OnSuccessCallback callback) {

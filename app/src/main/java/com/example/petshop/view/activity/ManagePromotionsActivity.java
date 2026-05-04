@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Promotion;
 import com.example.petshop.view.adapter.PromotionAdminAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.PromotionManageViewModel;
 
 import java.util.ArrayList;
@@ -49,10 +51,7 @@ public class ManagePromotionsActivity extends AppCompatActivity {
                 startActivity(intent);
             }
             public void onDelete(Promotion promo) {
-                new AlertDialog.Builder(ManagePromotionsActivity.this)
-                        .setMessage("Xoá khuyến mãi \"" + promo.getName() + "\"? Không thể hoàn tác!")
-                        .setPositiveButton("Xoá", (d, w) -> vm.delete(promo.getId()))
-                        .setNegativeButton("Huỷ", null).show();
+                confirmDeletePromotion(promo.getName(), promo.getId());
             }
             public void onToggle(Promotion promo, boolean isActive) {
                 vm.toggleActive(promo.getId(), isActive);
@@ -82,5 +81,20 @@ public class ManagePromotionsActivity extends AppCompatActivity {
         vm.getError().observe(this, err -> {
             if (err != null && !err.isEmpty()) Toast.makeText(this, err, Toast.LENGTH_LONG).show();
         });
+    }
+
+    private void confirmDeletePromotion(String promotionName, String promotionId) {
+        DialogUtils.showDeleteConfirmDialog(this, promotionName,
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.delete(promotionId);
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

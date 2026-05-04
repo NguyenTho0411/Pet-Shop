@@ -11,11 +11,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.petshop.R;
 import com.example.petshop.utils.Constants;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 
 public class VNPayWebViewActivity extends AppCompatActivity {
 
@@ -126,11 +127,18 @@ public class VNPayWebViewActivity extends AppCompatActivity {
     }
 
     private void confirmClose() {
-        new AlertDialog.Builder(this)
-                .setMessage("Bạn có muốn huỷ thanh toán?")
-                .setPositiveButton("Huỷ thanh toán", (d, w) -> finish())
-                .setNegativeButton("Tiếp tục", null)
-                .show();
+        DialogUtils.showConfirmDialog(this, "Bạn có muốn huỷ thanh toán?",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    finish();
+                }
+
+                @Override
+                public void onCancel() {
+                    // Tiếp tục
+                }
+            });
     }
 
     @Override

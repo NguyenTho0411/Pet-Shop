@@ -9,7 +9,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -18,6 +17,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.User;
 import com.example.petshop.view.adapter.UserAdminAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.UserManageViewModel;
 
 import java.util.ArrayList;
@@ -114,10 +115,17 @@ public class ManageUsersActivity extends AppCompatActivity {
     }
 
     private void confirmAction(String message, Runnable action) {
-        new AlertDialog.Builder(this)
-                .setMessage(message)
-                .setPositiveButton("Xác nhận", (d, w) -> action.run())
-                .setNegativeButton("Huỷ", null)
-                .show();
+        DialogUtils.showConfirmDialog(this, message,
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    action.run();
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

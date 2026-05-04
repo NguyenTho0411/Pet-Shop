@@ -7,11 +7,12 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.petshop.R;
 import com.example.petshop.utils.FirebaseHelper;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.google.firebase.auth.FirebaseUser;
 
 public class AdminActivity extends AppCompatActivity {
@@ -98,16 +99,23 @@ public class AdminActivity extends AppCompatActivity {
     }
 
     private void confirmLogout() {
-        new AlertDialog.Builder(this)
-                .setTitle("Đăng xuất")
-                .setMessage("Bạn có chắc muốn đăng xuất khỏi tài khoản Admin?")
-                .setPositiveButton("Đăng xuất", (d, w) -> {
+        DialogUtils.showConfirmDialog(this, "Đăng xuất", "Bạn có chắc muốn đăng xuất khỏi tài khoản Admin?",
+            "Đăng xuất", "Hủy",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
                     FirebaseHelper.logout();
-                    Intent intent = new Intent(this, PetShopActivity.class);
+                    Intent intent = new Intent(AdminActivity.this, PetShopActivity.class);
                     intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                     startActivity(intent);
-                })
-                .setNegativeButton("Hủy", null)
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            }, "logoutDialog");
+    }
                 .show();
     }
 }

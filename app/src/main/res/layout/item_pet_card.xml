@@ -3,206 +3,166 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="200dp"
-    android:layout_height="200dp"
+    android:layout_height="wrap_content"
     android:layout_marginEnd="14dp"
-    app:cardCornerRadius="20dp"
+    app:cardCornerRadius="16dp"
     app:cardElevation="4dp"
-    app:cardBackgroundColor="#F5A623"
+    app:cardBackgroundColor="@color/bg_card"
     android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Full-card container -->
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <!-- Top content: left info + right image -->
+        <!-- Hình ảnh pet - chiếm phần lớn card -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="180dp">
+
+            <ImageView
+                android:id="@+id/ivPetImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:src="@mipmap/ic_launcher" />
+
+            <!-- Sale badge góc trái trên -->
+            <TextView
+                android:id="@+id/tvSaleBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_orange_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="-10%"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Status badge góc phải trên -->
+            <TextView
+                android:id="@+id/tvStatusBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_orange_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="Đã bán"
+                android:textColor="@color/white"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Nút thêm vào giỏ hàng góc phải dưới -->
+            <ImageView
+                android:id="@+id/ivAddToCart"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="8dp"
+                android:src="@android:drawable/ic_input_add"
+                android:background="@drawable/bg_circle_primary"
+                android:padding="8dp"
+                android:contentDescription="Thêm vào giỏ hàng" />
+
+        </FrameLayout>
+
+        <!-- Thông tin pet bên dưới hình ảnh -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="horizontal">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <!-- LEFT: info block -->
+            <!-- Tên pet -->
+            <TextView
+                android:id="@+id/tvPetName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Pet name: Luna"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <!-- Giá -->
+            <TextView
+                android:id="@+id/tvPrice"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="820.000đ"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary"
+                android:layout_marginTop="4dp" />
+
+            <!-- Breed · age · gender - nằm ngang -->
+            <TextView
+                android:id="@+id/tvBreedInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Siberian Husky · 2 năm · Đực"
+                android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:layout_marginTop="4dp" />
+
+            <!-- Tags nằm ngang -->
             <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="12dp">
-
-                <!-- Sale badge -->
-                <TextView
-                    android:id="@+id/tvSaleBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bg_orange_pill"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="2dp"
-                    android:text="-10%"
-                    android:textColor="@color/white"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="4dp"
-                    android:visibility="gone" />
-
-                <!-- Distance -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Distance"
-                    android:textSize="10sp"
-                    android:textColor="#FFEDD0"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/tvDistance"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0.9 km nearby"
-                    android:textSize="10sp"
-                    android:textColor="#FFFFFF"
-                    android:layout_marginBottom="8dp" />
-
-                <!-- Tags label -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tags"
-                    android:textSize="10sp"
-                    android:textColor="#FFEDD0"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="4dp" />
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
 
                 <TextView
                     android:id="@+id/tvTag1"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Good with Kids"
+                    android:text="Chó"
                     android:textSize="10sp"
-                    android:textColor="#FFFFFF" />
+                    android:textColor="@color/primary"
+                    android:background="@drawable/bg_tag"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp" />
 
                 <TextView
                     android:id="@+id/tvTag2"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Energetic"
+                    android:text="Đã tẩy giun"
                     android:textSize="10sp"
-                    android:textColor="#FFFFFF" />
+                    android:textColor="@color/text_secondary"
+                    android:background="@drawable/bg_tag_outline"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="2dp"
+                    android:layout_marginStart="6dp" />
 
                 <TextView
                     android:id="@+id/tvTag3"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Loyal"
+                    android:text="Có giấy tờ"
                     android:textSize="10sp"
-                    android:textColor="#FFFFFF" />
-
-            </LinearLayout>
-
-            <!-- RIGHT: pet image fills right half -->
-            <FrameLayout
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1">
-
-                <!-- Orange circle backdrop behind image -->
-                <View
-                    android:layout_width="120dp"
-                    android:layout_height="120dp"
-                    android:layout_gravity="center_vertical|end"
-                    android:background="@drawable/bg_circle_orange"
-                    android:alpha="0.5"
-                    android:layout_marginEnd="-16dp" />
-
-                <ImageView
-                    android:id="@+id/ivPetImage"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:src="@mipmap/ic_launcher" />
-
-                <!-- Status Badge on Image -->
-                <TextView
-                    android:id="@+id/tvStatusBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|end"
-                    android:layout_margin="8dp"
-                    android:background="@drawable/bg_orange_pill"
+                    android:textColor="@color/text_secondary"
+                    android:background="@drawable/bg_tag_outline"
                     android:paddingHorizontal="8dp"
                     android:paddingVertical="2dp"
-                    android:text="Đã bán"
-                    android:textColor="@color/white"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
+                    android:layout_marginStart="6dp" />
 
-            </FrameLayout>
-        </LinearLayout>
-
-        <!-- BOTTOM info bar (overlays on top) -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_gravity="bottom"
-            android:orientation="vertical"
-            android:background="#CC1C1C1E"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="6dp"
-            android:justificationMode="inter_word">
-
-            <!-- Name + price row -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <TextView
-                    android:id="@+id/tvPetName"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Pet name: Luna"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:maxLines="1"
-                    android:ellipsize="end" />
-
-                <TextView
-                    android:id="@+id/tvPrice"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="$820"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/primary"
-                    android:layout_marginEnd="8dp" />
-
-                <ImageView
-                    android:id="@+id/ivAddToCart"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@android:drawable/ic_input_add"
-                    android:background="@drawable/bg_circle_orange"
-                    android:padding="4dp" />
             </LinearLayout>
 
-            <!-- Breed · age · gender -->
-            <TextView
-                android:id="@+id/tvBreedInfo"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Siberian Husky · Adult · Male"
-                android:textSize="10sp"
-                android:textColor="#CCFFFFFF"
-                android:maxLines="1"
-                android:ellipsize="end" />
         </LinearLayout>
 
-    </FrameLayout>
+    </LinearLayout>
+
 </androidx.cardview.widget.CardView>

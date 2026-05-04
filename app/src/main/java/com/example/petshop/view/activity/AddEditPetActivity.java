@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -26,6 +25,8 @@ import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.PetMedia;
 import com.example.petshop.repository.CategoryRepository;
 import com.example.petshop.view.adapter.MediaPickerAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.PetManageViewModel;
 import com.google.android.material.checkbox.MaterialCheckBox;
 import com.google.android.material.textfield.TextInputEditText;
@@ -118,13 +119,7 @@ public class AddEditPetActivity extends AppCompatActivity {
             public void onRemoveClick(int index) {
                 MediaPickerAdapter.MediaItem item = mediaAdapter.getItems().get(index);
                 if (item.isExisting && editingPetId != null) {
-                    new AlertDialog.Builder(AddEditPetActivity.this)
-                            .setMessage("Xoá media này?")
-                            .setPositiveButton("Xoá", (d, w) -> {
-                                vm.deleteMediaItem(editingPetId, item.mediaId, item.url);
-                                mediaAdapter.removeItem(index);
-                            })
-                            .setNegativeButton("Huỷ", null).show();
+                    confirmDeleteMedia(index, item);
                 } else {
                     mediaAdapter.removeItem(index);
                 }
@@ -299,5 +294,21 @@ public class AddEditPetActivity extends AppCompatActivity {
 
     private String getText(TextInputEditText et) {
         return et.getText() != null ? et.getText().toString().trim() : "";
+    }
+
+    private void confirmDeleteMedia(int index, MediaPickerAdapter.MediaItem item) {
+        DialogUtils.showConfirmDialog(this, "Xoá media này?",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.deleteMediaItem(editingPetId, item.mediaId, item.url);
+                    mediaAdapter.removeItem(index);
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

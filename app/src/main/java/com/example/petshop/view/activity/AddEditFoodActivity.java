@@ -14,7 +14,6 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -113,13 +112,7 @@ public class AddEditFoodActivity extends AppCompatActivity {
             public void onRemoveClick(int index) {
                 MediaPickerAdapter.MediaItem item = mediaAdapter.getItems().get(index);
                 if (item.isExisting && editingFoodId != null) {
-                    new AlertDialog.Builder(AddEditFoodActivity.this)
-                            .setMessage("Xoá media này?")
-                            .setPositiveButton("Xoá", (d, w) -> {
-                                vm.deleteMediaItem(editingFoodId, item.mediaId, item.url);
-                                mediaAdapter.removeItem(index);
-                            })
-                            .setNegativeButton("Huỷ", null).show();
+                    confirmDeleteMedia(index, item);
                 } else {
                     mediaAdapter.removeItem(index);
                 }
@@ -255,5 +248,21 @@ public class AddEditFoodActivity extends AppCompatActivity {
         food.setUsageGuide(etUsage.getText().toString().trim());
 
         vm.saveFood(food, mediaAdapter.getNewUris(), mediaAdapter.getNewTypes());
+    }
+
+    private void confirmDeleteMedia(int index, MediaPickerAdapter.MediaItem item) {
+        DialogUtils.showConfirmDialog(this, "Xoá media này?",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.deleteMediaItem(editingFoodId, item.mediaId, item.url);
+                    mediaAdapter.removeItem(index);
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

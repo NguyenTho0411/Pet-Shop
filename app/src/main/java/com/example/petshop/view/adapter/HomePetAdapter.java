@@ -148,7 +148,7 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
 
     static class VH extends RecyclerView.ViewHolder {
         ImageView ivPet, ivAddToCart;
-        TextView  tvPetName, tvPrice, tvBreedInfo, tvTag1, tvTag2, tvTag3, tvDistance, tvStatusBadge, tvSaleBadge;
+        TextView  tvPetName, tvPrice, tvBreedInfo, tvTag1, tvTag2, tvTag3, tvStatusBadge, tvSaleBadge;
 
         VH(View v) {
             super(v);
@@ -162,7 +162,6 @@ public class HomePetAdapter extends RecyclerView.Adapter<HomePetAdapter.VH> {
             tvTag1      = v.findViewById(R.id.tvTag1);
             tvTag2      = v.findViewById(R.id.tvTag2);
             tvTag3      = v.findViewById(R.id.tvTag3);
-            tvDistance  = v.findViewById(R.id.tvDistance);
         }
     }
 }

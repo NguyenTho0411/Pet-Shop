@@ -6,7 +6,6 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.view.adapter.PetAdminAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.PetManageViewModel;
 
 import java.util.ArrayList;
@@ -48,10 +49,7 @@ public class ManagePetsActivity extends AppCompatActivity {
                 Intent intent = new Intent(ManagePetsActivity.this, AddEditPetActivity.class);
                 intent.putExtra(AddEditPetActivity.EXTRA_PET_ID, pet.getId());
                 startActivity(intent);
-            }
-            public void onDelete(Pet pet) {
-                new AlertDialog.Builder(ManagePetsActivity.this)
-                        .setMessage("Xoá \"" + pet.getName() + "\"? Không thể hoàn tác!")
+            }confirmDeletePet(pet+ "\"? Không thể hoàn tác!")
                         .setPositiveButton("Xoá", (d, w) -> vm.deletePet(pet.getId()))
                         .setNegativeButton("Huỷ", null).show();
             }
@@ -100,5 +98,20 @@ public class ManagePetsActivity extends AppCompatActivity {
             }
             adapter.updateList(filtered);
         }
+    }
+
+    private void confirmDeletePet(Pet pet) {
+        DialogUtils.showDeleteConfirmDialog(this, pet.getName(),
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.deletePet(pet.getId());
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -15,6 +15,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Voucher;
 import com.example.petshop.view.adapter.VoucherAdminAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.VoucherManageViewModel;
 
 import java.util.ArrayList;
@@ -49,10 +51,7 @@ public class ManageVouchersActivity extends AppCompatActivity {
                 startActivity(intent);
             }
             public void onDelete(Voucher voucher) {
-                new AlertDialog.Builder(ManageVouchersActivity.this)
-                        .setMessage("Xoá voucher \"" + voucher.getCode() + "\"? Không thể hoàn tác!")
-                        .setPositiveButton("Xoá", (d, w) -> vm.delete(voucher.getId()))
-                        .setNegativeButton("Huỷ", null).show();
+                confirmDeleteVoucher(voucher.getCode(), voucher.getId());
             }
         });
         rv.setLayoutManager(new LinearLayoutManager(this));
@@ -79,5 +78,20 @@ public class ManageVouchersActivity extends AppCompatActivity {
         vm.getError().observe(this, err -> {
             if (err != null && !err.isEmpty()) Toast.makeText(this, err, Toast.LENGTH_LONG).show();
         });
+    }
+
+    private void confirmDeleteVoucher(String voucherCode, String voucherId) {
+        DialogUtils.showDeleteConfirmDialog(this, voucherCode,
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.delete(voucherId);
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

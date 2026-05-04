@@ -13,7 +13,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -101,14 +100,7 @@ public class ManageAddressActivity extends AppCompatActivity {
                         }));
 
                 v.findViewById(R.id.btnDelete).setOnClickListener(x ->
-                        new AlertDialog.Builder(ManageAddressActivity.this)
-                                .setMessage("Xoá địa chỉ này?")
-                                .setPositiveButton("Xoá", (d, w) ->
-                                        repo.deleteAddress(uid(), addr.getId(), new AddressRepository.Callback<>() {
-                                            public void onSuccess(Void vv) { runOnUiThread(() -> loadAddresses()); }
-                                            public void onFailure(String err) {}
-                                        }))
-                                .setNegativeButton("Huỷ", null).show());
+                        confirmDeleteAddress(addr.getId()));
             }
             @Override public int getItemCount() { return addresses.size(); }
         });
@@ -172,4 +164,22 @@ public class ManageAddressActivity extends AppCompatActivity {
     }
 
     private String get(TextInputEditText et) { return et.getText() != null ? et.getText().toString().trim() : ""; }
+
+    private void confirmDeleteAddress(String addressId) {
+        DialogUtils.showConfirmDialog(this, "Xoá địa chỉ này?", 
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    repo.deleteAddress(uid(), addressId, new AddressRepository.Callback<>() {
+                        public void onSuccess(Void vv) { runOnUiThread(() -> loadAddresses()); }
+                        public void onFailure(String err) {}
+                    });
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
+    }
 }

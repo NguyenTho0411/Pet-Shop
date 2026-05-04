@@ -14,7 +14,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -26,6 +25,8 @@ import com.example.petshop.model.entity.OrderItem;
 import com.example.petshop.repository.OrderRepository;
 import com.example.petshop.model.entity.Cart;
 import com.example.petshop.repository.CartRepository;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.google.firebase.auth.FirebaseAuth;
 
 import java.text.NumberFormat;
@@ -276,15 +277,23 @@ public class OrderDetailActivity extends AppCompatActivity {
         });
     }
     private void confirmCancel(Order order) {
-        new AlertDialog.Builder(this)
-                .setTitle("Huỷ đơn hàng")
-                .setMessage("Xác nhận huỷ đơn " + order.getOrderCode() + "?\nKho hàng sẽ được hoàn trả.")
-                .setPositiveButton("Huỷ đơn", (d, w) ->
-                        new OrderRepository().cancelOrder(order.getId(), "Khách huỷ", new OrderRepository.Callback<>() {
-                            public void onSuccess(Void v) { runOnUiThread(() -> { Toast.makeText(OrderDetailActivity.this, "Đã huỷ đơn", Toast.LENGTH_SHORT).show(); finish(); }); }
-                            public void onFailure(String err) { runOnUiThread(() -> Toast.makeText(OrderDetailActivity.this, err, Toast.LENGTH_LONG).show()); }
-                        }))
-                .setNegativeButton("Không", null).show();
+        DialogUtils.showConfirmDialog(this, "Huỷ đơn hàng", 
+            "Xác nhận huỷ đơn " + order.getOrderCode() + "?\nKho hàng sẽ được hoàn trả.",
+            "Huỷ đơn", "Không",
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    new OrderRepository().cancelOrder(order.getId(), "Khách huỷ", new OrderRepository.Callback<>() {
+                        public void onSuccess(Void v) { runOnUiThread(() -> { Toast.makeText(OrderDetailActivity.this, "Đã huỷ đơn", Toast.LENGTH_SHORT).show(); finish(); }); }
+                        public void onFailure(String err) { runOnUiThread(() -> Toast.makeText(OrderDetailActivity.this, err, Toast.LENGTH_LONG).show()); }
+                    });
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            }, "cancelOrderDialog");
     }
 
     private void openVNPay(Order order) {

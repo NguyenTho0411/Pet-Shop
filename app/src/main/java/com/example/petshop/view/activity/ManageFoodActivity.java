@@ -16,6 +16,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Food;
 import com.example.petshop.view.adapter.FoodAdminAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.FoodManageViewModel;
 import com.google.android.material.textfield.TextInputEditText;
 
@@ -52,10 +54,7 @@ public class ManageFoodActivity extends AppCompatActivity {
                 startActivity(intent);
             }
             public void onDelete(Food food) {
-                new AlertDialog.Builder(ManageFoodActivity.this)
-                        .setMessage("Xoá \"" + food.getName() + "\"? Không thể hoàn tác!")
-                        .setPositiveButton("Xoá", (d, w) -> vm.deleteFood(food.getId()))
-                        .setNegativeButton("Huỷ", null).show();
+                confirmDeleteFood(food);
             }
             public void onChangeStock(Food food) {
                 showStockDialog(food);
@@ -125,3 +124,19 @@ public class ManageFoodActivity extends AppCompatActivity {
                 .show();
     }
 }
+
+
+    private void confirmDeleteFood(Food food) {
+        DialogUtils.showDeleteConfirmDialog(this, food.getName(),
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.deleteFood(food.getId());
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
+    }

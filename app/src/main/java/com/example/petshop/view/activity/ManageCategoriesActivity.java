@@ -13,7 +13,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -21,6 +21,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Category;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.CategoryManageViewModel;
 import com.google.android.material.switchmaterial.SwitchMaterial;
 import com.google.android.material.textfield.TextInputEditText;
@@ -120,11 +122,7 @@ public class ManageCategoriesActivity extends AppCompatActivity {
                 sw.setOnCheckedChangeListener((btn, checked) -> vm.toggleActive(cat.getId(), checked));
 
                 v.findViewById(R.id.btnEdit).setOnClickListener(x -> showAddEditDialog(cat));
-                v.findViewById(R.id.btnDelete).setOnClickListener(x ->
-                        new AlertDialog.Builder(ManageCategoriesActivity.this)
-                                .setMessage("Xoá danh mục \"" + cat.getName() + "\"?")
-                                .setPositiveButton("Xoá", (d, w) -> vm.delete(cat.getId()))
-                                .setNegativeButton("Huỷ", null).show());
+                v.findViewById(R.id.btnDelete).setOnClickListener(x -> confirmDeleteCategory(cat.getName(), cat.getId()));
             }
             @Override public int getItemCount() { return list.size(); }
         });
@@ -234,5 +232,20 @@ public class ManageCategoriesActivity extends AppCompatActivity {
         List<Category> result = new ArrayList<>();
         for (Category c : allCategories) if (type.equals(c.getType())) result.add(c);
         return result;
+    }
+
+    private void confirmDeleteCategory(String categoryName, String categoryId) {
+        DialogUtils.showDeleteConfirmDialog(this, categoryName,
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.delete(categoryId);
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }

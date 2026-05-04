@@ -3,130 +3,136 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="160dp"
-    android:layout_height="200dp"
+    android:layout_height="wrap_content"
     android:layout_marginEnd="14dp"
-    app:cardCornerRadius="18dp"
-    app:cardElevation="3dp"
+    app:cardCornerRadius="16dp"
+    app:cardElevation="4dp"
     app:cardBackgroundColor="@color/bg_card"
     android:foreground="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
+        <!-- Hình ảnh thức ăn - to hơn -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="140dp"
+            android:background="#FFF8F2">
+
+            <ImageView
+                android:id="@+id/ivFoodImage"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:padding="16dp"
+                android:src="@mipmap/ic_launcher" />
+
+            <!-- Sale badge góc trái trên -->
+            <TextView
+                android:id="@+id/tvSaleBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|start"
+                android:layout_margin="8dp"
+                android:background="@drawable/bg_orange_pill"
+                android:paddingHorizontal="8dp"
+                android:paddingVertical="4dp"
+                android:text="-10%"
+                android:textColor="@color/white"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <!-- Nút thêm giỏ hàng góc phải dưới -->
+            <ImageView
+                android:id="@+id/ivAddToCart"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="8dp"
+                android:src="@android:drawable/ic_input_add"
+                android:background="@drawable/bg_circle_primary"
+                android:padding="6dp"
+                android:contentDescription="Thêm vào giỏ hàng" />
+
+        </FrameLayout>
+
+        <!-- Thông tin bên dưới hình ảnh -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:orientation="vertical">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="12dp">
 
-            <!-- Food image top half -->
-            <FrameLayout
+            <!-- Tên thức ăn -->
+            <TextView
+                android:id="@+id/tvFoodName"
                 android:layout_width="match_parent"
-                android:layout_height="110dp"
-                android:background="#FFF3E0">
+                android:layout_height="wrap_content"
+                android:text="Royal Canin Adult"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:maxLines="2"
+                android:ellipsize="end" />
 
-                <ImageView
-                    android:id="@+id/ivFoodImage"
-                    android:layout_width="90dp"
-                    android:layout_height="90dp"
-                    android:layout_gravity="center"
-                    android:scaleType="centerCrop"
-                    android:src="@mipmap/ic_launcher" />
+            <!-- Thương hiệu -->
+            <TextView
+                android:id="@+id/tvBrand"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Royal Canin"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-                <!-- Sale badge -->
-                <TextView
-                    android:id="@+id/tvSaleBadge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="top|start"
-                    android:layout_margin="8dp"
-                    android:text="SALE"
-                    android:textSize="9sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/white"
-                    android:background="@drawable/bg_orange_pill"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:paddingTop="2dp"
-                    android:paddingBottom="2dp"
-                    android:visibility="gone" />
-            </FrameLayout>
+            <!-- Trọng lượng -->
+            <TextView
+                android:id="@+id/tvWeight"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1.5 kg"
+                android:textSize="10sp"
+                android:textColor="@color/text_hint"
+                android:layout_marginTop="2dp" />
 
-            <!-- Info bottom half -->
+            <!-- Giá row -->
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:padding="10dp">
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginTop="6dp">
 
                 <TextView
-                    android:id="@+id/tvFoodName"
-                    android:layout_width="match_parent"
+                    android:id="@+id/tvFoodPrice"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Royal Canin Adult"
-                    android:textSize="13sp"
+                    android:text="250.000đ"
+                    android:textSize="14sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:maxLines="2"
-                    android:ellipsize="end" />
+                    android:textColor="@color/primary" />
 
                 <TextView
-                    android:id="@+id/tvBrand"
+                    android:id="@+id/tvOriginalPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Royal Canin"
-                    android:textSize="11sp"
-                    android:textColor="@color/text_secondary"
-                    android:layout_marginTop="2dp" />
-
-                <TextView
-                    android:id="@+id/tvWeight"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="1.5 kg"
+                    android:text="300.000đ"
                     android:textSize="10sp"
-                    android:textColor="@color/text_hint" />
+                    android:textColor="@color/text_hint"
+                    android:layout_marginStart="6dp"
+                    android:visibility="gone" />
 
-                <!-- Price row -->
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical"
-                    android:layout_marginTop="4dp">
-
-                    <TextView
-                        android:id="@+id/tvFoodPrice"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="250.000đ"
-                        android:textSize="13sp"
-                        android:textStyle="bold"
-                        android:textColor="@color/primary"
-                        android:layout_marginEnd="4dp" />
-
-                    <TextView
-                        android:id="@+id/tvOriginalPrice"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:text="300k"
-                        android:textSize="10sp"
-                        android:textColor="@color/text_hint"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/ivAddToCart"
-                        android:layout_width="26dp"
-                        android:layout_height="26dp"
-                        android:src="@android:drawable/ic_input_add"
-                        android:background="@drawable/bg_circle_orange"
-                        android:padding="5dp" />
-                </LinearLayout>
             </LinearLayout>
+
         </LinearLayout>
-    </FrameLayout>
+
+    </LinearLayout>
+
 </androidx.cardview.widget.CardView>

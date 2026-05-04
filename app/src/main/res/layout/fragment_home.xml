@@ -97,10 +97,12 @@
                 android:layout_marginStart="20dp" android:layout_marginBottom="12dp" />
 
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvCategories"
-                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:paddingStart="20dp" android:paddingEnd="20dp"
                 android:clipToPadding="false"
+                android:nestedScrollingEnabled="true"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 android:layout_marginBottom="24dp" />
 
@@ -121,10 +123,12 @@
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvFeaturedPets"
-                android:layout_width="match_parent" android:layout_height="220dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:paddingStart="20dp" android:paddingEnd="20dp"
                 android:clipToPadding="false"
+                android:nestedScrollingEnabled="true"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                 android:layout_marginBottom="24dp" />
             <TextView
@@ -155,10 +159,12 @@
             </LinearLayout>
 
             <androidx.recyclerview.widget.RecyclerView android:id="@+id/rvFeaturedFood"
-                android:layout_width="match_parent" android:layout_height="200dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:paddingStart="20dp" android:paddingEnd="20dp"
                 android:clipToPadding="false"
+                android:nestedScrollingEnabled="true"
                 app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
             <TextView
                 android:id="@+id/tvEmptyFood"

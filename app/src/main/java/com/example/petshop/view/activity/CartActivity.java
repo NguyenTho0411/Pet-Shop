@@ -9,7 +9,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -19,6 +18,8 @@ import com.example.petshop.R;
 import com.example.petshop.model.entity.Cart;
 import com.example.petshop.model.entity.CartItem;
 import com.example.petshop.view.adapter.CartItemAdapter;
+import com.example.petshop.view.dialog.ConfirmDialog;
+import com.example.petshop.view.dialog.DialogUtils;
 import com.example.petshop.viewmodel.CartViewModel;
 
 import java.text.NumberFormat;
@@ -84,7 +85,7 @@ public class CartActivity extends AppCompatActivity {
                 rvItems.setVisibility(View.VISIBLE);
                 llCheckoutBar.setVisibility(View.VISIBLE);
                 adapter.updateList(cart.getItems());
-                int count = cart.getItems().size();
+                int count = cart.calculateTotalItems();
                 tvItemCount.setText(count + " sản phẩm");
                 double sub = cart.calculateSubtotal();
                 tvSubtotal.setText(VND.format((long) sub) + "đ");
@@ -104,10 +105,17 @@ public class CartActivity extends AppCompatActivity {
     }
 
     private void confirmRemove(CartItem item) {
-        new AlertDialog.Builder(this)
-                .setMessage("Xoá \"" + item.getProductName() + "\" khỏi giỏ hàng?")
-                .setPositiveButton("Xoá", (d, w) -> vm.removeItem(item.getId()))
-                .setNegativeButton("Huỷ", null)
-                .show();
+        DialogUtils.showRemoveFromCartDialog(this, item.getProductName(),
+            new ConfirmDialog.OnConfirmListener() {
+                @Override
+                public void onConfirm() {
+                    vm.removeItem(item.getId());
+                }
+
+                @Override
+                public void onCancel() {
+                    // Không làm gì
+                }
+            });
     }
 }
