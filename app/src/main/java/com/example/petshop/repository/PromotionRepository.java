@@ -1,9 +1,12 @@
 package com.example.petshop.repository;
 
+import com.example.petshop.model.entity.Notification;
 import com.example.petshop.model.entity.Promotion;
+import com.example.petshop.model.entity.User;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -113,8 +116,57 @@ public class PromotionRepository {
         promotion.setUpdatedAt(Timestamp.now().toString());
         promotion.setUsageCount(0);
         db.collection(COL).document(id).set(promotion)
-                .addOnSuccessListener(v -> cb.onSuccess(id))
+                .addOnSuccessListener(v -> {
+                    cb.onSuccess(id);
+                    // Gửi thông báo khuyến mãi cho tất cả khách hàng
+                    sendPromotionNotification(promotion);
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    private void sendPromotionNotification(Promotion promotion) {
+        if (promotion == null || !promotion.isActive()) return;
+
+        // Lấy tất cả khách hàng
+        db.collection("users")
+                .whereEqualTo("role", "CUSTOMER")
+                .whereEqualTo("status", "ACTIVE")
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) return;
+
+                    String title = "Khuyến mãi mới! 🎉";
+                    String discountText = promotion.isPercentType()
+                            ? " giảm " + (int) promotion.getDiscountValue() + "%"
+                            : " giảm " + formatPrice(promotion.getDiscountValue());
+                    String message = promotion.getName() + discountText
+                            + (promotion.getVoucherCode() != null && !promotion.getVoucherCode().isEmpty()
+                                ? "\nMã: " + promotion.getVoucherCode()
+                                : "");
+
+                    String createdAt = Timestamp.now().toString();
+
+                    for (var doc : snap.getDocuments()) {
+                        String notifId = System.currentTimeMillis() + "_" + doc.getId();
+                        Notification notif = new Notification();
+                        notif.setId(notifId);
+                        notif.setUserId(doc.getId());
+                        notif.setTitle(title);
+                        notif.setMessage(message);
+                        notif.setType("PROMO");
+                        notif.setCreatedAt(createdAt);
+                        notif.setRead(false);
+                        db.collection("notifications").document(notifId).set(notif);
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Silent fail - notification is not critical
+                });
+    }
+
+    private String formatPrice(double price) {
+        java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new Locale("vi", "VN"));
+        return nf.format((long) price) + "đ";
     }
 
     public void update(Promotion promotion, Callback<Void> cb) {

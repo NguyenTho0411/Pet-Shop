@@ -43,6 +43,20 @@ public class UserRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    public void getAllCustomers(Callback<List<User>> cb) {
+        db.collection(COL)
+                .whereEqualTo("role", User.ROLE_CUSTOMER)
+                .whereEqualTo("status", User.STATUS_ACTIVE)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    List<User> list = new ArrayList<>();
+                    for (var doc : snap.getDocuments())
+                        list.add(doc.toObject(User.class));
+                    cb.onSuccess(list);
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     public void updateUserStatus(String uid, String status, Callback<Void> cb) {
         db.collection(COL).document(uid)
                 .update("status", status)

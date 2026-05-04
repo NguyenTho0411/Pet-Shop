@@ -20,7 +20,11 @@ import com.example.petshop.R;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.model.entity.OrderItem;
 import com.example.petshop.model.entity.Pet;
+import com.example.petshop.model.entity.Notification;
+import com.example.petshop.model.entity.User;
 import com.example.petshop.repository.OrderRepository;
+import com.example.petshop.repository.NotificationRepository;
+import com.example.petshop.repository.UserRepository;
 import com.example.petshop.utils.FirebaseHelper;
 
 import java.text.NumberFormat;
@@ -179,6 +183,8 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
                                 Toast.makeText(AdminOrderDetailActivity.this,
                                         "Đã cập nhật → " + newStatus, Toast.LENGTH_SHORT).show();
                             });
+                            // Gửi thông báo cho người dùng
+                            sendOrderStatusNotification(currentOrder, newStatus);
                         }
                         public void onFailure(String err) {
                             runOnUiThread(() -> {
@@ -189,6 +195,53 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
                         }
                     });
         });
+    }
+
+    private void sendOrderStatusNotification(Order order, String newStatus) {
+        if (order == null || order.getUserId() == null) return;
+
+        String title = "Cập nhật đơn hàng " + order.getOrderCode();
+        String message = getStatusNotificationMessage(newStatus);
+
+        Notification notif = new Notification();
+        notif.setUserId(order.getUserId());
+        notif.setTitle(title);
+        notif.setMessage(message);
+        notif.setType("ORDER");
+        notif.setOrderId(order.getId());
+
+        new NotificationRepository().createNotification(notif, new NotificationRepository.Callback<>() {
+            @Override
+            public void onSuccess(String data) {
+                // Notification sent successfully
+            }
+
+            @Override
+            public void onFailure(String error) {
+                // Log error but don't show to user (background operation)
+            }
+        });
+    }
+
+    private String getStatusNotificationMessage(String status) {
+        switch (status) {
+            case "CONFIRMED":
+                return "Đơn hàng của bạn đã được xác nhận và đang được chuẩn bị.";
+            case "PREPARING":
+                return "Đơn hàng của bạn đang được chuẩn bị.";
+            case "SHIPPING":
+                return "Đơn hàng của bạn đang được giao đến bạn!";
+            case "DELIVERED":
+                return "Đơn hàng của bạn đã được giao thành công.";
+            case "COMPLETED":
+                return "Đơn hàng của bạn đã hoàn thành. Cảm ơn bạn đã mua sắm!";
+            case "CANCELLED":
+                return "Rất tiếc, đơn hàng của bạn đã bị hủy.";
+            case "REFUNDED":
+                return "Đơn hàng của bạn đã được hoàn tiền.";
+            default:
+                return "Trạng thái đơn hàng: " + status;
+        }
     }
 
     /**

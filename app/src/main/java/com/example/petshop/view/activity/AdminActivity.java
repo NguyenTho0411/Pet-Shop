@@ -112,9 +112,6 @@ public class AdminActivity extends AppCompatActivity {
 
         setupActionItem(R.id.itemManageReturns, "↩️", "Quản lý hoàn trả", v ->
                 startActivity(new Intent(this, AdminReturnListActivity.class)));
-
-        setupActionItem(R.id.itemStatistics, "📊", "Thống kê", v ->
-                startActivity(new Intent(this, StatisticsActivity.class)));
     }
 
     private void setupActionItem(int viewId, String icon, String title, View.OnClickListener listener) {

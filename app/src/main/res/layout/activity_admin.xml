@@ -277,9 +277,6 @@
                 <include layout="@layout/item_admin_action"
                     android:id="@+id/itemManageReturns" />
 
-                <include layout="@layout/item_admin_action"
-                    android:id="@+id/itemStatistics" />
-
             </LinearLayout>
 
         </LinearLayout>

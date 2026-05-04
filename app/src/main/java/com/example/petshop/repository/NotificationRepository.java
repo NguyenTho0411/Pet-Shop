@@ -1,6 +1,7 @@
 package com.example.petshop.repository;
 
 import com.example.petshop.model.entity.Notification;
+import com.example.petshop.model.entity.User;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
@@ -81,6 +82,36 @@ public class NotificationRepository {
         db.collection(COL).document(id).set(notification)
                 .addOnSuccessListener(v -> cb.onSuccess(id))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    public void createNotificationAsync(Notification notification) {
+        String id = System.currentTimeMillis() + "_" + notification.getUserId();
+        notification.setId(id);
+        notification.setCreatedAt(Timestamp.now().toString());
+        notification.setRead(false);
+        db.collection(COL).document(id).set(notification);
+    }
+
+    public void sendToAllCustomers(String title, String message, String type, String orderId, List<com.example.petshop.model.entity.User> customers) {
+        if (customers == null || customers.isEmpty()) return;
+        String createdAt = Timestamp.now().toString();
+        List<com.google.firebase.firestore.WriteBatch> batches = new ArrayList<>();
+
+        for (User user : customers) {
+            com.google.firebase.firestore.WriteBatch batch = db.batch();
+            String notifId = System.currentTimeMillis() + "_" + user.getId();
+            Notification notif = new Notification();
+            notif.setId(notifId);
+            notif.setUserId(user.getId());
+            notif.setTitle(title);
+            notif.setMessage(message);
+            notif.setType(type);
+            notif.setOrderId(orderId);
+            notif.setCreatedAt(createdAt);
+            notif.setRead(false);
+            batch.set(db.collection(COL).document(notifId), notif);
+            batch.commit();
+        }
     }
 
     public void getUnreadCount(String userId, Callback<Long> cb) {
