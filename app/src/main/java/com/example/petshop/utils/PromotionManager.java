@@ -13,7 +13,8 @@ public class PromotionManager {
 
     /**
      * Tìm khuyến mãi tốt nhất áp dụng cho sản phẩm và cập nhật giá đã giảm.
-     * Áp dụng tất cả promotions đang active để hiển thị giá khuyến mãi.
+     * Chỉ áp dụng AUTOMATIC promotions cho hiển thị giá sản phẩm.
+     * VOUCHER chỉ áp dụng khi user nhập mã ở checkout.
      */
     public static void applyPromotions(List<Pet> pets, List<Food> foods, List<Promotion> activePromos) {
         if (activePromos == null || activePromos.isEmpty()) return;
@@ -97,6 +98,10 @@ public class PromotionManager {
         else if (product instanceof Food) price = ((Food) product).getPrice();
 
         for (Promotion p : promos) {
+            // Chỉ áp dụng AUTOMATIC cho hiển thị giá sản phẩm
+            // VOUCHER chỉ áp dụng khi user nhập mã ở checkout
+            if (p.isVoucher()) continue;
+
             if (p.appliesTo(product)) {
                 double saving = p.calculateDiscount(price);
                 if (saving > maxSaving) {

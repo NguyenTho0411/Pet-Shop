@@ -45,11 +45,20 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
         h.tvName.setText(p.getName());
         h.tvDesc.setText(p.getDescription());
         
-        String discountText = Promotion.TYPE_PERCENT.equals(p.getDiscountType()) 
+        String discountText = Promotion.TYPE_PERCENT.equals(p.getDiscountType())
             ? String.format("%d%%", (int)p.getDiscountValue())
             : String.format("₫%,d", (long)p.getDiscountValue());
         h.tvDiscount.setText("Giảm: " + discountText);
-        
+
+        // Hiển thị badge loại VOUCHER / AUTOMATIC
+        if (p.isVoucher()) {
+            h.tvType.setText("🎫 VOUCHER");
+            h.tvType.setBackgroundResource(R.drawable.bg_discount_badge);
+        } else {
+            h.tvType.setText("⚡ TỰ ĐỘNG");
+            h.tvType.setBackgroundResource(R.drawable.bg_orange_pill);
+        }
+
         h.tvApplyTo.setText("Áp dụng: " + formatApplyTo(p));
         h.tvDateRange.setText(String.format("📅 %s → %s", 
                 p.getStartDate() != null ? p.getStartDate() : "N/A", 
@@ -130,7 +139,7 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
     }
 
     static class VH extends RecyclerView.ViewHolder {
-        TextView tvName, tvDesc, tvDiscount, tvApplyTo, tvDateRange, tvUsage;
+        TextView tvName, tvDesc, tvDiscount, tvType, tvApplyTo, tvDateRange, tvUsage;
         SwitchMaterial switchActive;
         ImageButton btnMore;
 
@@ -139,6 +148,7 @@ public class PromotionAdminAdapter extends RecyclerView.Adapter<PromotionAdminAd
             tvName      = v.findViewById(R.id.tvName);
             tvDesc      = v.findViewById(R.id.tvDesc);
             tvDiscount  = v.findViewById(R.id.tvDiscount);
+            tvType      = v.findViewById(R.id.tvType);
             tvApplyTo   = v.findViewById(R.id.tvApplyTo);
             tvDateRange = v.findViewById(R.id.tvDateRange);
             tvUsage     = v.findViewById(R.id.tvUsage);
