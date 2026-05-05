@@ -3,6 +3,7 @@ package com.example.petshop.view.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.ChatMessage;
 
@@ -45,22 +47,39 @@ public class ChatAdapter extends ListAdapter<ChatMessage, ChatAdapter.VH> {
             h.llUser.setVisibility(View.VISIBLE);
             h.llBot.setVisibility(View.GONE);
             h.tvUser.setText(msg.getText());
+            
+            if (msg.getImageUrl() != null) {
+                h.ivUser.setVisibility(View.VISIBLE);
+                Glide.with(h.itemView.getContext()).load(msg.getImageUrl()).into(h.ivUser);
+            } else {
+                h.ivUser.setVisibility(View.GONE);
+            }
         } else {
             h.llUser.setVisibility(View.GONE);
             h.llBot.setVisibility(View.VISIBLE);
             h.tvBot.setText(msg.getText());
+
+            if (msg.getImageUrl() != null) {
+                h.ivBot.setVisibility(View.VISIBLE);
+                Glide.with(h.itemView.getContext()).load(msg.getImageUrl()).into(h.ivBot);
+            } else {
+                h.ivBot.setVisibility(View.GONE);
+            }
         }
     }
 
     static class VH extends RecyclerView.ViewHolder {
         LinearLayout llUser, llBot;
         TextView tvUser, tvBot;
+        ImageView ivUser, ivBot;
         VH(View v) {
             super(v);
             llUser = v.findViewById(R.id.llUserMsg);
             llBot  = v.findViewById(R.id.llBotMsg);
             tvUser = v.findViewById(R.id.tvUserMsg);
             tvBot  = v.findViewById(R.id.tvBotMsg);
+            ivUser = v.findViewById(R.id.ivUserImage);
+            ivBot  = v.findViewById(R.id.ivBotImage);
         }
     }
 }

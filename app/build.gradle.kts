@@ -72,6 +72,13 @@ android {
         viewBinding = true
         buildConfig = true
     }
+
+    packaging {
+        resources {
+            excludes += "META-INF/NOTICE.md"
+            excludes += "META-INF/LICENSE.md"
+        }
+    }
 }
 
 dependencies {
@@ -95,6 +102,8 @@ dependencies {
     implementation(libs.circleimageview)
     implementation(libs.gson)
     implementation(libs.okhttp)
+    implementation(libs.javamail)
+    implementation(libs.activation)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.espresso.core)

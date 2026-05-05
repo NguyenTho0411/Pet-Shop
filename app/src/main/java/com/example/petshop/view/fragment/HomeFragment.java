@@ -52,7 +52,7 @@ public class HomeFragment extends Fragment {
     private HomeCategoryAdapter categoryAdapter;
     private HomePetAdapter      petAdapter;
     private HomeFoodAdapter     foodAdapter;
-    private TextView            tvGreeting, tvTimeGreeting;
+    private TextView            tvGreeting, tvTimeGreeting, tvCartBadge;
     private Button              btnLoginTopBar;
     private EditText            etSearch;
     private View                rootView;
@@ -82,6 +82,7 @@ public class HomeFragment extends Fragment {
     private void bindViews(View root) {
         tvGreeting     = root.findViewById(R.id.tvGreeting);
         tvTimeGreeting = root.findViewById(R.id.tvTimeGreeting);
+        tvCartBadge    = root.findViewById(R.id.tvCartBadge);
         btnLoginTopBar = root.findViewById(R.id.btnLoginTopBar);
 
         btnLoginTopBar.setOnClickListener(v ->
@@ -175,6 +176,25 @@ public class HomeFragment extends Fragment {
         cartVm.getError().observe(getViewLifecycleOwner(), err -> {
             if (err != null) Toast.makeText(requireContext(), err, Toast.LENGTH_SHORT).show();
         });
+
+        cartVm.getCart().observe(getViewLifecycleOwner(), cart -> {
+            if (cart != null) {
+                int total = cart.calculateTotalItems();
+                if (total > 0) {
+                    tvCartBadge.setText(total > 99 ? "99+" : String.valueOf(total));
+                    tvCartBadge.setVisibility(View.VISIBLE);
+                } else {
+                    tvCartBadge.setVisibility(View.GONE);
+                }
+            } else {
+                tvCartBadge.setVisibility(View.GONE);
+            }
+        });
+        
+        // Load cart initially to show badge
+        if (FirebaseHelper.getCurrentUser() != null) {
+            cartVm.loadCart();
+        }
     }
 
     private void updateTopBar() {

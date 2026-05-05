@@ -102,7 +102,13 @@ public class VNPayResultActivity extends AppCompatActivity {
                 // Sử dụng hàm completeVNPayOrder để trừ kho và cập nhật trạng thái đồng thời
                 repo.completeVNPayOrder(order.getId(), new OrderRepository.Callback<Void>() {
                     @Override public void onSuccess(Void data) {
-                        Toast.makeText(VNPayResultActivity.this, "Thanh toán thành công & Đã trừ kho", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(VNPayResultActivity.this, "Thanh toán thành công", Toast.LENGTH_SHORT).show();
+                        
+                        // Đảm bảo giỏ hàng được xóa sau khi thanh toán thành công
+                        new com.example.petshop.repository.CartRepository().clearCart(order.getUserId(), new com.example.petshop.repository.CartRepository.Callback<Void>() {
+                            @Override public void onSuccess(Void v) {}
+                            @Override public void onFailure(String e) {}
+                        });
                     }
                     @Override public void onFailure(String error) {
                         Toast.makeText(VNPayResultActivity.this, "Lỗi hoàn tất đơn hàng: " + error, Toast.LENGTH_SHORT).show();

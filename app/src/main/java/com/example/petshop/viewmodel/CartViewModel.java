@@ -34,31 +34,40 @@ public class CartViewModel extends ViewModel {
         return u != null ? u.getUid() : null;
     }
 
+    private com.google.firebase.firestore.ListenerRegistration cartListener;
+
     public void loadCart() {
         String uid = uid();
-        if (uid == null) { cart.setValue(new Cart()); return; }
-        isLoading.setValue(true);
-        repo.getCart(uid, new CartRepository.Callback<Cart>() {
-            public void onSuccess(Cart c) {
-                // Luôn re-apply promotion hiện tại để đảm bảo giá đúng
-                new PromotionRepository().getActive(new PromotionRepository.Callback<List<Promotion>>() {
-                    public void onSuccess(List<Promotion> promos) {
-                        boolean changed = PromotionManager.refreshCartPrices(c, promos, null);
-                        if (changed) {
-                            repo.saveCart(uid, c, new CartRepository.Callback<Cart>() {
-                                public void onSuccess(Cart saved) { isLoading.postValue(false); cart.postValue(saved); }
-                                public void onFailure(String e)  { isLoading.postValue(false); cart.postValue(c); }
-                            });
-                        } else {
-                            isLoading.postValue(false);
-                            cart.postValue(c);
-                        }
+        if (uid == null) { cart.postValue(new Cart()); return; }
+
+        if (cartListener != null) cartListener.remove();
+
+        isLoading.postValue(true);
+        cartListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("carts").document(uid)
+                .addSnapshotListener((doc, e) -> {
+                    isLoading.postValue(false);
+                    if (e != null) {
+                        error.postValue(e.getMessage());
+                        return;
                     }
-                    public void onFailure(String e) { isLoading.postValue(false); cart.postValue(c); }
+                    if (doc != null && doc.exists()) {
+                        Cart c = doc.toObject(Cart.class);
+                        if (c != null) {
+                            cart.postValue(c);
+                        } else {
+                            cart.postValue(new Cart(uid));
+                        }
+                    } else {
+                        cart.postValue(new Cart(uid));
+                    }
                 });
-            }
-            public void onFailure(String e) { isLoading.postValue(false); error.postValue(e); }
-        });
+    }
+
+    @Override
+    protected void onCleared() {
+        super.onCleared();
+        if (cartListener != null) cartListener.remove();
     }
 
     public void addPet(Pet pet) {

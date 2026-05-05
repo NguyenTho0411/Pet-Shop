@@ -11,11 +11,19 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="end"
+        android:orientation="vertical"
         android:background="@drawable/bg_orange_pill"
         android:paddingStart="14dp" android:paddingEnd="14dp"
         android:paddingTop="8dp" android:paddingBottom="8dp"
         android:layout_marginStart="60dp"
         android:visibility="gone">
+        <ImageView
+            android:id="@+id/ivUserImage"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp" />
         <TextView
             android:id="@+id/tvUserMsg"
             android:layout_width="wrap_content"
@@ -31,12 +39,20 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
+        android:orientation="vertical"
         android:background="@drawable/bg_social_btn"
         android:backgroundTint="#F0F0F0"
         android:paddingStart="14dp" android:paddingEnd="14dp"
         android:paddingTop="8dp" android:paddingBottom="8dp"
         android:layout_marginEnd="60dp"
         android:visibility="gone">
+        <ImageView
+            android:id="@+id/ivBotImage"
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:scaleType="centerCrop"
+            android:visibility="gone"
+            android:layout_marginBottom="4dp" />
         <TextView
             android:id="@+id/tvBotMsg"
             android:layout_width="wrap_content"

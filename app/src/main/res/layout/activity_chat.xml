@@ -1,97 +1,204 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.drawerlayout.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/drawerLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:background="@color/bg_main">
+    android:layout_height="match_parent">
 
-    <!-- TOP BAR -->
+    <!-- MAIN CONTENT -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="@color/white"
-        android:paddingStart="8dp" android:paddingEnd="16dp"
-        android:paddingTop="44dp" android:paddingBottom="12dp"
-        android:elevation="2dp">
-        <ImageButton
-            android:id="@+id/btnBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:src="@android:drawable/ic_menu_revert"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            app:tint="@color/text_primary" />
-        <de.hdodenhof.circleimageview.CircleImageView
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:src="@mipmap/ic_launcher"
-            android:layout_marginStart="4dp" />
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="10dp">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Tư vấn PetShop"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary" />
-            <TextView
-                android:id="@+id/tvBotStatus"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Đang hoạt động"
-                android:textSize="11sp"
-                android:textColor="@color/status_success" />
-        </LinearLayout>
-    </LinearLayout>
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/bg_main">
 
-    <!-- MESSAGES LIST -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvChat"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:padding="8dp"
-        android:clipToPadding="false" />
-
-    <!-- INPUT AREA -->
-    <androidx.cardview.widget.CardView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:cardElevation="8dp">
+        <!-- TOP BAR -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:padding="8dp"
-            android:background="@color/white">
-            <EditText
-                android:id="@+id/etMessage"
+            android:background="@color/white"
+            android:paddingStart="8dp" android:paddingEnd="16dp"
+            android:paddingTop="44dp" android:paddingBottom="12dp"
+            android:elevation="2dp">
+            <ImageButton
+                android:id="@+id/btnMenu"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@android:drawable/ic_menu_sort_by_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/text_primary" />
+
+            <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:hint="Nhập tin nhắn..."
-                android:background="@drawable/bg_input_field"
-                android:padding="12dp"
-                android:maxLines="4"
-                android:textSize="14sp"
-                android:textColor="@color/text_primary" />
-            <ImageButton
-                android:id="@+id/btnSend"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_send"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                app:tint="@color/primary"
-                android:layout_marginStart="4dp" />
-        </LinearLayout>
-    </androidx.cardview.widget.CardView>
+                android:orientation="vertical"
+                android:layout_marginStart="10dp">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tư vấn PetShop"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary" />
+                <TextView
+                    android:id="@+id/tvBotStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Đang hoạt động"
+                    android:textSize="11sp"
+                    android:textColor="@color/status_success" />
+            </LinearLayout>
 
-</LinearLayout>
+            <ImageButton
+                android:id="@+id/btnNewChat"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:src="@android:drawable/ic_menu_add"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                app:tint="@color/primary" />
+        </LinearLayout>
+
+        <!-- MESSAGES LIST -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvChat"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:padding="8dp"
+            android:clipToPadding="false" />
+
+        <!-- INPUT AREA -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:cardElevation="8dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- Image preview area -->
+                <FrameLayout
+                    android:id="@+id/flImagePreview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="8dp"
+                    android:visibility="gone"
+                    android:background="#F9F9F9">
+                    <ImageView
+                        android:id="@+id/ivPreview"
+                        android:layout_width="60dp"
+                        android:layout_height="60dp"
+                        android:scaleType="centerCrop"
+                        android:background="@drawable/bg_social_btn" />
+                    <ImageButton
+                        android:id="@+id/btnClearImage"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:layout_marginStart="50dp"
+                        android:src="@android:drawable/ic_menu_close_clear_cancel"
+                        android:background="@drawable/bg_circle_white"
+                        app:tint="@color/status_error"
+                        android:padding="2dp" />
+                </FrameLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="8dp"
+                    android:background="@color/white">
+                    <ImageButton
+                        android:id="@+id/btnAttach"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:src="@android:drawable/ic_menu_gallery"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:tint="@color/text_secondary"
+                        android:layout_marginEnd="4dp" />
+                    <EditText
+                        android:id="@+id/etMessage"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:hint="Nhập tin nhắn..."
+                        android:background="@drawable/bg_input_field"
+                        android:padding="12dp"
+                        android:maxLines="4"
+                        android:textSize="14sp"
+                        android:textColor="@color/text_primary" />
+                    <ImageButton
+                        android:id="@+id/btnVoice"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@android:drawable/ic_btn_speak_now"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:tint="@color/text_secondary"
+                        android:layout_marginStart="4dp" />
+                    <ImageButton
+                        android:id="@+id/btnSend"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:src="@android:drawable/ic_menu_send"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        app:tint="@color/primary"
+                        android:layout_marginStart="4dp" />
+                </LinearLayout>
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+    </LinearLayout>
+
+    <!-- LEFT DRAWER (HISTORY) -->
+    <LinearLayout
+        android:id="@+id/drawerContent"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="#FAFAFA"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:clickable="true"
+        android:focusable="true">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Lịch sử Chat"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:layout_marginBottom="16dp"
+            android:layout_marginTop="32dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvHistory"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:scrollbars="vertical" />
+
+        <TextView
+            android:id="@+id/tvEmptyHistory"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Chưa có lịch sử trò chuyện"
+            android:gravity="center"
+            android:padding="20dp"
+            android:visibility="gone"
+            android:textColor="@color/text_secondary" />
+
+        <Button
+            android:id="@+id/btnBackToHome"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Quay lại shop"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:drawableStart="@android:drawable/ic_menu_revert" />
+    </LinearLayout>
+
+</androidx.drawerlayout.widget.DrawerLayout>

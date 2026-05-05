@@ -47,9 +47,27 @@
             app:cardCornerRadius="12dp" app:cardBackgroundColor="@color/bg_card"
             app:cardElevation="2dp"
             android:layout_marginStart="10dp">
-            <ImageView android:layout_width="24dp" android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:src="@drawable/ic_cart" app:tint="@color/text_primary" />
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent">
+                <ImageView android:layout_width="24dp" android:layout_height="24dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/ic_cart" app:tint="@color/text_primary" />
+                <TextView
+                    android:id="@+id/tvCartBadge"
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_gravity="top|end"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginEnd="2dp"
+                    android:background="@drawable/bg_badge"
+                    android:gravity="center"
+                    android:text="0"
+                    android:textColor="@color/white"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+            </FrameLayout>
         </androidx.cardview.widget.CardView>
 
         <Button android:id="@+id/btnLoginTopBar"

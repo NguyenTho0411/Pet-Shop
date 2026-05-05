@@ -184,24 +184,33 @@ public class OrderRepository {
             
             if (order == null || !Order.STATUS_WAIT_PAY.equals(order.getStatus())) return null;
 
-            try {
-                // Reserve pets (chờ admin xác nhận mới thành SOLD)
-                for (OrderItem item : order.getItems()) {
-                    if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                        tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_RESERVED);
-                    } else {
-                        DocumentReference foodRef = db.collection(COL_FOODS).document(item.getProductId());
-                        DocumentSnapshot foodSnap = tx.get(foodRef);
-                        long stock = (foodSnap != null && foodSnap.getLong("stock") != null) ? foodSnap.getLong("stock") : 0;
-                        tx.update(foodRef, "stock", Math.max(0, stock - item.getQuantity()));
-                    }
+            // 1. COLLECT ALL DATA (READS)
+            Map<String, DocumentReference> foodRefs = new HashMap<>();
+            for (OrderItem item : order.getItems()) {
+                if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                    foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
                 }
-            } catch (Exception e) {
-                throw new RuntimeException(e);
+            }
+
+            Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
+            for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
+                foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
             }
 
             DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
             DocumentSnapshot userSnap = tx.get(userRef);
+
+            // 2. PERFORM ALL UPDATES (WRITES)
+            for (OrderItem item : order.getItems()) {
+                if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                    tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_RESERVED);
+                } else {
+                    DocumentSnapshot foodSnap = foodSnaps.get(item.getProductId());
+                    long stock = (foodSnap != null && foodSnap.getLong("stock") != null) ? foodSnap.getLong("stock") : 0;
+                    tx.update(foodRefs.get(item.getProductId()), "stock", Math.max(0, stock - item.getQuantity()));
+                }
+            }
+
             if (userSnap.exists()) {
                 long totalOrders = userSnap.getLong("totalOrders") != null ? userSnap.getLong("totalOrders") : 0;
                 double totalSpent = userSnap.getDouble("totalSpent") != null ? userSnap.getDouble("totalSpent") : 0;

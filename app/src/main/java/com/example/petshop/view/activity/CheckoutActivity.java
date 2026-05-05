@@ -487,7 +487,12 @@ public class CheckoutActivity extends AppCompatActivity {
 
         new OrderRepository().createOrder(order, cart.getItems(), new OrderRepository.Callback<>() {
             public void onSuccess(String orderId) {
-                vm.clearCart();
+                // Xóa giỏ hàng ngay lập tức qua Repository để tránh bị huỷ khi activity finish
+                new com.example.petshop.repository.CartRepository().clearCart(uid, new com.example.petshop.repository.CartRepository.Callback<Void>() {
+                    @Override public void onSuccess(Void v) {}
+                    @Override public void onFailure(String e) {}
+                });
+
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
                     if (Order.PAYMENT_VNPAY.equals(paymentMethod)) {

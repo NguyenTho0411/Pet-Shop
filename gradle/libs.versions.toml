@@ -17,6 +17,7 @@ recyclerview = "1.3.2"
 gson = "2.10.1"
 okhttp = "4.12.0"
 viewpager2 = "1.0.0"
+javamail = "1.6.7"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -53,6 +54,8 @@ circleimageview = { group = "de.hdodenhof", name = "circleimageview", version.re
 # Gson
 gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+javamail = { group = "com.sun.mail", name = "android-mail", version.ref = "javamail" }
+activation = { group = "com.sun.mail", name = "android-activation", version.ref = "javamail" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(xargs grep *)",
+      "Bash(cd /d \"e:\\\\Maiproooject\")",
+      "Bash(powershell -Command \"Get-Content app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\petshop\\\\utils\\\\SharedPrefManager.java\")"
+    ]
+  }
+}

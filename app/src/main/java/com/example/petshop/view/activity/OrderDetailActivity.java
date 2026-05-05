@@ -69,8 +69,8 @@ public class OrderDetailActivity extends AppCompatActivity {
             }
         };
 
-        // orderId có thể là UUID (document ID) hoặc orderCode (ORD-xxx) từ VNPay
-        if (orderId.startsWith("ORD-")) {
+        // orderId có thể là UUID (document ID) hoặc orderCode (ORDxxxx) từ VNPay
+        if (orderId.startsWith("ORD")) {
             repo.getOrderByCode(orderId, callback);
         } else {
             repo.getOrderById(orderId, callback);

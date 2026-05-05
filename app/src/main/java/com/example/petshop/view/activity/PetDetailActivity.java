@@ -103,13 +103,7 @@ public class PetDetailActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
-        findViewById(R.id.btnCall).setOnClickListener(v -> {
-            if (FirebaseHelper.getCurrentUser() == null) {
-                startActivity(new Intent(this, LoginActivity.class));
-            } else {
-                Toast.makeText(this, "Gọi điện tư vấn", Toast.LENGTH_SHORT).show();
-            }
-        });
+        findViewById(R.id.btnCall).setOnClickListener(v -> showCallDialog());
 
         findViewById(R.id.btnChat).setOnClickListener(v -> {
             if (FirebaseHelper.getCurrentUser() == null) {
@@ -126,6 +120,25 @@ public class PetDetailActivity extends AppCompatActivity {
                 cartVm.addPet(currentPet);
             }
         });
+    }
+
+    private void showCallDialog() {
+        String phone = "0933623348";
+        com.google.android.material.bottomsheet.BottomSheetDialog dialog = 
+                new com.google.android.material.bottomsheet.BottomSheetDialog(this);
+        View view = getLayoutInflater().inflate(R.layout.dialog_call_bottom_sheet, null);
+        
+        view.findViewById(R.id.btnConfirmCall).setOnClickListener(v -> {
+            Intent intent = new Intent(Intent.ACTION_DIAL);
+            intent.setData(Uri.parse("tel:" + phone));
+            startActivity(intent);
+            dialog.dismiss();
+        });
+        
+        view.findViewById(R.id.btnCancelCall).setOnClickListener(v -> dialog.dismiss());
+        
+        dialog.setContentView(view);
+        dialog.show();
     }
 
     private void loadPet(String petId) {

@@ -48,7 +48,6 @@ public class PetShopActivity extends AppCompatActivity {
                 return true;
 
             } else if (id == R.id.nav_chat) {
-                if (!requireLogin()) return false;
                 startActivity(new Intent(this, ChatActivity.class));
                 return true;
 
