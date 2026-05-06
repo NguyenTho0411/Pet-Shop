@@ -11,12 +11,9 @@
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Banner Image -->
-        <FrameLayout android:layout_width="match_parent" android:layout_height="160dp">
-            <ImageView android:id="@+id/ivBanner"
-                android:layout_width="match_parent" android:layout_height="match_parent"
-                android:scaleType="centerCrop"
-                android:background="@color/primary_light" />
+        <!-- Content -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="16dp">
 
             <!-- Discount Badge -->
             <TextView android:id="@+id/tvDiscount"
@@ -26,13 +23,7 @@
                 android:text="-20%"
                 android:textColor="@color/white" android:textSize="14sp"
                 android:textStyle="bold"
-                android:layout_gravity="start|bottom"
-                android:layout_margin="12dp" />
-        </FrameLayout>
-
-        <!-- Content -->
-        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-            android:orientation="vertical" android:padding="16dp">
+                android:layout_marginBottom="12dp" />
 
             <TextView android:id="@+id/tvName"
                 android:layout_width="match_parent" android:layout_height="wrap_content"

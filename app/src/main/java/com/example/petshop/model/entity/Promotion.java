@@ -132,14 +132,25 @@ public class Promotion {
     }
     
     public double calculateDiscount(double originalPrice) {
+        if (originalPrice <= 0) return 0;
+        
         if (isPercentType()) {
             double discount = originalPrice * discountValue / 100;
-            return maxDiscountAmount > 0 ? Math.min(discount, maxDiscountAmount) : discount;
+            // Giới hạn diskon tối đa nếu có
+            if (maxDiscountAmount > 0) {
+                discount = Math.min(discount, maxDiscountAmount);
+            }
+            return Math.max(0, discount);  // Đảm bảo không âm
+        } else if (isFixedType()) {
+            // Cho loại FIXED, không được vượt quá giá gốc
+            double discount = Math.min(discountValue, originalPrice);
+            return Math.max(0, discount);
         }
-        return Math.min(discountValue, originalPrice);
+        return 0;
     }
 
     public double applyDiscount(double originalPrice) {
+        if (originalPrice <= 0) return 0;
         return Math.max(0, originalPrice - calculateDiscount(originalPrice));
     }
 

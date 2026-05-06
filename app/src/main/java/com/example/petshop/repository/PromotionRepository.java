@@ -450,6 +450,21 @@ public class PromotionRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    /**
+     * Giảm usageCount khi đơn hàng bị huỷ (hoàn lại lượt sử dụng voucher).
+     */
+    public void decrementUsageCount(String id, Callback<Void> cb) {
+        db.collection(COL).document(id).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        Promotion p = doc.toObject(Promotion.class);
+                        p.setUsageCount(Math.max(0, p.getUsageCount() - 1));
+                        update(p, cb);
+                    }
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     private boolean isNotExpired(String endDate) {
         if (endDate == null || endDate.isEmpty()) return true;
         try {

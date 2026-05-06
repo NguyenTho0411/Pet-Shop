@@ -3,13 +3,11 @@ package com.example.petshop.view.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.example.petshop.R;
 import com.example.petshop.model.entity.Promotion;
 
@@ -50,14 +48,12 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
     }
 
     class VH extends RecyclerView.ViewHolder {
-        private final ImageView ivBanner;
         private final TextView tvName, tvDescription, tvDiscount, tvApplyFor, tvValidDate, tvBadge, tvVoucherCode;
         private final View btnCopy;
         private final View layoutApplyFor, layoutVoucherCode;
 
         VH(@NonNull View itemView) {
             super(itemView);
-            ivBanner = itemView.findViewById(R.id.ivBanner);
             tvName = itemView.findViewById(R.id.tvName);
             tvDescription = itemView.findViewById(R.id.tvDescription);
             tvDiscount = itemView.findViewById(R.id.tvDiscount);
@@ -119,14 +115,6 @@ public class PromotionAdapter extends RecyclerView.Adapter<PromotionAdapter.VH> 
                 validDate = "Từ " + formatDate(p.getStartDate()) + " - " + (p.getEndDate() != null ? formatDate(p.getEndDate()) : "...");
             }
             tvValidDate.setText(validDate);
-
-            // Banner image
-            if (p.getBannerUrl() != null && !p.getBannerUrl().isEmpty()) {
-                Glide.with(itemView).load(p.getBannerUrl()).centerCrop()
-                        .placeholder(R.mipmap.ic_launcher).into(ivBanner);
-            } else {
-                ivBanner.setImageResource(R.mipmap.ic_launcher);
-            }
         }
 
         private String getApplyText(Promotion p) {

@@ -125,4 +125,19 @@ public class VoucherRepository {
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
+
+    /**
+     * Giảm usedCount khi đơn hàng bị huỷ (hoàn lại lượt sử dụng voucher).
+     */
+    public void decrementUsageCount(String voucherId, Callback<Void> cb) {
+        db.collection(COL).document(voucherId).get()
+                .addOnSuccessListener(doc -> {
+                    if (doc.exists()) {
+                        Voucher v = doc.toObject(Voucher.class);
+                        v.setUsedCount(Math.max(0, v.getUsedCount() - 1));
+                        update(v, cb);
+                    }
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
 }

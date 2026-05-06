@@ -52,7 +52,8 @@ public class HomeFragment extends Fragment {
     private HomeCategoryAdapter categoryAdapter;
     private HomePetAdapter      petAdapter;
     private HomeFoodAdapter     foodAdapter;
-    private TextView            tvGreeting, tvTimeGreeting, tvCartBadge;
+    private TextView            tvGreeting, tvTimeGreeting;
+    private View                tvCartBadge;
     private Button              btnLoginTopBar;
     private EditText            etSearch;
     private View                rootView;
@@ -180,12 +181,7 @@ public class HomeFragment extends Fragment {
         cartVm.getCart().observe(getViewLifecycleOwner(), cart -> {
             if (cart != null) {
                 int total = cart.calculateTotalItems();
-                if (total > 0) {
-                    tvCartBadge.setText(total > 99 ? "99+" : String.valueOf(total));
-                    tvCartBadge.setVisibility(View.VISIBLE);
-                } else {
-                    tvCartBadge.setVisibility(View.GONE);
-                }
+                tvCartBadge.setVisibility(total > 0 ? View.VISIBLE : View.GONE);
             } else {
                 tvCartBadge.setVisibility(View.GONE);
             }

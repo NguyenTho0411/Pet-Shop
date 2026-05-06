@@ -127,7 +127,12 @@ public class Food {
 
     @Exclude
     public double getEffectivePrice() {
-        return discountedPrice > 0 ? discountedPrice : price;
+        // Gunakan discountedPrice hanya jika promotion aktif
+        if (promotionId != null && !promotionId.isEmpty() && promotion != null && promotion.isActive()) {
+            return promotion.applyDiscount(price);
+        }
+        // Fallback ke price jika không có promosi hoặc promosi sudah expired
+        return price;
     }
 
     // region Getters & Setters

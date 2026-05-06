@@ -229,6 +229,9 @@ public class OrderRepository {
     }
 
     public void cancelOrder(String orderId, String reason, Callback<Void> cb) {
+        // Dùng mảng để capture voucherId từ bên trong transaction
+        final String[] cancelledVoucherId = {null};
+
         db.runTransaction((Transaction.Function<Void>) tx -> {
                     DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
 
@@ -243,6 +246,9 @@ public class OrderRepository {
                     if (!order.canCancel()) {
                         throw new RuntimeException("Không thể hủy đơn hàng này");
                     }
+
+                    // Lưu voucherId để hoàn lại lượt sử dụng sau khi transaction thành công
+                    cancelledVoucherId[0] = order.getVoucherId();
 
                     boolean wasSubtracted = !Order.STATUS_WAIT_PAY.equals(order.getStatus());
 
@@ -339,8 +345,38 @@ public class OrderRepository {
 
                     return null;
                 })
-                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnSuccessListener(v -> {
+                    // Hoàn lại lượt sử dụng voucher khi huỷ đơn thành công
+                    restoreVoucherUsage(cancelledVoucherId[0]);
+                    cb.onSuccess(null);
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    /**
+     * Hoàn lại lượt sử dụng voucher khi đơn hàng bị huỷ.
+     * Thử giảm usedCount ở cả vouchers collection và promotions collection.
+     */
+    private void restoreVoucherUsage(String voucherId) {
+        if (voucherId == null || voucherId.isEmpty()) return;
+
+        // Thử giảm ở vouchers collection
+        new VoucherRepository().decrementUsageCount(voucherId, new VoucherRepository.Callback<Void>() {
+            @Override public void onSuccess(Void data) {
+                android.util.Log.d("OrderRepo", "Voucher usage restored: " + voucherId);
+            }
+            @Override public void onFailure(String error) {
+                // Nếu không tìm thấy trong vouchers, thử promotions
+                new PromotionRepository().decrementUsageCount(voucherId, new PromotionRepository.Callback<Void>() {
+                    @Override public void onSuccess(Void data) {
+                        android.util.Log.d("OrderRepo", "Promotion voucher usage restored: " + voucherId);
+                    }
+                    @Override public void onFailure(String error2) {
+                        android.util.Log.e("OrderRepo", "Failed to restore voucher usage: " + error2);
+                    }
+                });
+            }
+        });
     }
 
     public void getAllOrders(Callback<List<Order>> cb) {

@@ -22,12 +22,18 @@ public class PromotionManager {
         // Apply for Pets
         if (pets != null) {
             for (Pet p : pets) {
+                // Reset promotion first
+                p.setPromotionId(null);
+                p.setPromotion(null);
+                p.setDiscountedPrice(0);
+                
                 Promotion best = findBestPromoForProduct(p, activePromos);
-                if (best != null) {
+                if (best != null && best.isActive() && best.isWithinDateRange()) {  // Double check active
                     p.setPromotionId(best.getId());
                     p.setPromotion(best);
                     p.setOriginalPrice(p.getPrice());
-                    p.setDiscountedPrice(best.applyDiscount(p.getPrice()));
+                    double discounted = best.applyDiscount(p.getPrice());
+                    p.setDiscountedPrice(discounted);
                 }
             }
         }
@@ -35,12 +41,18 @@ public class PromotionManager {
         // Apply for Foods
         if (foods != null) {
             for (Food f : foods) {
+                // Reset promotion first
+                f.setPromotionId(null);
+                f.setPromotion(null);
+                f.setDiscountedPrice(0);
+                
                 Promotion best = findBestPromoForProduct(f, activePromos);
-                if (best != null) {
+                if (best != null && best.isActive() && best.isWithinDateRange()) {  // Double check active
                     f.setPromotionId(best.getId());
                     f.setPromotion(best);
                     f.setOriginalPrice(f.getPrice());
-                    f.setDiscountedPrice(best.applyDiscount(f.getPrice()));
+                    double discounted = best.applyDiscount(f.getPrice());
+                    f.setDiscountedPrice(discounted);
                 }
             }
         }
@@ -97,11 +109,16 @@ public class PromotionManager {
         if (product instanceof Pet) price = ((Pet) product).getPrice();
         else if (product instanceof Food) price = ((Food) product).getPrice();
 
-        for (Promotion p : promos) {
-            // Chỉ áp dụng AUTOMATIC cho hiển thị giá sản phẩm
-            // VOUCHER chỉ áp dụng khi user nhập mã ở checkout
-            if (p.isVoucher()) continue;
+        if (price <= 0) return null;
 
+        for (Promotion p : promos) {
+            // Chỉ xét AUTOMATIC promotions, bỏ qua VOUCHER
+            if (p.isVoucher()) continue;
+            
+            // Kiểm tra promotion có active và nằm trong date range không
+            if (!p.isActive() || !p.isWithinDateRange()) continue;
+
+            // Kiểm tra promotion áp dụng cho sản phẩm này không
             if (p.appliesTo(product)) {
                 double saving = p.calculateDiscount(price);
                 if (saving > maxSaving) {
@@ -117,27 +134,38 @@ public class PromotionManager {
         Promotion best = null;
         double maxSaving = 0;
 
+        if (item.getOriginalPrice() <= 0) return null;
+
         Object productSnapshot = item.isPet() ? item.getPetInfo() : item.getFoodInfo();
 
         for (Promotion p : promos) {
-            // Skip voucher unless it's the selected one
-            if (p.isVoucher() && (selectedVoucher == null || !p.getId().equals(selectedVoucher.getId()))) {
+            // Kiểm tra loại promotion
+            if (p.isVoucher()) {
+                // Chỉ áp dụng voucher được chọn
+                if (selectedVoucher == null || !p.getId().equals(selectedVoucher.getId())) {
+                    continue;
+                }
+            }
+
+            // Kiểm tra promotion active và còn trong date range
+            if (!p.isActive() || !p.isWithinDateRange()) {
                 continue;
             }
 
             boolean applies = false;
 
             if (productSnapshot != null) {
+                // Nếu có product snapshot, kiểm tra chi tiết
                 applies = p.appliesTo(productSnapshot);
             } else {
-                if (!p.isActive() || !p.isWithinDateRange()) continue;
-
+                // Nếu không có snapshot, kiểm tra theo category/product ID
                 if (Promotion.APPLY_ALL.equals(p.getApplyType())) {
                     applies = true;
                 } else if (Promotion.APPLY_CATEGORY.equals(p.getApplyType())) {
-                    applies = categoryType.equals(p.getApplyCategory());
+                    applies = categoryType != null && categoryType.equals(p.getApplyCategory());
                 } else if (Promotion.APPLY_PRODUCT.equals(p.getApplyType())) {
-                    applies = p.getProductIds() != null && p.getProductIds().contains(item.getProductId());
+                    List<String> productIds = p.getProductIds();
+                    applies = productIds != null && productIds.contains(item.getProductId());
                 }
             }
 

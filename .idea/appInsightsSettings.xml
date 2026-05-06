@@ -6,6 +6,14 @@
         <entry key="Firebase Crashlytics">
           <value>
             <InsightsFilterSettings>
+              <option name="connection">
+                <ConnectionSetting>
+                  <option name="appId" value="com.example.petshop" />
+                  <option name="mobileSdkAppId" value="1:15454009990:android:194a2af6499e3fb440af07" />
+                  <option name="projectId" value="petshop-95c67" />
+                  <option name="projectNumber" value="15454009990" />
+                </ConnectionSetting>
+              </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />
               <option name="timeIntervalDays" value="THIRTY_DAYS" />
               <option name="visibilityType" value="ALL" />

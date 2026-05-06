@@ -224,6 +224,7 @@ public class CheckoutActivity extends AppCompatActivity {
 
     private String        selectedVoucherId = null;
     private String        selectedVoucherCode = null;
+    private boolean       isPromotionVoucher = false; // true = từ promotions collection, false = từ vouchers collection
 
     private void applyVoucher() {
         TextInputEditText etVoucher = findViewById(R.id.etVoucher);
@@ -305,6 +306,7 @@ public class CheckoutActivity extends AppCompatActivity {
         voucherDiscount = promo.calculateDiscount(subtotal);
         selectedVoucherId = promo.getId();
         selectedVoucherCode = promo.getVoucherCode();
+        isPromotionVoucher = true;
 
         updatePriceSummary(subtotal);
         Toast.makeText(this, "Đã áp dụng mã " + promo.getVoucherCode(), Toast.LENGTH_SHORT).show();
@@ -334,7 +336,8 @@ public class CheckoutActivity extends AppCompatActivity {
         voucherDiscount = v.calculateDiscount(subtotal);
         selectedVoucherId = v.getId();
         selectedVoucherCode = v.getCode();
-        
+        isPromotionVoucher = false;
+
         updatePriceSummary(subtotal);
         Toast.makeText(this, "Đã áp dụng mã " + v.getCode(), Toast.LENGTH_SHORT).show();
     }
@@ -433,6 +436,7 @@ public class CheckoutActivity extends AppCompatActivity {
         voucherDiscount = 0;
         selectedVoucherId = null;
         selectedVoucherCode = null;
+        isPromotionVoucher = false;
         TextInputEditText etVoucher = findViewById(R.id.etVoucher);
         if (etVoucher != null) etVoucher.setText("");
         if (cvSelectedVoucher != null) cvSelectedVoucher.setVisibility(View.GONE);
@@ -485,6 +489,10 @@ public class CheckoutActivity extends AppCompatActivity {
         order.setPaymentStatus(Order.PAY_STATUS_PENDING);
         order.setNote(note);
 
+        // Lưu lại thông tin voucher để dùng sau khi tạo đơn
+        final String appliedVoucherId = selectedVoucherId;
+        final boolean appliedIsPromotion = isPromotionVoucher;
+
         new OrderRepository().createOrder(order, cart.getItems(), new OrderRepository.Callback<>() {
             public void onSuccess(String orderId) {
                 // Xóa giỏ hàng ngay lập tức qua Repository để tránh bị huỷ khi activity finish
@@ -492,6 +500,9 @@ public class CheckoutActivity extends AppCompatActivity {
                     @Override public void onSuccess(Void v) {}
                     @Override public void onFailure(String e) {}
                 });
+
+                // Giảm số lượng voucher khi đơn hàng được tạo thành công
+                recordVoucherUsageAfterOrder(uid, appliedVoucherId, appliedIsPromotion);
 
                 runOnUiThread(() -> {
                     progressBar.setVisibility(View.GONE);
@@ -537,6 +548,40 @@ public class CheckoutActivity extends AppCompatActivity {
             // Address picked from ManageAddressActivity
             String addrId = data.getStringExtra("selected_address_id");
             loadAddress(addrId);
+        }
+    }
+
+    /**
+     * Ghi nhận sử dụng voucher sau khi đặt hàng thành công.
+     * Tăng usedCount trên Firestore real-time.
+     */
+    private void recordVoucherUsageAfterOrder(String userId, String voucherId, boolean isPromotion) {
+        if (voucherId == null || voucherId.isEmpty()) return;
+
+        if (isPromotion) {
+            // Voucher từ promotions collection → tăng usageCount
+            new PromotionRepository().incrementUsageCount(voucherId, new PromotionRepository.Callback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                    android.util.Log.d("Checkout", "Promotion voucher usage incremented: " + voucherId);
+                }
+                @Override
+                public void onFailure(String error) {
+                    android.util.Log.e("Checkout", "Failed to increment promotion usage: " + error);
+                }
+            });
+        } else {
+            // Voucher từ vouchers collection → ghi usage + tăng usedCount
+            new VoucherRepository().recordVoucherUsage(userId, voucherId, new VoucherRepository.Callback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                    android.util.Log.d("Checkout", "Voucher usage recorded: " + voucherId);
+                }
+                @Override
+                public void onFailure(String error) {
+                    android.util.Log.e("Checkout", "Failed to record voucher usage: " + error);
+                }
+            });
         }
     }
 }
