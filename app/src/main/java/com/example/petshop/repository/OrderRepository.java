@@ -14,9 +14,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 public class OrderRepository {
@@ -37,10 +39,11 @@ public class OrderRepository {
     public void createOrder(Order order, List<CartItem> cartItems, Callback<String> cb) {
         String orderId   = UUID.randomUUID().toString();
         String orderCode = "ORD" + new SimpleDateFormat("MMddHHmmss", Locale.getDefault()).format(new Date())
-                        + orderId.substring(0, 6).toUpperCase();
+                + orderId.substring(0, 6).toUpperCase();
+
         order.setId(orderId);
         order.setOrderCode(orderCode);
-        
+
         boolean isVNPay = Order.PAYMENT_VNPAY.equals(order.getPaymentMethod());
         if (isVNPay) {
             order.setStatus(Order.STATUS_WAIT_PAY);
@@ -69,173 +72,91 @@ public class OrderRepository {
         order.setItems(orderItems);
 
         db.runTransaction((Transaction.Function<Void>) tx -> {
-            if (!isVNPay) {
-                // 1. COLLECT ALL READS FIRST
-                DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
-                
-                // Collect food references
-                Map<String, DocumentReference> foodRefs = new HashMap<>();
-                Map<String, DocumentReference> petRefs = new HashMap<>();
-                for (OrderItem item : orderItems) {
-                    if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
-                        foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
-                    } else if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                        petRefs.put(item.getProductId(), db.collection(COL_PETS).document(item.getProductId()));
+                    if (!isVNPay) {
+                        Map<String, DocumentReference> foodRefs = new HashMap<>();
+                        for (OrderItem item : orderItems) {
+                            if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                                foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
+                            }
+                        }
+
+                        Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
+                        for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
+                            foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
+                        }
+
+                        for (OrderItem item : orderItems) {
+                            if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                                tx.update(db.collection(COL_PETS).document(item.getProductId()),
+                                        "status", Pet.STATUS_RESERVED);
+                            } else if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                                DocumentSnapshot snap = foodSnaps.get(item.getProductId());
+                                long stock = snap != null && snap.getLong("stock") != null
+                                        ? snap.getLong("stock") : 0;
+                                tx.update(foodRefs.get(item.getProductId()),
+                                        "stock", Math.max(0, stock - item.getQuantity()));
+                            }
+                        }
                     }
-                }
-                
-                // Perform all gets
-                DocumentSnapshot userSnap = tx.get(userRef);
-                Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
-                for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
-                    foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
-                }
-                Map<String, DocumentSnapshot> petSnaps = new HashMap<>();
-                for (Map.Entry<String, DocumentReference> entry : petRefs.entrySet()) {
-                    petSnaps.put(entry.getKey(), tx.get(entry.getValue()));
-                }
 
-                // 2. PERFORM ALL WRITES
-                // Reserve pets (chờ admin xác nhận mới thành SOLD)
-                for (OrderItem item : orderItems) {
-                    if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                        tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_RESERVED);
-                    } else {
-                        DocumentSnapshot snap = foodSnaps.get(item.getProductId());
-                        long stock = (snap != null && snap.getLong("stock") != null) ? snap.getLong("stock") : 0;
-                        tx.update(foodRefs.get(item.getProductId()), "stock", Math.max(0, stock - item.getQuantity()));
-                    }
-                }
-
-                // Update User stats
-                if (userSnap.exists()) {
-                    long totalOrders = userSnap.getLong("totalOrders") != null ? userSnap.getLong("totalOrders") : 0;
-                    double totalSpent = userSnap.getDouble("totalSpent") != null ? userSnap.getDouble("totalSpent") : 0;
-                    tx.update(userRef, "totalOrders", totalOrders + 1, "totalSpent", totalSpent + order.getTotalAmount());
-                }
-            }
-            
-            tx.set(db.collection(COL_ORDERS).document(orderId), order);
-            return null;
-        })
-        .addOnSuccessListener(v -> cb.onSuccess(orderId))
-        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
-    }
-
-    private void subtractStockInTx(Transaction tx, List<OrderItem> items) throws Exception {
-        Map<String, DocumentReference> foodRefs = new HashMap<>();
-        for (OrderItem item : items) {
-            if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
-                foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
-            }
-        }
-
-        Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
-        for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
-            foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
-        }
-
-        for (OrderItem item : items) {
-            if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_SOLD);
-            } else {
-                DocumentSnapshot snap = foodSnaps.get(item.getProductId());
-                long stock = (snap != null && snap.getLong("stock") != null) ? snap.getLong("stock") : 0;
-                long sold  = (snap != null && snap.getLong("sold") != null) ? snap.getLong("sold") : 0;
-                tx.update(foodRefs.get(item.getProductId()),
-                        "stock", Math.max(0, stock - item.getQuantity()),
-                        "sold",  sold + item.getQuantity());
-            }
-        }
-    }
-
-    private void restoreStockInTx(Transaction tx, List<OrderItem> items) throws Exception {
-        Map<String, DocumentReference> foodRefs = new HashMap<>();
-        for (OrderItem item : items) {
-            if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
-                foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
-            }
-        }
-
-        Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
-        for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
-            foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
-        }
-
-        for (OrderItem item : items) {
-            if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_AVAILABLE);
-            } else {
-                DocumentSnapshot snap = foodSnaps.get(item.getProductId());
-                long stock = (snap != null && snap.getLong("stock") != null) ? snap.getLong("stock") : 0;
-                long sold  = (snap != null && snap.getLong("sold") != null) ? snap.getLong("sold") : 0;
-                tx.update(foodRefs.get(item.getProductId()),
-                        "stock", stock + item.getQuantity(),
-                        "sold",  Math.max(0, sold - item.getQuantity()));
-            }
-        }
+                    tx.set(db.collection(COL_ORDERS).document(orderId), order);
+                    return null;
+                })
+                .addOnSuccessListener(v -> cb.onSuccess(orderId))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void completeVNPayOrder(String orderId, Callback<Void> cb) {
         db.runTransaction((Transaction.Function<Void>) tx -> {
-            DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
-            DocumentSnapshot orderSnap = tx.get(orderRef);
-            Order order = orderSnap.toObject(Order.class);
-            
-            if (order == null || !Order.STATUS_WAIT_PAY.equals(order.getStatus())) return null;
+                    DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
+                    DocumentSnapshot orderSnap = tx.get(orderRef);
+                    Order order = orderSnap.toObject(Order.class);
 
-            // 1. COLLECT ALL DATA (READS)
-            Map<String, DocumentReference> foodRefs = new HashMap<>();
-            for (OrderItem item : order.getItems()) {
-                if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
-                    foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
-                }
-            }
+                    if (order == null || !Order.STATUS_WAIT_PAY.equals(order.getStatus())) {
+                        return null;
+                    }
 
-            Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
-            for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
-                foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
-            }
+                    Map<String, DocumentReference> foodRefs = new HashMap<>();
+                    for (OrderItem item : order.getItems()) {
+                        if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                            foodRefs.put(item.getProductId(), db.collection(COL_FOODS).document(item.getProductId()));
+                        }
+                    }
 
-            DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
-            DocumentSnapshot userSnap = tx.get(userRef);
+                    Map<String, DocumentSnapshot> foodSnaps = new HashMap<>();
+                    for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
+                        foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
+                    }
 
-            // 2. PERFORM ALL UPDATES (WRITES)
-            for (OrderItem item : order.getItems()) {
-                if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                    tx.update(db.collection(COL_PETS).document(item.getProductId()), "status", Pet.STATUS_RESERVED);
-                } else {
-                    DocumentSnapshot foodSnap = foodSnaps.get(item.getProductId());
-                    long stock = (foodSnap != null && foodSnap.getLong("stock") != null) ? foodSnap.getLong("stock") : 0;
-                    tx.update(foodRefs.get(item.getProductId()), "stock", Math.max(0, stock - item.getQuantity()));
-                }
-            }
+                    for (OrderItem item : order.getItems()) {
+                        if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
+                            tx.update(db.collection(COL_PETS).document(item.getProductId()),
+                                    "status", Pet.STATUS_RESERVED);
+                        } else if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
+                            DocumentSnapshot foodSnap = foodSnaps.get(item.getProductId());
+                            long stock = foodSnap != null && foodSnap.getLong("stock") != null
+                                    ? foodSnap.getLong("stock") : 0;
+                            tx.update(foodRefs.get(item.getProductId()),
+                                    "stock", Math.max(0, stock - item.getQuantity()));
+                        }
+                    }
 
-            if (userSnap.exists()) {
-                long totalOrders = userSnap.getLong("totalOrders") != null ? userSnap.getLong("totalOrders") : 0;
-                double totalSpent = userSnap.getDouble("totalSpent") != null ? userSnap.getDouble("totalSpent") : 0;
-                tx.update(userRef, "totalOrders", totalOrders + 1, "totalSpent", totalSpent + order.getTotalAmount());
-            }
+                    tx.update(orderRef,
+                            "status", Order.STATUS_PENDING,
+                            "paymentStatus", Order.PAY_STATUS_PAID,
+                            "updatedAt", now());
 
-            tx.update(orderRef, 
-                    "status", Order.STATUS_PENDING,
-                    "paymentStatus", Order.PAY_STATUS_PAID,
-                    "updatedAt", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date()));
-            
-            return null;
-        })
-        .addOnSuccessListener(v -> cb.onSuccess(null))
-        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                    return null;
+                })
+                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void cancelOrder(String orderId, String reason, Callback<Void> cb) {
-        // Dùng mảng để capture voucherId từ bên trong transaction
-        final String[] cancelledVoucherId = {null};
+        final String[] cancelledVoucherIds = {null};
 
         db.runTransaction((Transaction.Function<Void>) tx -> {
                     DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
-
-                    // ===== 1. READS: đọc hết trước =====
                     DocumentSnapshot orderSnap = tx.get(orderRef);
                     Order order = orderSnap.toObject(Order.class);
 
@@ -247,8 +168,7 @@ public class OrderRepository {
                         throw new RuntimeException("Không thể hủy đơn hàng này");
                     }
 
-                    // Lưu voucherId để hoàn lại lượt sử dụng sau khi transaction thành công
-                    cancelledVoucherId[0] = order.getVoucherId();
+                    cancelledVoucherIds[0] = order.getVoucherId();
 
                     boolean wasSubtracted = !Order.STATUS_WAIT_PAY.equals(order.getStatus());
 
@@ -263,36 +183,26 @@ public class OrderRepository {
                     DocumentSnapshot userSnap = null;
 
                     if (wasSubtracted) {
-                        // gom food refs cần đọc
                         for (OrderItem item : items) {
                             if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
-                                foodRefs.put(
-                                        item.getProductId(),
-                                        db.collection(COL_FOODS).document(item.getProductId())
-                                );
+                                foodRefs.put(item.getProductId(),
+                                        db.collection(COL_FOODS).document(item.getProductId()));
                             }
                         }
 
-                        // đọc tất cả food trước
                         for (Map.Entry<String, DocumentReference> entry : foodRefs.entrySet()) {
                             foodSnaps.put(entry.getKey(), tx.get(entry.getValue()));
                         }
 
-                        // đọc user trước khi ghi
                         userRef = db.collection(COL_USERS).document(order.getUserId());
                         userSnap = tx.get(userRef);
                     }
 
-                    // ===== 2. WRITES: sau khi đọc xong mới ghi =====
                     if (wasSubtracted) {
-                        // hoàn stock/pet status
                         for (OrderItem item : items) {
                             if (OrderItem.PRODUCT_TYPE_PET.equals(item.getProductType())) {
-                                tx.update(
-                                        db.collection(COL_PETS).document(item.getProductId()),
-                                        "status",
-                                        Pet.STATUS_AVAILABLE
-                                );
+                                tx.update(db.collection(COL_PETS).document(item.getProductId()),
+                                        "status", Pet.STATUS_AVAILABLE);
                             } else if (OrderItem.PRODUCT_TYPE_FOOD.equals(item.getProductType())) {
                                 DocumentSnapshot snap = foodSnaps.get(item.getProductId());
 
@@ -307,76 +217,43 @@ public class OrderRepository {
                                     sold = soldValue != null ? soldValue : 0;
                                 }
 
-                                tx.update(
-                                        foodRefs.get(item.getProductId()),
+                                tx.update(foodRefs.get(item.getProductId()),
                                         "stock", stock + item.getQuantity(),
-                                        "sold", Math.max(0, sold - item.getQuantity())
-                                );
+                                        "sold", Math.max(0, sold - item.getQuantity()));
                             }
                         }
 
-                        // trừ lại thống kê user
-                        if (userSnap != null && userSnap.exists() && userRef != null) {
-                            Long totalOrdersValue = userSnap.getLong("totalOrders");
-                            Double totalSpentValue = userSnap.getDouble("totalSpent");
+                        boolean counted = countsForCustomerStats(
+                                order.getStatus(),
+                                order.getPaymentStatus(),
+                                order.getPaymentMethod()
+                        );
 
-                            long totalOrders = totalOrdersValue != null ? totalOrdersValue : 0;
-                            double totalSpent = totalSpentValue != null ? totalSpentValue : 0;
+                        if (counted && userSnap != null && userSnap.exists() && userRef != null) {
+                            long totalOrders = userSnap.getLong("totalOrders") != null
+                                    ? userSnap.getLong("totalOrders") : 0;
+                            double totalSpent = userSnap.getDouble("totalSpent") != null
+                                    ? userSnap.getDouble("totalSpent") : 0;
 
-                            tx.update(
-                                    userRef,
+                            tx.update(userRef,
                                     "totalOrders", Math.max(0, totalOrders - 1),
-                                    "totalSpent", Math.max(0, totalSpent - order.getTotalAmount())
-                            );
+                                    "totalSpent", Math.max(0, totalSpent - order.getTotalAmount()));
                         }
                     }
 
-                    String now = new SimpleDateFormat(
-                            "yyyy-MM-dd'T'HH:mm:ss",
-                            Locale.getDefault()
-                    ).format(new Date());
-
-                    tx.update(
-                            orderRef,
+                    tx.update(orderRef,
                             "status", Order.STATUS_CANCELLED,
+                            "paymentStatus", Order.PAY_STATUS_FAILED,
                             "cancelReason", reason,
-                            "updatedAt", now
-                    );
+                            "updatedAt", now());
 
                     return null;
                 })
                 .addOnSuccessListener(v -> {
-                    // Hoàn lại lượt sử dụng voucher khi huỷ đơn thành công
-                    restoreVoucherUsage(cancelledVoucherId[0]);
+                    restoreVoucherUsage(cancelledVoucherIds[0]);
                     cb.onSuccess(null);
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
-    }
-
-    /**
-     * Hoàn lại lượt sử dụng voucher khi đơn hàng bị huỷ.
-     * Thử giảm usedCount ở cả vouchers collection và promotions collection.
-     */
-    private void restoreVoucherUsage(String voucherId) {
-        if (voucherId == null || voucherId.isEmpty()) return;
-
-        // Thử giảm ở vouchers collection
-        new VoucherRepository().decrementUsageCount(voucherId, new VoucherRepository.Callback<Void>() {
-            @Override public void onSuccess(Void data) {
-                android.util.Log.d("OrderRepo", "Voucher usage restored: " + voucherId);
-            }
-            @Override public void onFailure(String error) {
-                // Nếu không tìm thấy trong vouchers, thử promotions
-                new PromotionRepository().decrementUsageCount(voucherId, new PromotionRepository.Callback<Void>() {
-                    @Override public void onSuccess(Void data) {
-                        android.util.Log.d("OrderRepo", "Promotion voucher usage restored: " + voucherId);
-                    }
-                    @Override public void onFailure(String error2) {
-                        android.util.Log.e("OrderRepo", "Failed to restore voucher usage: " + error2);
-                    }
-                });
-            }
-        });
     }
 
     public void getAllOrders(Callback<List<Order>> cb) {
@@ -385,10 +262,14 @@ public class OrderRepository {
                     List<Order> list = new ArrayList<>();
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         Order o = doc.toObject(Order.class);
-                        if (o != null) { o.setId(doc.getId()); list.add(o); }
+                        if (o != null) {
+                            o.setId(doc.getId());
+                            list.add(o);
+                        }
                     }
                     cb.onSuccess(list);
-                }).addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void getOrdersByUser(String userId, Callback<List<Order>> cb) {
@@ -398,10 +279,14 @@ public class OrderRepository {
                     List<Order> list = new ArrayList<>();
                     for (DocumentSnapshot doc : snap.getDocuments()) {
                         Order o = doc.toObject(Order.class);
-                        if (o != null) { o.setId(doc.getId()); list.add(o); }
+                        if (o != null) {
+                            o.setId(doc.getId());
+                            list.add(o);
+                        }
                     }
                     cb.onSuccess(list);
-                }).addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void getOrderById(String orderId, Callback<Order> cb) {
@@ -410,7 +295,8 @@ public class OrderRepository {
                     Order o = doc.toObject(Order.class);
                     if (o != null) o.setId(doc.getId());
                     cb.onSuccess(o);
-                }).addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void getOrderByCode(String orderCode, Callback<Order> cb) {
@@ -420,29 +306,95 @@ public class OrderRepository {
                         Order o = snap.getDocuments().get(0).toObject(Order.class);
                         if (o != null) o.setId(snap.getDocuments().get(0).getId());
                         cb.onSuccess(o);
-                    } else cb.onFailure("Order not found");
-                }).addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                    } else {
+                        cb.onFailure("Order not found");
+                    }
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void updateStatus(String orderId, String newStatus, String note, Callback<Void> cb) {
-        String now = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date());
-        Map<String, Object> updates = new HashMap<>();
-        updates.put("status", newStatus);
-        updates.put("updatedAt", now);
-        if (Order.STATUS_DELIVERED.equals(newStatus)) updates.put("deliveredAt", now);
-        if (Order.PAY_STATUS_PAID.equals(newStatus)) updates.put("paidAt", now);
-        if (note != null && !note.isEmpty()) updates.put("adminNote", note);
+        db.runTransaction((Transaction.Function<Void>) tx -> {
+                    DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
+                    DocumentSnapshot orderSnap = tx.get(orderRef);
+                    Order order = orderSnap.toObject(Order.class);
 
-        db.collection(COL_ORDERS).document(orderId).update(updates)
+                    if (order == null) {
+                        throw new RuntimeException("Không tìm thấy đơn hàng");
+                    }
+
+                    String oldStatus = order.getStatus();
+                    String oldPaymentStatus = order.getPaymentStatus();
+                    String paymentMethod = order.getPaymentMethod();
+
+                    boolean wasCounted = countsForCustomerStats(oldStatus, oldPaymentStatus, paymentMethod);
+
+                    String nextPaymentStatus = oldPaymentStatus;
+
+                    Map<String, Object> updates = new HashMap<>();
+                    updates.put("status", newStatus);
+                    updates.put("updatedAt", now());
+
+                    if (Order.STATUS_DELIVERED.equals(newStatus)
+                            || Order.STATUS_COMPLETED.equals(newStatus)) {
+                        nextPaymentStatus = Order.PAY_STATUS_PAID;
+                        updates.put("paymentStatus", Order.PAY_STATUS_PAID);
+                        updates.put("paidAt", now());
+                    }
+
+                    if (Order.STATUS_DELIVERED.equals(newStatus)) {
+                        updates.put("deliveredAt", now());
+                    }
+
+                    if (Order.STATUS_REFUNDED.equals(newStatus)) {
+                        nextPaymentStatus = Order.PAY_STATUS_REFUNDED;
+                        updates.put("paymentStatus", Order.PAY_STATUS_REFUNDED);
+                    }
+
+                    if (Order.STATUS_CANCELLED.equals(newStatus)
+                            && !Order.PAY_STATUS_PAID.equals(oldPaymentStatus)) {
+                        nextPaymentStatus = Order.PAY_STATUS_FAILED;
+                        updates.put("paymentStatus", Order.PAY_STATUS_FAILED);
+                    }
+
+                    if (note != null && !note.isEmpty()) {
+                        updates.put("adminNote", note);
+                    }
+
+                    boolean willCount = countsForCustomerStats(newStatus, nextPaymentStatus, paymentMethod);
+
+                    if (wasCounted != willCount) {
+                        DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
+                        DocumentSnapshot userSnap = tx.get(userRef);
+
+                        if (userSnap.exists()) {
+                            long totalOrders = userSnap.getLong("totalOrders") != null
+                                    ? userSnap.getLong("totalOrders") : 0;
+                            double totalSpent = userSnap.getDouble("totalSpent") != null
+                                    ? userSnap.getDouble("totalSpent") : 0.0;
+
+                            long deltaOrders = willCount ? 1 : -1;
+                            double deltaSpent = willCount ? order.getTotalAmount() : -order.getTotalAmount();
+
+                            tx.update(userRef,
+                                    "totalOrders", Math.max(0, totalOrders + deltaOrders),
+                                    "totalSpent", Math.max(0, totalSpent + deltaSpent));
+                        }
+                    }
+
+                    tx.update(orderRef, updates);
+                    return null;
+                })
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
     public void requestReturn(String orderId, String reason, boolean hasPet, Callback<Void> cb) {
         Map<String, Object> upd = new HashMap<>();
-        upd.put("status", Order.STATUS_REFUNDED);
+        upd.put("status", Order.STATUS_RETURN_REQUESTED);
         upd.put("cancelReason", reason);
-        upd.put("updatedAt", new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date()));
+        upd.put("updatedAt", now());
+
         db.collection(COL_ORDERS).document(orderId).update(upd)
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
@@ -455,10 +407,60 @@ public class OrderRepository {
                 .addOnSuccessListener(v -> cb.onSuccess(null))
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
+
     public void countPending(Callback<Long> cb) {
         db.collection(COL_ORDERS).whereEqualTo("status", Order.STATUS_PENDING)
                 .count().get(com.google.firebase.firestore.AggregateSource.SERVER)
                 .addOnSuccessListener(r -> cb.onSuccess(r.getCount()))
                 .addOnFailureListener(e -> cb.onSuccess(0L));
+    }
+
+    private boolean countsForCustomerStats(String status, String paymentStatus, String paymentMethod) {
+        if (!(Order.STATUS_DELIVERED.equals(status) || Order.STATUS_COMPLETED.equals(status))) {
+            return false;
+        }
+
+        return Order.PAY_STATUS_PAID.equals(paymentStatus)
+                || Order.PAYMENT_COD.equals(paymentMethod);
+    }
+
+    private void restoreVoucherUsage(String voucherIds) {
+        if (voucherIds == null || voucherIds.trim().isEmpty()) return;
+
+        Set<String> uniqueIds = new HashSet<>();
+        String[] ids = voucherIds.split(",");
+
+        for (String rawId : ids) {
+            String voucherId = rawId.trim();
+            if (!voucherId.isEmpty()) uniqueIds.add(voucherId);
+        }
+
+        for (String voucherId : uniqueIds) {
+            new VoucherRepository().decrementUsageCount(voucherId, new VoucherRepository.Callback<Void>() {
+                @Override
+                public void onSuccess(Void data) {
+                    android.util.Log.d("OrderRepo", "Voucher usage restored: " + voucherId);
+                }
+
+                @Override
+                public void onFailure(String error) {
+                    new PromotionRepository().decrementUsageCount(voucherId, new PromotionRepository.Callback<Void>() {
+                        @Override
+                        public void onSuccess(Void data) {
+                            android.util.Log.d("OrderRepo", "Promotion voucher usage restored: " + voucherId);
+                        }
+
+                        @Override
+                        public void onFailure(String error2) {
+                            android.util.Log.e("OrderRepo", "Failed to restore voucher usage: " + error2);
+                        }
+                    });
+                }
+            });
+        }
+    }
+
+    private String now() {
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date());
     }
 }

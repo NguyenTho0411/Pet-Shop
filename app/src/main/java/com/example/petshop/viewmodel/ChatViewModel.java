@@ -32,11 +32,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 
-import java.lang.reflect.Type;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,20 +50,22 @@ import okhttp3.Response;
 public class ChatViewModel extends AndroidViewModel {
 
     private final MutableLiveData<List<ChatMessage>> messages = new MutableLiveData<>(new ArrayList<>());
-    private final MutableLiveData<Boolean>           isTyping = new MutableLiveData<>(false);
-    private final MutableLiveData<String>            selectedImageUri = new MutableLiveData<>(null);
-    private final MutableLiveData<List<com.example.petshop.model.entity.ChatSession>> sessions = new MutableLiveData<>(new ArrayList<>());
-    private final MutableLiveData<String>            currentSessionId = new MutableLiveData<>(null);
+    private final MutableLiveData<Boolean> isTyping = new MutableLiveData<>(false);
+    private final MutableLiveData<String> selectedImageUri = new MutableLiveData<>(null);
+    private final MutableLiveData<List<com.example.petshop.model.entity.ChatSession>> sessions =
+            new MutableLiveData<>(new ArrayList<>());
+    private final MutableLiveData<String> currentSessionId = new MutableLiveData<>(null);
 
-    private final OkHttpClient                       client   = new OkHttpClient.Builder()
+    private final OkHttpClient client = new OkHttpClient.Builder()
             .readTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
             .build();
-    private final Gson                               gson     = new Gson();
 
-    private static final String PREFS_NAME        = "petshop_prefs";
-    private static final String KEY_GUEST_MSGS    = "guest_chat_messages";
+    private final Gson gson = new Gson();
+
+    private static final String PREFS_NAME = "petshop_prefs";
+    private static final String KEY_GUEST_MSGS = "guest_chat_messages";
     private static final String KEY_GUEST_SESSIONS = "guest_chat_sessions";
-    private static final int    GUEST_MSG_LIMIT   = 50;
+    private static final int GUEST_MSG_LIMIT = 50;
 
     private String userContext = "";
     private String currentUserId = "";
@@ -74,10 +75,10 @@ public class ChatViewModel extends AndroidViewModel {
     }
 
     public LiveData<List<ChatMessage>> getMessages() { return messages; }
-    public LiveData<Boolean>           getIsTyping() { return isTyping; }
-    public LiveData<String>            getSelectedImageUri() { return selectedImageUri; }
+    public LiveData<Boolean> getIsTyping() { return isTyping; }
+    public LiveData<String> getSelectedImageUri() { return selectedImageUri; }
     public LiveData<List<com.example.petshop.model.entity.ChatSession>> getSessions() { return sessions; }
-    public LiveData<String>            getCurrentSessionId() { return currentSessionId; }
+    public LiveData<String> getCurrentSessionId() { return currentSessionId; }
 
     public void setSelectedImage(String uri) {
         selectedImageUri.postValue(uri);
@@ -86,29 +87,39 @@ public class ChatViewModel extends AndroidViewModel {
     public void addWelcomeMessage() {
         List<ChatMessage> current = messages.getValue();
         if (current == null || current.isEmpty()) {
-            ChatMessage welcome = new ChatMessage("Chào bạn! Tôi là trợ lý ảo của PetShop. Tôi có thể giúp gì cho bạn hôm nay?", ChatMessage.TYPE_BOT);
+            ChatMessage welcome = new ChatMessage(
+                    "Chào bạn! Tôi là trợ lý ảo của PetShop. Tôi có thể giúp gì cho bạn hôm nay?",
+                    ChatMessage.TYPE_BOT
+            );
             welcome.setSessionId(currentSessionId.getValue());
             addMessageInternal(welcome);
         }
     }
 
     public void initContext(String userId) {
-        this.currentUserId = userId;
+        this.currentUserId = userId != null ? userId : "";
         loadSessions();
 
         StringBuilder sb = new StringBuilder();
-        
-        // 1. Fetch Categories
+
         new CategoryRepository().getAll(new CategoryRepository.Callback<>() {
             @Override
             public void onSuccess(List<Category> data) {
                 sb.append("DANH MỤC: ");
                 if (data != null) {
-                    for (Category c : data) if (c.isActive()) sb.append(c.getName()).append(", ");
+                    for (Category c : data) {
+                        if (c != null && c.isActive()) {
+                            sb.append(c.getName()).append(", ");
+                        }
+                    }
                 }
-                fetchPets(userId, sb);
+                fetchPets(currentUserId, sb);
             }
-            @Override public void onFailure(String error) { fetchPets(userId, sb); }
+
+            @Override
+            public void onFailure(String error) {
+                fetchPets(currentUserId, sb);
+            }
         });
     }
 
@@ -116,19 +127,23 @@ public class ChatViewModel extends AndroidViewModel {
         new PetRepository().getAll(new PetRepository.Callback<>() {
             @Override
             public void onSuccess(List<Pet> data) {
-                sb.append("\nTHÚ CƯNG ĐANG BÁN: ");
+                sb.append("\nTHÚ CƯNG ĐANG BÁN:\n");
                 if (data != null) {
                     int count = 0;
                     for (Pet p : data) {
-                        if (p.isAvailable() && count < 10) {
-                            sb.append(p.getName()).append(" (").append(p.getBreed()).append(" - ").append(p.getEffectivePrice()).append("đ), ");
+                        if (p != null && p.isAvailable() && count < 30) {
+                            sb.append(formatPetForAI(p)).append("\n");
                             count++;
                         }
                     }
                 }
                 fetchFoods(userId, sb);
             }
-            @Override public void onFailure(String error) { fetchFoods(userId, sb); }
+
+            @Override
+            public void onFailure(String error) {
+                fetchFoods(userId, sb);
+            }
         });
     }
 
@@ -136,23 +151,32 @@ public class ChatViewModel extends AndroidViewModel {
         new FoodRepository().getAll(new FoodRepository.Callback<>() {
             @Override
             public void onSuccess(List<Food> data) {
-                sb.append("\nTHỨC ĂN/PHỤ KIỆN: ");
+                sb.append("\nTHỨC ĂN/PHỤ KIỆN:\n");
                 if (data != null) {
                     int count = 0;
                     for (Food f : data) {
-                        if (f.isAvailable() && count < 10) {
-                            sb.append(f.getName()).append(" (").append(f.getBrand()).append(" - ").append(f.getEffectivePrice()).append("đ), ");
+                        if (f != null && f.isAvailable() && count < 30) {
+                            sb.append(formatFoodForAI(f)).append("\n");
                             count++;
                         }
                     }
                 }
                 fetchOrders(userId, sb);
             }
-            @Override public void onFailure(String error) { fetchOrders(userId, sb); }
+
+            @Override
+            public void onFailure(String error) {
+                fetchOrders(userId, sb);
+            }
         });
     }
 
     private void fetchOrders(String userId, StringBuilder sb) {
+        if (userId == null || userId.isEmpty()) {
+            fetchPromotions(sb);
+            return;
+        }
+
         new OrderRepository().getOrdersByUser(userId, new OrderRepository.Callback<>() {
             @Override
             public void onSuccess(List<Order> data) {
@@ -161,12 +185,18 @@ public class ChatViewModel extends AndroidViewModel {
                     sb.append("Chưa có.");
                 } else {
                     for (Order o : data) {
-                        sb.append("Mã ").append(o.getOrderCode()).append(" (").append(o.getStatus()).append("), ");
+                        sb.append("Mã ").append(o.getOrderCode())
+                                .append(" (").append(o.getStatus())
+                                .append(", tổng ").append((long) o.getTotalAmount()).append("đ), ");
                     }
                 }
                 fetchPromotions(sb);
             }
-            @Override public void onFailure(String error) { fetchPromotions(sb); }
+
+            @Override
+            public void onFailure(String error) {
+                fetchPromotions(sb);
+            }
         });
     }
 
@@ -176,11 +206,22 @@ public class ChatViewModel extends AndroidViewModel {
             public void onSuccess(List<Promotion> data) {
                 sb.append("\nKHUYẾN MÃI: ");
                 if (data != null) {
-                    for (Promotion p : data) sb.append(p.getName()).append(": ").append(p.getDescription()).append("; ");
+                    for (Promotion p : data) {
+                        if (p != null) {
+                            sb.append(p.getName())
+                                    .append(": ")
+                                    .append(p.getDescription())
+                                    .append("; ");
+                        }
+                    }
                 }
                 fetchVouchers(sb);
             }
-            @Override public void onFailure(String error) { fetchVouchers(sb); }
+
+            @Override
+            public void onFailure(String error) {
+                fetchVouchers(sb);
+            }
         });
     }
 
@@ -190,11 +231,22 @@ public class ChatViewModel extends AndroidViewModel {
             public void onSuccess(List<Voucher> data) {
                 sb.append("\nVOUCHER: ");
                 if (data != null) {
-                    for (Voucher v : data) if (v.isActive()) sb.append(v.getCode()).append(" (").append(v.getDescription()).append("), ");
+                    for (Voucher v : data) {
+                        if (v != null && v.isActive()) {
+                            sb.append(v.getCode())
+                                    .append(" (")
+                                    .append(v.getDescription())
+                                    .append("), ");
+                        }
+                    }
                 }
                 userContext = sb.toString();
             }
-            @Override public void onFailure(String error) { userContext = sb.toString(); }
+
+            @Override
+            public void onFailure(String error) {
+                userContext = sb.toString();
+            }
         });
     }
 
@@ -209,35 +261,40 @@ public class ChatViewModel extends AndroidViewModel {
                 .orderBy("lastTimestamp", Query.Direction.DESCENDING)
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
-                    List<com.example.petshop.model.entity.ChatSession> sessionList = queryDocumentSnapshots.toObjects(com.example.petshop.model.entity.ChatSession.class);
+                    List<com.example.petshop.model.entity.ChatSession> sessionList =
+                            queryDocumentSnapshots.toObjects(com.example.petshop.model.entity.ChatSession.class);
+
                     if (sessionList == null) sessionList = new ArrayList<>();
-                    
+
                     sessions.postValue(new ArrayList<>(sessionList));
+
                     if (!sessionList.isEmpty()) {
                         switchSession(sessionList.get(0).getId());
                     } else {
                         startNewChat();
                     }
                 })
-                .addOnFailureListener(e -> {
-                    // Fallback to guest sessions if firestore fails
-                    loadGuestSessions();
-                });
+                .addOnFailureListener(e -> loadGuestSessions());
     }
 
     private void loadGuestSessions() {
         String json = getApplication()
                 .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
                 .getString(KEY_GUEST_SESSIONS, null);
+
         if (json != null && !json.isEmpty()) {
             Type type = new TypeToken<List<com.example.petshop.model.entity.ChatSession>>() {}.getType();
             List<com.example.petshop.model.entity.ChatSession> sessionList = gson.fromJson(json, type);
-            sessions.postValue(new ArrayList<>(sessionList));
-            if (!sessionList.isEmpty()) {
-                switchSession(sessionList.get(0).getId());
-                return;
+
+            if (sessionList != null) {
+                sessions.postValue(new ArrayList<>(sessionList));
+                if (!sessionList.isEmpty()) {
+                    switchSession(sessionList.get(0).getId());
+                    return;
+                }
             }
         }
+
         startNewChat();
     }
 
@@ -260,6 +317,7 @@ public class ChatViewModel extends AndroidViewModel {
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<ChatMessage> history = queryDocumentSnapshots.toObjects(ChatMessage.class);
                     messages.postValue(history != null ? history : new ArrayList<>());
+
                     if (history == null || history.isEmpty()) {
                         addWelcomeMessage();
                     }
@@ -270,6 +328,7 @@ public class ChatViewModel extends AndroidViewModel {
         String json = getApplication()
                 .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
                 .getString(KEY_GUEST_MSGS + "_" + sessionId, null);
+
         if (json != null && !json.isEmpty()) {
             Type listType = new TypeToken<List<ChatMessage>>() {}.getType();
             List<ChatMessage> history = gson.fromJson(json, listType);
@@ -286,28 +345,34 @@ public class ChatViewModel extends AndroidViewModel {
 
         List<ChatMessage> current = messages.getValue();
         if (current == null) return;
-        
+
         List<ChatMessage> toSave = current.size() > GUEST_MSG_LIMIT
                 ? current.subList(current.size() - GUEST_MSG_LIMIT, current.size())
                 : current;
+
         getApplication()
                 .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
-                .edit().putString(KEY_GUEST_MSGS + "_" + sid, gson.toJson(toSave)).apply();
-        
-        // Update session timestamp in guest sessions
+                .edit()
+                .putString(KEY_GUEST_MSGS + "_" + sid, gson.toJson(toSave))
+                .apply();
+
         List<com.example.petshop.model.entity.ChatSession> currentSessions = sessions.getValue();
         if (currentSessions != null) {
             for (com.example.petshop.model.entity.ChatSession s : currentSessions) {
                 if (s.getId().equals(sid)) {
                     s.setLastTimestamp(System.currentTimeMillis());
-                    if (current.size() > 1 && (s.getTitle() == null || s.getTitle().startsWith("Cuộc trò chuyện mới"))) {
+
+                    if (current.size() > 1
+                            && (s.getTitle() == null || s.getTitle().startsWith("Cuộc trò chuyện mới"))) {
                         String firstMsg = current.get(1).getText();
-                        if (firstMsg.length() > 20) firstMsg = firstMsg.substring(0, 20) + "...";
+                        if (firstMsg != null && firstMsg.length() > 20) {
+                            firstMsg = firstMsg.substring(0, 20) + "...";
+                        }
                         s.setTitle(firstMsg);
                     }
                     break;
+                }
             }
-        }
             saveGuestSessionsInternal(currentSessions);
         }
     }
@@ -315,13 +380,17 @@ public class ChatViewModel extends AndroidViewModel {
     private void saveGuestSessionsInternal(List<com.example.petshop.model.entity.ChatSession> sessionList) {
         getApplication()
                 .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
-                .edit().putString(KEY_GUEST_SESSIONS, gson.toJson(sessionList)).apply();
+                .edit()
+                .putString(KEY_GUEST_SESSIONS, gson.toJson(sessionList))
+                .apply();
+
         sessions.postValue(new ArrayList<>(sessionList));
     }
 
     private void saveMessageToFirestore(ChatMessage msg) {
         String sid = currentSessionId.getValue();
         if (sid == null) return;
+
         msg.setSessionId(sid);
 
         if (currentUserId == null || currentUserId.isEmpty()) {
@@ -333,24 +402,27 @@ public class ChatViewModel extends AndroidViewModel {
                 .collection("chats")
                 .add(msg);
 
-        // Update session lastTimestamp
         FirebaseHelper.db().collection("users").document(currentUserId)
-                .collection("sessions").document(sid)
+                .collection("sessions")
+                .document(sid)
                 .update("lastTimestamp", System.currentTimeMillis());
-        
-        // Cập nhật title nếu là tin nhắn người dùng đầu tiên (sau welcome)
+
         List<ChatMessage> currentMsgs = messages.getValue();
         if (currentMsgs != null && currentMsgs.size() >= 2 && msg.getType() == ChatMessage.TYPE_USER) {
             String title = msg.getText();
+
             if (title != null && !title.isEmpty()) {
                 if (title.length() > 25) title = title.substring(0, 25) + "...";
+
                 final String finalTitle = title;
+
                 FirebaseHelper.db().collection("users").document(currentUserId)
-                        .collection("sessions").document(sid)
+                        .collection("sessions")
+                        .document(sid)
                         .update("title", finalTitle)
                         .addOnSuccessListener(aVoid -> {
-                            // Cập nhật lại danh sách local
                             List<com.example.petshop.model.entity.ChatSession> currentSessions = sessions.getValue();
+
                             if (currentSessions != null) {
                                 for (com.example.petshop.model.entity.ChatSession s : currentSessions) {
                                     if (s.getId().equals(sid)) {
@@ -367,11 +439,14 @@ public class ChatViewModel extends AndroidViewModel {
 
     public void startNewChat() {
         String newId = String.valueOf(System.currentTimeMillis());
-        com.example.petshop.model.entity.ChatSession newSession = new com.example.petshop.model.entity.ChatSession(newId, "Cuộc trò chuyện mới");
-        
+        com.example.petshop.model.entity.ChatSession newSession =
+                new com.example.petshop.model.entity.ChatSession(newId, "Cuộc trò chuyện mới");
+
         if (currentUserId == null || currentUserId.isEmpty()) {
             List<com.example.petshop.model.entity.ChatSession> current = sessions.getValue();
-            List<com.example.petshop.model.entity.ChatSession> newList = current != null ? new ArrayList<>(current) : new ArrayList<>();
+            List<com.example.petshop.model.entity.ChatSession> newList =
+                    current != null ? new ArrayList<>(current) : new ArrayList<>();
+
             newList.add(0, newSession);
             saveGuestSessionsInternal(newList);
             switchSession(newId);
@@ -379,11 +454,11 @@ public class ChatViewModel extends AndroidViewModel {
         }
 
         FirebaseHelper.db().collection("users").document(currentUserId)
-                .collection("sessions").document(newId)
+                .collection("sessions")
+                .document(newId)
                 .set(newSession)
                 .addOnSuccessListener(aVoid -> loadSessions())
                 .addOnFailureListener(e -> {
-                    // Fallback to guest if failed
                     currentUserId = "";
                     startNewChat();
                 });
@@ -400,11 +475,15 @@ public class ChatViewModel extends AndroidViewModel {
 
     private void uploadImageAndSend(ChatMessage msg) {
         isTyping.postValue(true);
+
         String localUri = msg.getImageUrl();
         Uri fileUri = Uri.parse(localUri);
         String fileName = "chat_" + System.currentTimeMillis() + ".jpg";
-        com.google.firebase.storage.StorageReference ref = 
-                com.google.firebase.storage.FirebaseStorage.getInstance().getReference().child("chats/" + fileName);
+
+        com.google.firebase.storage.StorageReference ref =
+                com.google.firebase.storage.FirebaseStorage.getInstance()
+                        .getReference()
+                        .child("chats/" + fileName);
 
         ref.putFile(fileUri)
                 .addOnSuccessListener(taskSnapshot -> ref.getDownloadUrl().addOnSuccessListener(uri -> {
@@ -421,6 +500,7 @@ public class ChatViewModel extends AndroidViewModel {
     private void addMessageInternal(ChatMessage msg) {
         List<ChatMessage> current = messages.getValue();
         List<ChatMessage> updated = current != null ? new ArrayList<>(current) : new ArrayList<>();
+
         updated.add(msg);
         messages.postValue(updated);
         saveMessageToFirestore(msg);
@@ -428,6 +508,7 @@ public class ChatViewModel extends AndroidViewModel {
 
     private void callOpenAI(String userMsg, String imgUri) {
         isTyping.postValue(true);
+
         final String sid = currentSessionId.getValue();
 
         JsonObject body = new JsonObject();
@@ -435,23 +516,25 @@ public class ChatViewModel extends AndroidViewModel {
         body.addProperty("stream", true);
 
         JsonArray msgs = new JsonArray();
-        
+
         JsonObject sys = new JsonObject();
         sys.addProperty("role", "system");
-        sys.addProperty("content", "Bạn là trợ lý ảo PetShop. " +
-                "DỰA VÀO DỮ LIỆU SAU ĐỂ TRẢ LỜI: \n" + userContext + "\n" +
-                "QUY TẮC: " +
-                "1. CHỈ sử dụng dữ liệu trên để tư vấn sản phẩm, đơn hàng, khuyến mãi. " +
-                "2. Nếu khách hỏi sản phẩm không có trong danh sách, hãy nói shop hiện chưa có nhưng sẽ cập nhật sau. " +
-                "3. TUYỆT ĐỐI KHÔNG trả lời các câu hỏi ngoài lề (toán, code, chính trị, kiến thức chung không liên quan thú cưng). " +
-                "Nếu bị hỏi ngoài lề, đáp: 'Xin lỗi, tôi là trợ lý PetShop, tôi chỉ hỗ trợ các vấn đề về thú cưng và cửa hàng.' " +
-                "4. Thân thiện, ngắn gọn, dùng tiếng Việt.");
+        sys.addProperty("content",
+                "Bạn là trợ lý ảo PetShop. "
+                        + "DỰA VÀO DỮ LIỆU SAU ĐỂ TRẢ LỜI:\n"
+                        + userContext
+                        + "\nQUY TẮC: "
+                        + "1. Chỉ sử dụng dữ liệu trên để tư vấn sản phẩm, đơn hàng, khuyến mãi. "
+                        + "2. Nếu khách hỏi sản phẩm không có trong danh sách, hãy nói shop hiện chưa có nhưng sẽ cập nhật sau. "
+                        + "3. Không trả lời câu hỏi ngoài lề không liên quan thú cưng hoặc cửa hàng. "
+                        + "4. Trả lời thân thiện, ngắn gọn, dùng tiếng Việt. "
+                        + "5. Nếu khách hỏi chi tiết như xuất xứ, cân nặng, vaccine, thành phần, tồn kho, hãy dùng đúng dữ liệu đã được cung cấp.");
         msgs.add(sys);
 
         List<ChatMessage> history = messages.getValue();
         if (history != null) {
-            int start = Math.max(0, history.size() - 7); 
-            for (int i = start; i < history.size() - 1; i++) { 
+            int start = Math.max(0, history.size() - 7);
+            for (int i = start; i < history.size() - 1; i++) {
                 ChatMessage m = history.get(i);
                 JsonObject h = new JsonObject();
                 h.addProperty("role", m.getType() == ChatMessage.TYPE_USER ? "user" : "assistant");
@@ -462,9 +545,10 @@ public class ChatViewModel extends AndroidViewModel {
 
         JsonObject user = new JsonObject();
         user.addProperty("role", "user");
-        
+
         if (imgUri != null) {
             JsonArray content = new JsonArray();
+
             JsonObject textPart = new JsonObject();
             textPart.addProperty("type", "text");
             textPart.addProperty("text", userMsg);
@@ -474,23 +558,28 @@ public class ChatViewModel extends AndroidViewModel {
             if (base64 != null) {
                 JsonObject imgPart = new JsonObject();
                 imgPart.addProperty("type", "image_url");
+
                 JsonObject imgUrl = new JsonObject();
                 imgUrl.addProperty("url", "data:image/jpeg;base64," + base64);
+
                 imgPart.add("image_url", imgUrl);
                 content.add(imgPart);
             }
-            
+
             user.add("content", content);
             selectedImageUri.postValue(null);
         } else {
             user.addProperty("content", userMsg);
         }
+
         msgs.add(user);
-
         body.add("messages", msgs);
-        // ... rest of streaming logic remains the same
 
-        RequestBody reqBody = RequestBody.create(gson.toJson(body), MediaType.parse("application/json"));
+        RequestBody reqBody = RequestBody.create(
+                gson.toJson(body),
+                MediaType.parse("application/json")
+        );
+
         Request request = new Request.Builder()
                 .url("https://api.openai.com/v1/chat/completions")
                 .header("Authorization", "Bearer " + BuildConfig.OPENAI_API_KEY)
@@ -506,15 +595,15 @@ public class ChatViewModel extends AndroidViewModel {
 
             @Override
             public void onResponse(Call call, Response response) throws IOException {
-                if (!response.isSuccessful()) {
+                if (!response.isSuccessful() || response.body() == null) {
                     isTyping.postValue(false);
                     addBotMessage("AI hiện không phản hồi. (Lỗi " + response.code() + ")");
                     return;
                 }
 
-                // Create placeholder for streaming message
                 ChatMessage streamingMsg = new ChatMessage("", ChatMessage.TYPE_BOT);
                 streamingMsg.setSessionId(sid);
+
                 final long streamingTimestamp = streamingMsg.getTimestamp();
                 addMessageInternalSync(streamingMsg);
 
@@ -524,6 +613,7 @@ public class ChatViewModel extends AndroidViewModel {
                 while (true) {
                     String line = source.readUtf8Line();
                     if (line == null) break;
+
                     if (line.startsWith("data: ")) {
                         String data = line.substring(6);
                         if (data.equals("[DONE]")) break;
@@ -531,17 +621,22 @@ public class ChatViewModel extends AndroidViewModel {
                         try {
                             JsonObject chunk = gson.fromJson(data, JsonObject.class);
                             JsonArray choices = chunk.getAsJsonArray("choices");
+
                             if (choices.size() > 0) {
-                                JsonObject delta = choices.get(0).getAsJsonObject().getAsJsonObject("delta");
+                                JsonObject delta = choices.get(0)
+                                        .getAsJsonObject()
+                                        .getAsJsonObject("delta");
+
                                 if (delta.has("content")) {
                                     String content = delta.get("content").getAsString();
                                     fullText.append(content);
-                                    
-                                    // Tạo bản sao với text mới nhưng giữ nguyên timestamp để DiffUtil nhận diện là cùng 1 item
-                                    ChatMessage updatedMsg = new ChatMessage(fullText.toString(), ChatMessage.TYPE_BOT);
+
+                                    ChatMessage updatedMsg =
+                                            new ChatMessage(fullText.toString(), ChatMessage.TYPE_BOT);
+
                                     updatedMsg.setSessionId(sid);
                                     updatedMsg.setTimestamp(streamingTimestamp);
-                                    
+
                                     List<ChatMessage> currentList = messages.getValue();
                                     if (currentList != null && !currentList.isEmpty()) {
                                         List<ChatMessage> newList = new ArrayList<>(currentList);
@@ -550,13 +645,13 @@ public class ChatViewModel extends AndroidViewModel {
                                     }
                                 }
                             }
-                        } catch (Exception ignored) {}
+                        } catch (Exception ignored) {
+                        }
                     }
                 }
-                
+
                 isTyping.postValue(false);
-                
-                // Lưu tin nhắn cuối cùng hoàn chỉnh vào Firestore
+
                 ChatMessage finalMsg = new ChatMessage(fullText.toString(), ChatMessage.TYPE_BOT);
                 finalMsg.setSessionId(sid);
                 finalMsg.setTimestamp(streamingTimestamp);
@@ -568,17 +663,95 @@ public class ChatViewModel extends AndroidViewModel {
     private void addMessageInternalSync(ChatMessage msg) {
         List<ChatMessage> current = messages.getValue();
         List<ChatMessage> updated = current != null ? new ArrayList<>(current) : new ArrayList<>();
+
         updated.add(msg);
         messages.postValue(updated);
     }
 
     private void addBotMessage(String text) {
         ChatMessage botMsg = new ChatMessage(text, ChatMessage.TYPE_BOT);
+
         List<ChatMessage> current = messages.getValue();
         List<ChatMessage> updated = current != null ? new ArrayList<>(current) : new ArrayList<>();
+
         updated.add(botMsg);
         messages.postValue(updated);
         saveMessageToFirestore(botMsg);
+    }
+
+    private String formatPetForAI(Pet p) {
+        if (p == null) return "";
+
+        StringBuilder s = new StringBuilder();
+        s.append("- Pet: ").append(safe(p.getName()));
+
+        appendField(s, "ID", p.getId());
+        appendField(s, "Loài", p.getSpecies());
+        appendField(s, "Giống", p.getBreed());
+        appendField(s, "Danh mục", p.getCategory() != null ? p.getCategory().getName() : p.getCategoryId());
+        appendField(s, "Tuổi", p.getAge() + " " + safe(p.getAgeUnit()));
+        appendField(s, "Giới tính", p.getGender());
+        appendField(s, "Cân nặng", p.getWeight() > 0 ? p.getWeight() + " kg" : "");
+        appendField(s, "Màu", p.getColor());
+        appendField(s, "Xuất xứ", p.getOrigin());
+        appendField(s, "Giá", String.valueOf((long) p.getEffectivePrice()) + "đ");
+        appendField(s, "Giá gốc", p.getOriginalPrice() > 0 ? String.valueOf((long) p.getOriginalPrice()) + "đ" : "");
+        appendField(s, "Vaccine", p.getVaccineStatus());
+        appendField(s, "Tẩy giun", p.isDewormed() ? "Có" : "Không");
+        appendField(s, "Microchip", p.isMicrochipped() ? "Có" : "Không");
+        appendField(s, "Giấy chứng nhận", p.isHasCertificate() ? "Có" : "Không");
+        appendField(s, "Tình trạng", p.getStatus());
+        appendField(s, "Mô tả", p.getDescription());
+        appendField(s, "Chăm sóc", p.getCareGuide());
+        appendField(s, "Chế độ ăn", p.getDietInfo());
+        appendField(s, "Sức khỏe", p.getHealthInfo());
+        appendField(s, "Đánh giá", p.getAverageRating() + " sao / " + p.getReviewCount() + " đánh giá");
+
+        return s.toString();
+    }
+
+    private String formatFoodForAI(Food f) {
+        if (f == null) return "";
+
+        StringBuilder s = new StringBuilder();
+        s.append("- Food: ").append(safe(f.getName()));
+
+        appendField(s, "ID", f.getId());
+        appendField(s, "Thương hiệu", f.getBrand());
+        appendField(s, "Danh mục", f.getCategory() != null ? f.getCategory().getName() : f.getCategoryId());
+        appendField(s, "Loại thức ăn", f.getFoodType());
+        appendField(s, "Phù hợp cho", f.getTargetPetType());
+        appendField(s, "Khối lượng", f.getWeightGram() > 0 ? f.getWeightGram() + " gram" : "");
+        appendField(s, "Đơn vị", f.getUnit());
+        appendField(s, "Giá", String.valueOf((long) f.getEffectivePrice()) + "đ");
+        appendField(s, "Giá gốc", f.getOriginalPrice() > 0 ? String.valueOf((long) f.getOriginalPrice()) + "đ" : "");
+        appendField(s, "Tồn kho", String.valueOf(f.getStock()));
+        appendField(s, "Đã bán", String.valueOf(f.getSold()));
+        appendField(s, "Thành phần", f.getIngredients());
+        appendField(s, "Dinh dưỡng", f.getNutritionInfo());
+        appendField(s, "Hướng dẫn dùng", f.getUsageGuide());
+        appendField(s, "Bảo quản", f.getStorageGuide());
+        appendField(s, "Độ tuổi phù hợp", f.getSuitableAge());
+        appendField(s, "Xuất xứ", f.getOrigin());
+        appendField(s, "Hạn dùng", f.getExpiryMonths() > 0 ? f.getExpiryMonths() + " tháng" : "");
+        appendField(s, "Trạng thái", f.getStatus());
+        appendField(s, "Mô tả", f.getDescription());
+        appendField(s, "Đánh giá", f.getAverageRating() + " sao / " + f.getReviewCount() + " đánh giá");
+
+        return s.toString();
+    }
+
+    private void appendField(StringBuilder s, String label, String value) {
+        if (value == null) return;
+
+        String v = value.trim();
+        if (v.isEmpty() || "null".equalsIgnoreCase(v)) return;
+
+        s.append(" | ").append(label).append(": ").append(v);
+    }
+
+    private String safe(String value) {
+        return value != null ? value : "";
     }
 
     private String uriToBase64(String uriString) {
@@ -586,17 +759,29 @@ public class ChatViewModel extends AndroidViewModel {
             Uri uri = Uri.parse(uriString);
             InputStream inputStream = getApplication().getContentResolver().openInputStream(uri);
             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-            
-            // Resize if too large
+
+            if (bitmap == null) return null;
+
             if (bitmap.getWidth() > 1024 || bitmap.getHeight() > 1024) {
-                float scale = Math.min(1024f / bitmap.getWidth(), 1024f / bitmap.getHeight());
-                bitmap = Bitmap.createScaledBitmap(bitmap, (int)(bitmap.getWidth() * scale), (int)(bitmap.getHeight() * scale), true);
+                float scale = Math.min(
+                        1024f / bitmap.getWidth(),
+                        1024f / bitmap.getHeight()
+                );
+
+                bitmap = Bitmap.createScaledBitmap(
+                        bitmap,
+                        (int) (bitmap.getWidth() * scale),
+                        (int) (bitmap.getHeight() * scale),
+                        true
+                );
             }
-            
+
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream);
+
             byte[] bytes = outputStream.toByteArray();
             return Base64.encodeToString(bytes, Base64.NO_WRAP);
+
         } catch (Exception e) {
             e.printStackTrace();
             return null;

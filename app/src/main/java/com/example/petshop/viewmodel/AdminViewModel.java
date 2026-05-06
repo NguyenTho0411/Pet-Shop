@@ -9,20 +9,17 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.example.petshop.model.entity.Order;
-import com.google.firebase.firestore.CollectionReference;
-import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
-import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
 
 /**
  * AdminViewModel - MVVM Pattern cho Admin Dashboard
  * - Real-time updates khi có thay đổi trong Firestore
  * - Tự động cập nhật UI khi data thay đổi
- * - Tối ưu query với Firestore listeners
+ * - Tính doanh thu và số đơn dựa trên trạng thái đơn hàng hiện tại
  */
 public class AdminViewModel extends AndroidViewModel {
 
@@ -30,7 +27,6 @@ public class AdminViewModel extends AndroidViewModel {
     private static final String COL_ORDERS = "orders";
     private static final String COL_USERS = "users";
 
-    // LiveData cho Dashboard Stats
     private final MutableLiveData<Long> totalRevenue = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> totalOrders = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> totalUsers = new MutableLiveData<>(0L);
@@ -42,11 +38,9 @@ public class AdminViewModel extends AndroidViewModel {
     private final MutableLiveData<Long> shippingOrders = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> deliveredOrders = new MutableLiveData<>(0L);
 
-    // LiveData cho loading/error states
     private final MutableLiveData<Boolean> isLoading = new MutableLiveData<>(false);
     private final MutableLiveData<String> error = new MutableLiveData<>();
 
-    // Firestore & Listeners
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ListenerRegistration ordersListener;
     private ListenerRegistration usersListener;
@@ -54,8 +48,6 @@ public class AdminViewModel extends AndroidViewModel {
     public AdminViewModel(@NonNull Application application) {
         super(application);
     }
-
-    // ==================== GETTERS CHO LIVE DATA ====================
 
     public LiveData<Long> getTotalRevenue() { return totalRevenue; }
     public LiveData<Long> getTotalOrders() { return totalOrders; }
@@ -70,27 +62,13 @@ public class AdminViewModel extends AndroidViewModel {
     public LiveData<Boolean> getIsLoading() { return isLoading; }
     public LiveData<String> getError() { return error; }
 
-    // ==================== REAL-TIME LISTENERS ====================
-
-    /**
-     * Bắt đầu lắng nghe real-time changes
-     * Gọi trong onStart() của Activity
-     */
     public void startListening() {
         Log.d(TAG, "startListening: Starting real-time listeners");
         isLoading.postValue(true);
-
-        // Lắng nghe orders collection
         startOrdersListener();
-
-        // Lắng nghe users collection
         startUsersListener();
     }
 
-    /**
-     * Dừng lắng nghe khi Activity bị destroy
-     * Gọi trong onStop() của Activity
-     */
     public void stopListening() {
         Log.d(TAG, "stopListening: Removing all listeners");
         if (ordersListener != null) {
@@ -104,7 +82,6 @@ public class AdminViewModel extends AndroidViewModel {
     }
 
     private void startOrdersListener() {
-        // Sử dụng listener thay vì one-time fetch
         ordersListener = db.collection(COL_ORDERS)
                 .addSnapshotListener(new EventListener<QuerySnapshot>() {
                     @Override
@@ -122,7 +99,6 @@ public class AdminViewModel extends AndroidViewModel {
                             return;
                         }
 
-                        // Tính toán tất cả stats từ snapshots
                         calculateOrderStats(snapshots);
                         isLoading.postValue(false);
                         Log.d(TAG, "Orders updated: " + snapshots.size() + " documents");
@@ -132,22 +108,17 @@ public class AdminViewModel extends AndroidViewModel {
 
     private void startUsersListener() {
         usersListener = db.collection(COL_USERS)
-                .addSnapshotListener(new EventListener<QuerySnapshot>() {
-                    @Override
-                    public void onEvent(QuerySnapshot snapshots, FirebaseFirestoreException e) {
-                        if (e != null) {
-                            Log.e(TAG, "Users listener error: " + e.getMessage());
-                            return;
-                        }
-
-                        int count = snapshots != null ? snapshots.size() : 0;
-                        totalUsers.postValue((long) count);
-                        Log.d(TAG, "Users updated: " + count);
+                .addSnapshotListener((snapshots, e) -> {
+                    if (e != null) {
+                        Log.e(TAG, "Users listener error: " + e.getMessage());
+                        return;
                     }
+
+                    int count = snapshots != null ? snapshots.size() : 0;
+                    totalUsers.postValue((long) count);
+                    Log.d(TAG, "Users updated: " + count);
                 });
     }
-
-    // ==================== TÍNH TOÁN STATS ====================
 
     private void calculateOrderStats(QuerySnapshot snapshots) {
         long total = 0;
@@ -157,60 +128,67 @@ public class AdminViewModel extends AndroidViewModel {
         long preparing = 0;
         long shipping = 0;
         long delivered = 0;
-        long revenue = 0;
-        long refunded = 0;
+        long paidRevenue = 0;
+        long refundedOrders = 0;
+        long refundedMoney = 0;
 
         for (var doc : snapshots.getDocuments()) {
             total++;
 
             String status = doc.getString("status");
             String paymentStatus = doc.getString("paymentStatus");
+            String paymentMethod = doc.getString("paymentMethod");
             Double amount = doc.getDouble("totalAmount");
             if (amount == null) amount = 0.0;
 
-            // Check if order is paid (PAID status hoặc null = COD đã nhận tiền)
-            boolean isPaid = "PAID".equals(paymentStatus) || paymentStatus == null;
+            boolean isPaid = Order.PAY_STATUS_PAID.equals(paymentStatus)
+                    || (Order.PAYMENT_COD.equals(paymentMethod)
+                    && (Order.STATUS_DELIVERED.equals(status) || Order.STATUS_COMPLETED.equals(status)));
 
-            // Đếm theo status
             switch (status != null ? status : "") {
                 case Order.STATUS_PENDING:
                 case Order.STATUS_WAIT_PAY:
                 case Order.STATUS_CONFIRMED:
                     pending++;
                     break;
+
                 case Order.STATUS_PREPARING:
                     preparing++;
                     break;
+
                 case Order.STATUS_SHIPPING:
                     shipping++;
                     break;
+
                 case Order.STATUS_DELIVERED:
                     delivered++;
-                    if (isPaid) {
-                        revenue += amount.longValue();
-                    }
+                    if (isPaid) paidRevenue += amount.longValue();
                     break;
+
                 case Order.STATUS_COMPLETED:
                     completed++;
-                    if (isPaid) {
-                        revenue += amount.longValue();
-                    }
+                    if (isPaid) paidRevenue += amount.longValue();
                     break;
+
                 case Order.STATUS_CANCELLED:
                     cancelled++;
                     break;
+
                 case Order.STATUS_RETURN_REQUESTED:
                 case Order.STATUS_RETURN_APPROVED:
                     pending++;
                     break;
+
                 case Order.STATUS_REFUNDED:
-                    refunded += amount.longValue();
+                    refundedOrders++;
+                    refundedMoney += amount.longValue();
                     break;
             }
         }
 
-        // Cập nhật LiveData
-        long activeOrders = total - cancelled - refunded;
+        long activeOrders = Math.max(0, total - cancelled - refundedOrders);
+        long netRevenue = Math.max(0, paidRevenue - refundedMoney);
+
         totalOrders.postValue(activeOrders);
         pendingOrders.postValue(pending);
         preparingOrders.postValue(preparing);
@@ -218,13 +196,15 @@ public class AdminViewModel extends AndroidViewModel {
         deliveredOrders.postValue(delivered);
         completedOrders.postValue(completed);
         cancelledOrders.postValue(cancelled);
-
-        // Doanh thu = COMPLETED + DELIVERED - REFUNDED
-        long netRevenue = revenue - refunded;
         totalRevenue.postValue(netRevenue);
-        refundedAmount.postValue(refunded);
+        refundedAmount.postValue(refundedMoney);
 
-        Log.d(TAG, "Stats: Revenue=" + netRevenue + ", Paid=" + revenue + ", Refunded=" + refunded);
+        Log.d(TAG, "Stats: total=" + total
+                + ", active=" + activeOrders
+                + ", paidRevenue=" + paidRevenue
+                + ", refundedOrders=" + refundedOrders
+                + ", refundedMoney=" + refundedMoney
+                + ", netRevenue=" + netRevenue);
     }
 
     private void resetOrderStats() {
@@ -238,8 +218,6 @@ public class AdminViewModel extends AndroidViewModel {
         totalRevenue.postValue(0L);
         refundedAmount.postValue(0L);
     }
-
-    // ==================== CLEANUP ====================
 
     @Override
     protected void onCleared() {
