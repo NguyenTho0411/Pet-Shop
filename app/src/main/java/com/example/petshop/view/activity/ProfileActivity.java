@@ -280,6 +280,11 @@ public class ProfileActivity extends AppCompatActivity {
             new ConfirmDialog.OnConfirmListener() {
                 @Override
                 public void onConfirm() {
+                    // Clear chat data trước khi logout
+                    androidx.lifecycle.ViewModelProvider provider = new androidx.lifecycle.ViewModelProvider(ProfileActivity.this);
+                    com.example.petshop.viewmodel.ChatViewModel chatVm = provider.get(com.example.petshop.viewmodel.ChatViewModel.class);
+                    chatVm.clearChatData();
+                    
                     FirebaseHelper.logout();
                     Intent i = new Intent(ProfileActivity.this, PetShopActivity.class);
                     i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);

@@ -97,7 +97,11 @@ public class ChatViewModel extends AndroidViewModel {
     }
 
     public void initContext(String userId) {
-        this.currentUserId = userId != null ? userId : "";
+        // Kiểm tra nếu userId thay đổi, clear dữ liệu cũ
+        if (!userId.equals(currentUserId)) {
+            clearChatDataInternal();
+        }
+        this.currentUserId = userId;
         loadSessions();
 
         StringBuilder sb = new StringBuilder();
@@ -281,30 +285,29 @@ public class ChatViewModel extends AndroidViewModel {
         String json = getApplication()
                 .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
                 .getString(KEY_GUEST_SESSIONS, null);
-
         if (json != null && !json.isEmpty()) {
             Type type = new TypeToken<List<com.example.petshop.model.entity.ChatSession>>() {}.getType();
             List<com.example.petshop.model.entity.ChatSession> sessionList = gson.fromJson(json, type);
-
-            if (sessionList != null) {
-                sessions.postValue(new ArrayList<>(sessionList));
-                if (!sessionList.isEmpty()) {
-                    switchSession(sessionList.get(0).getId());
-                    return;
-                }
+            sessions.postValue(new ArrayList<>(sessionList));
+            if (!sessionList.isEmpty()) {
+                switchSession(sessionList.get(0).getId());
+                return;
             }
         }
-
         startNewChat();
     }
 
     public void switchSession(String sessionId) {
+        android.util.Log.d("ChatViewModel", "Switching to session: " + sessionId);
         currentSessionId.postValue(sessionId);
+        messages.postValue(new ArrayList<>()); // Clear messages trước khi load session mới
         loadChatHistory(sessionId);
     }
 
     private void loadChatHistory(String sessionId) {
+        android.util.Log.d("ChatViewModel", "Loading chat history for session: " + sessionId + ", userId: " + currentUserId);
         if (currentUserId == null || currentUserId.isEmpty()) {
+            android.util.Log.d("ChatViewModel", "Loading guest messages");
             loadGuestMessages(sessionId);
             return;
         }
@@ -316,11 +319,37 @@ public class ChatViewModel extends AndroidViewModel {
                 .get()
                 .addOnSuccessListener(queryDocumentSnapshots -> {
                     List<ChatMessage> history = queryDocumentSnapshots.toObjects(ChatMessage.class);
+                    android.util.Log.d("ChatViewModel", "Loaded " + (history != null ? history.size() : 0) + " messages");
                     messages.postValue(history != null ? history : new ArrayList<>());
 
                     if (history == null || history.isEmpty()) {
                         addWelcomeMessage();
                     }
+                })
+                .addOnFailureListener(e -> {
+                    android.util.Log.e("ChatViewModel", "Lỗi load chat history: " + e.getMessage());
+                    // Nếu lỗi là do composite index, thử load không có order
+                    FirebaseHelper.db().collection("users").document(currentUserId)
+                            .collection("chats")
+                            .whereEqualTo("sessionId", sessionId)
+                            .get()
+                            .addOnSuccessListener(queryDocumentSnapshots -> {
+                                List<ChatMessage> history = queryDocumentSnapshots.toObjects(ChatMessage.class);
+                                android.util.Log.d("ChatViewModel", "Loaded (fallback) " + (history != null ? history.size() : 0) + " messages");
+                                if (history != null && history.size() > 1) {
+                                    // Sort by timestamp nếu load được data
+                                    history.sort((a, b) -> Long.compare(a.getTimestamp(), b.getTimestamp()));
+                                }
+                                messages.postValue(history != null ? history : new ArrayList<>());
+                                if (history == null || history.isEmpty()) {
+                                    addWelcomeMessage();
+                                }
+                            })
+                            .addOnFailureListener(e2 -> {
+                                android.util.Log.e("ChatViewModel", "Lỗi load chat history (fallback): " + e2.getMessage());
+                                messages.postValue(new ArrayList<>());
+                                addWelcomeMessage();
+                            });
                 });
     }
 
@@ -328,7 +357,6 @@ public class ChatViewModel extends AndroidViewModel {
         String json = getApplication()
                 .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
                 .getString(KEY_GUEST_MSGS + "_" + sessionId, null);
-
         if (json != null && !json.isEmpty()) {
             Type listType = new TypeToken<List<ChatMessage>>() {}.getType();
             List<ChatMessage> history = gson.fromJson(json, listType);
@@ -435,6 +463,38 @@ public class ChatViewModel extends AndroidViewModel {
                         });
             }
         }
+    }
+
+    public void clearChatData() {
+        clearChatDataInternal();
+    }
+
+    private void clearChatDataInternal() {
+        // Clear local state
+        messages.postValue(new ArrayList<>());
+        sessions.postValue(new ArrayList<>());
+        currentSessionId.postValue(null);
+        selectedImageUri.postValue(null);
+        isTyping.postValue(false);
+        
+        // Clear SharedPreferences
+        getApplication()
+                .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE)
+                .edit()
+                .remove(KEY_GUEST_MSGS)
+                .remove(KEY_GUEST_SESSIONS)
+                .apply();
+        
+        // Clear all guest message keys
+        android.content.SharedPreferences prefs = getApplication()
+                .getSharedPreferences(PREFS_NAME, android.content.Context.MODE_PRIVATE);
+        android.content.SharedPreferences.Editor editor = prefs.edit();
+        for (String key : prefs.getAll().keySet()) {
+            if (key.startsWith(KEY_GUEST_MSGS)) {
+                editor.remove(key);
+            }
+        }
+        editor.apply();
     }
 
     public void startNewChat() {
