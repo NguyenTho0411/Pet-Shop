@@ -175,30 +175,37 @@ public class AdminOrderListActivity extends AppCompatActivity {
     }
 
     private void showStatusPicker(Order order) {
-        String[] statusLabels = {
-                "⏳ Chờ xác nhận",
-                "✅ Đã xác nhận",
-                "📦 Đang chuẩn bị",
-                "🚚 Đang giao hàng",
-                "📬 Đã giao hàng",
-                "🏁 Hoàn thành",
-                "❌ Huỷ đơn"
-        };
+        String currentStatus = order.getStatus();
+        List<String> statusLabels = new ArrayList<>();
+        List<String> statusValues = new ArrayList<>();
 
-        String[] statusValues = {
-                Order.STATUS_PENDING,
-                Order.STATUS_CONFIRMED,
-                Order.STATUS_PREPARING,
-                Order.STATUS_SHIPPING,
-                Order.STATUS_DELIVERED,
-                Order.STATUS_COMPLETED,
-                Order.STATUS_CANCELLED
-        };
+        if (Order.STATUS_PENDING.equals(currentStatus)) {
+            statusLabels.add("✅ Xác nhận đơn");
+            statusValues.add(Order.STATUS_CONFIRMED);
+        } else if (Order.STATUS_CONFIRMED.equals(currentStatus)) {
+            statusLabels.add("📦 Đang chuẩn bị");
+            statusValues.add(Order.STATUS_PREPARING);
+        } else if (Order.STATUS_PREPARING.equals(currentStatus)) {
+            statusLabels.add("🚚 Đang giao");
+            statusValues.add(Order.STATUS_SHIPPING);
+        } else if (Order.STATUS_SHIPPING.equals(currentStatus)) {
+            statusLabels.add("📬 Đã giao");
+            statusValues.add(Order.STATUS_DELIVERED);
+        }
+
+        // Always allow huỷ đơn từ mọi trạng thái quản lý
+        statusLabels.add("❌ Huỷ đơn");
+        statusValues.add(Order.STATUS_CANCELLED);
+
+        if (statusLabels.isEmpty()) {
+            Toast.makeText(this, "Không có trạng thái cập nhật phù hợp.", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         new AlertDialog.Builder(this)
                 .setTitle("Cập nhật trạng thái: " + order.getOrderCode())
-                .setItems(statusLabels, (dialog, which) -> {
-                    updateOrderStatus(order, statusValues[which]);
+                .setItems(statusLabels.toArray(new String[0]), (dialog, which) -> {
+                    updateOrderStatus(order, statusValues.get(which));
                 })
                 .setNegativeButton("Đóng", null)
                 .show();
@@ -229,7 +236,6 @@ public class AdminOrderListActivity extends AppCompatActivity {
             case Order.STATUS_PREPARING: return "Đang chuẩn bị";
             case Order.STATUS_SHIPPING: return "Đang giao";
             case Order.STATUS_DELIVERED: return "Đã giao";
-            case Order.STATUS_COMPLETED: return "Hoàn thành";
             case Order.STATUS_CANCELLED: return "Đã huỷ";
             case Order.STATUS_REFUNDED: return "Hoàn tiền";
             case Order.STATUS_WAIT_PAY: return "Chờ thanh toán";
@@ -245,8 +251,7 @@ public class AdminOrderListActivity extends AppCompatActivity {
             case Order.STATUS_CONFIRMED: return 0xFF5856D6;
             case Order.STATUS_PREPARING: return 0xFFFF9500;
             case Order.STATUS_SHIPPING: return 0xFF34AADC;
-            case Order.STATUS_DELIVERED:
-            case Order.STATUS_COMPLETED: return 0xFF34C759;
+            case Order.STATUS_DELIVERED: return 0xFF34C759;
             case Order.STATUS_CANCELLED: return 0xFFFF3B30;
             case Order.STATUS_REFUNDED: return 0xFFFF2D55;
             default: return 0xFF007AFF;

@@ -44,6 +44,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
             R.id.chipCancelled
     };
 
+    private static final int REQUEST_CODE_RETURN = 1001;
     private static final NumberFormat VND = NumberFormat.getInstance(new Locale("vi","VN"));
 
     @Override
@@ -186,7 +187,7 @@ public class OrderHistoryActivity extends AppCompatActivity {
                     Intent i = new Intent(OrderHistoryActivity.this, ReturnRequestActivity.class);
                     i.putExtra("order_id", order.getId());
                     i.putExtra("has_pet", hasPetItem(order));
-                    startActivity(i);
+                    startActivityForResult(i, REQUEST_CODE_RETURN);
                 });
 
                 // Pay now button for VNPay pending
@@ -312,6 +313,14 @@ public class OrderHistoryActivity extends AppCompatActivity {
             case Order.STATUS_CANCELLED: return 0xFFFF3B30;
             case Order.STATUS_REFUNDED:  return 0xFFFF9500;
             default: return 0xFF888888;
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CODE_RETURN && resultCode == RESULT_OK) {
+            loadOrders();
         }
     }
 }

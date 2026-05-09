@@ -28,6 +28,7 @@ import com.example.petshop.repository.UserRepository;
 import com.example.petshop.utils.FirebaseHelper;
 
 import java.text.NumberFormat;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -39,13 +40,12 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
     private static final String[] STATUS_OPTIONS = {
             Order.STATUS_CONFIRMED, Order.STATUS_PREPARING,
             Order.STATUS_SHIPPING,  Order.STATUS_DELIVERED,
-            Order.STATUS_COMPLETED, Order.STATUS_CANCELLED,
-            Order.STATUS_REFUNDED
+            Order.STATUS_CANCELLED, Order.STATUS_REFUNDED
     };
 
     private static final String[] STATUS_LABELS = {
             "✅ Xác nhận đơn", "📦 Đang chuẩn bị", "🚚 Đang giao",
-            "📬 Đã giao", "🏁 Hoàn thành", "❌ Huỷ đơn", "💸 Hoàn tiền"
+            "📬 Đã giao", "❌ Huỷ đơn", "💸 Hoàn tiền"
     };
 
     @Override
@@ -157,11 +157,37 @@ public class AdminOrderDetailActivity extends AppCompatActivity {
 
     private void showStatusPicker() {
         if (currentOrder == null) return;
+
+        List<String> statusLabels = new ArrayList<>();
+        List<String> statusValues = new ArrayList<>();
+        String currentStatus = currentOrder.getStatus();
+
+        if (Order.STATUS_PENDING.equals(currentStatus)) {
+            statusLabels.add("✅ Xác nhận đơn");
+            statusValues.add(Order.STATUS_CONFIRMED);
+        } else if (Order.STATUS_CONFIRMED.equals(currentStatus)) {
+            statusLabels.add("📦 Đang chuẩn bị");
+            statusValues.add(Order.STATUS_PREPARING);
+        } else if (Order.STATUS_PREPARING.equals(currentStatus)) {
+            statusLabels.add("🚚 Đang giao");
+            statusValues.add(Order.STATUS_SHIPPING);
+        } else if (Order.STATUS_SHIPPING.equals(currentStatus)) {
+            statusLabels.add("📬 Đã giao");
+            statusValues.add(Order.STATUS_DELIVERED);
+        }
+
+        statusLabels.add("❌ Huỷ đơn");
+        statusValues.add(Order.STATUS_CANCELLED);
+
+        if (statusLabels.isEmpty()) {
+            Toast.makeText(this, "Không có trạng thái cập nhật phù hợp.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         new AlertDialog.Builder(this)
                 .setTitle("Cập nhật trạng thái đơn hàng")
-                .setItems(STATUS_LABELS, (dialog, which) -> {
-                    String newStatus = STATUS_OPTIONS[which];
-                    updateOrderStatus(newStatus);
+                .setItems(statusLabels.toArray(new String[0]), (dialog, which) -> {
+                    updateOrderStatus(statusValues.get(which));
                 })
                 .setNegativeButton("Huỷ", null)
                 .show();

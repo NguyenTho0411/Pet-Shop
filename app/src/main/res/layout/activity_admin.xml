@@ -370,42 +370,6 @@
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <!-- Hoàn thành -->
-                <androidx.cardview.widget.CardView
-                    android:layout_width="0dp"
-                    android:layout_height="80dp"
-                    android:layout_columnWeight="1"
-                    android:layout_margin="4dp"
-                    app:cardCornerRadius="12dp"
-                    app:cardBackgroundColor="#C8E6C9"
-                    app:cardElevation="0dp">
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:gravity="center">
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="✅"
-                            android:textSize="18sp" />
-                        <TextView
-                            android:id="@+id/tvCompletedOrders"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="0"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:textColor="#2E7D32" />
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Hoàn thành"
-                            android:textSize="10sp"
-                            android:textColor="@color/text_secondary" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
-
                 <!-- Đã hủy -->
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
@@ -446,7 +410,8 @@
                 <androidx.cardview.widget.CardView
                     android:layout_width="0dp"
                     android:layout_height="80dp"
-                    android:layout_columnWeight="1"
+                    android:layout_columnWeight="2"
+                    android:layout_columnSpan="2"
                     android:layout_margin="4dp"
                     app:cardCornerRadius="12dp"
                     app:cardBackgroundColor="#FCE4EC"

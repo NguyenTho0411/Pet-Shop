@@ -31,7 +31,6 @@ public class AdminViewModel extends AndroidViewModel {
     private final MutableLiveData<Long> totalOrders = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> totalUsers = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> pendingOrders = new MutableLiveData<>(0L);
-    private final MutableLiveData<Long> completedOrders = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> cancelledOrders = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> refundedAmount = new MutableLiveData<>(0L);
     private final MutableLiveData<Long> preparingOrders = new MutableLiveData<>(0L);
@@ -53,7 +52,6 @@ public class AdminViewModel extends AndroidViewModel {
     public LiveData<Long> getTotalOrders() { return totalOrders; }
     public LiveData<Long> getTotalUsers() { return totalUsers; }
     public LiveData<Long> getPendingOrders() { return pendingOrders; }
-    public LiveData<Long> getCompletedOrders() { return completedOrders; }
     public LiveData<Long> getCancelledOrders() { return cancelledOrders; }
     public LiveData<Long> getRefundedAmount() { return refundedAmount; }
     public LiveData<Long> getPreparingOrders() { return preparingOrders; }
@@ -123,7 +121,6 @@ public class AdminViewModel extends AndroidViewModel {
     private void calculateOrderStats(QuerySnapshot snapshots) {
         long total = 0;
         long pending = 0;
-        long completed = 0;
         long cancelled = 0;
         long preparing = 0;
         long shipping = 0;
@@ -143,50 +140,33 @@ public class AdminViewModel extends AndroidViewModel {
 
             boolean isPaid = Order.PAY_STATUS_PAID.equals(paymentStatus)
                     || (Order.PAYMENT_COD.equals(paymentMethod)
-                    && (Order.STATUS_DELIVERED.equals(status) || Order.STATUS_COMPLETED.equals(status)));
+                    && (Order.STATUS_DELIVERED.equals(status)));
 
             switch (status != null ? status : "") {
-                case Order.STATUS_PENDING:
-                case Order.STATUS_WAIT_PAY:
-                case Order.STATUS_CONFIRMED:
-                    pending++;
-                    break;
-
-                case Order.STATUS_PREPARING:
-                    preparing++;
-                    break;
-
-                case Order.STATUS_SHIPPING:
-                    shipping++;
-                    break;
-
-                case Order.STATUS_DELIVERED:
-                    delivered++;
-                    if (isPaid) paidRevenue += amount.longValue();
-                    break;
-
-                case Order.STATUS_COMPLETED:
-                    completed++;
-                    if (isPaid) paidRevenue += amount.longValue();
-                    break;
-
                 case Order.STATUS_CANCELLED:
                     cancelled++;
                     break;
 
-                case Order.STATUS_RETURN_REQUESTED:
-                case Order.STATUS_RETURN_APPROVED:
-                    pending++;
+                case Order.STATUS_DELIVERED:
+                case Order.STATUS_COMPLETED:
+                    delivered++;
+                    if (isPaid) paidRevenue += amount.longValue();
                     break;
 
                 case Order.STATUS_REFUNDED:
                     refundedOrders++;
                     refundedMoney += amount.longValue();
                     break;
+
+                default:
+                    // Các đơn chưa được đánh là Đã giao / Hoàn thành / Đã hủy / Hoàn tiền
+                    pending++;
+                    break;
             }
         }
 
-        long activeOrders = Math.max(0, total - cancelled - refundedOrders);
+        // Count refunded orders as part of total orders, only exclude cancelled orders.
+        long activeOrders = Math.max(0, total - cancelled);
         long netRevenue = Math.max(0, paidRevenue - refundedMoney);
 
         totalOrders.postValue(activeOrders);
@@ -194,7 +174,6 @@ public class AdminViewModel extends AndroidViewModel {
         preparingOrders.postValue(preparing);
         shippingOrders.postValue(shipping);
         deliveredOrders.postValue(delivered);
-        completedOrders.postValue(completed);
         cancelledOrders.postValue(cancelled);
         totalRevenue.postValue(netRevenue);
         refundedAmount.postValue(refundedMoney);
@@ -213,7 +192,6 @@ public class AdminViewModel extends AndroidViewModel {
         preparingOrders.postValue(0L);
         shippingOrders.postValue(0L);
         deliveredOrders.postValue(0L);
-        completedOrders.postValue(0L);
         cancelledOrders.postValue(0L);
         totalRevenue.postValue(0L);
         refundedAmount.postValue(0L);

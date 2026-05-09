@@ -124,6 +124,17 @@
                 app:backgroundTint="#4CAF50"
                 style="@style/Widget.MaterialComponents.Button" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnDeleteRequest"
+                android:layout_width="wrap_content" android:layout_height="36dp"
+                android:text="Xóa"
+                android:textSize="12sp"
+                app:strokeColor="@color/text_hint"
+                app:cornerRadius="8dp"
+                android:textColor="@color/text_secondary"
+                android:visibility="gone"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
+
         </LinearLayout>
 
     </LinearLayout>

@@ -139,6 +139,48 @@ public class ReturnRepository {
         .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    /** Xóa yêu cầu hoàn trả đã hoàn tiền hoặc từ chối. */
+    public void delete(String returnId, Callback<Void> cb) {
+        // First get the return request to know its status and orderId
+        db.collection(COL_RETURNS).document(returnId).get()
+                .addOnSuccessListener(doc -> {
+                    if (!doc.exists()) {
+                        cb.onFailure("Yêu cầu hoàn trả không tồn tại");
+                        return;
+                    }
+                    String status = doc.getString("status");
+                    String orderId = doc.getString("orderId");
+                    if (orderId == null) {
+                        cb.onFailure("Không tìm thấy orderId");
+                        return;
+                    }
+
+                    // If refunded, rollback order status
+                    if (ReturnRequest.STATUS_REFUNDED.equals(status)) {
+                        db.runTransaction(tx -> {
+                            // Delete return request
+                            tx.delete(db.collection(COL_RETURNS).document(returnId));
+
+                            // Rollback order to DELIVERED and payment to PAID
+                            Map<String, Object> ordUpd = new HashMap<>();
+                            ordUpd.put("status", Order.STATUS_DELIVERED);
+                            ordUpd.put("paymentStatus", Order.PAY_STATUS_PAID);
+                            ordUpd.put("updatedAt", now());
+                            tx.update(db.collection(COL_ORDERS).document(orderId), ordUpd);
+                            return null;
+                        })
+                        .addOnSuccessListener(v -> cb.onSuccess(null))
+                        .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                    } else {
+                        // For rejected or other, just delete
+                        db.collection(COL_RETURNS).document(returnId).delete()
+                                .addOnSuccessListener(v -> cb.onSuccess(null))
+                                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                    }
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     /** Admin từ chối yêu cầu: PENDING → REJECTED, order → DELIVERED (rollback). */
     public void reject(String returnId, String orderId, String note, Callback<Void> cb) {
         String ts = now();

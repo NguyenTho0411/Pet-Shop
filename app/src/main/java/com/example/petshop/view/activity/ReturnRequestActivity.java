@@ -135,6 +135,7 @@ public class ReturnRequestActivity extends AppCompatActivity {
         new ReturnRepository().create(req, new ReturnRepository.Callback<String>() {
             public void onSuccess(String id) {
                 runOnUiThread(() -> {
+                    setResult(RESULT_OK);
                     Toast.makeText(ReturnRequestActivity.this,
                             "Yêu cầu trả hàng đã được gửi. Chúng tôi sẽ liên hệ trong 24h.",
                             Toast.LENGTH_LONG).show();

@@ -26,7 +26,7 @@ public class AdminActivity extends AppCompatActivity {
 
     // Views cho Dashboard Stats
     private TextView tvRevenue, tvTotalOrders, tvTotalUsers, tvPendingOrders;
-    private TextView tvCompletedOrders, tvCancelledOrders, tvRefundedAmount;
+    private TextView tvCancelledOrders, tvRefundedAmount;
     private TextView tvPreparingOrders, tvShippingOrders, tvDeliveredOrders;
     private View loadingView;
 
@@ -79,7 +79,6 @@ public class AdminActivity extends AppCompatActivity {
         tvPendingOrders = findViewById(R.id.tvPendingOrders);
         
         // Các stat mới
-        tvCompletedOrders = findViewById(R.id.tvCompletedOrders);
         tvCancelledOrders = findViewById(R.id.tvCancelledOrders);
         tvRefundedAmount = findViewById(R.id.tvRefundedAmount);
         tvPreparingOrders = findViewById(R.id.tvPreparingOrders);
@@ -155,13 +154,6 @@ public class AdminActivity extends AppCompatActivity {
         viewModel.getDeliveredOrders().observe(this, delivered -> {
             if (delivered != null && tvDeliveredOrders != null) {
                 tvDeliveredOrders.setText(String.valueOf(delivered));
-            }
-        });
-
-        // Đơn hoàn thành
-        viewModel.getCompletedOrders().observe(this, completed -> {
-            if (completed != null && tvCompletedOrders != null) {
-                tvCompletedOrders.setText(String.valueOf(completed));
             }
         });
 

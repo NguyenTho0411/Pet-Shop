@@ -21,6 +21,7 @@ import com.example.petshop.repository.ReturnRepository;
 import com.example.petshop.view.dialog.ConfirmDialog;
 import com.example.petshop.view.dialog.DialogUtils;
 import com.google.android.material.chip.Chip;
+import com.google.android.material.chip.ChipGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
@@ -39,6 +40,7 @@ public class AdminReturnListActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private TextView tvEmpty;
     private ReturnAdapter adapter;
+    private ChipGroup chipGroupFilters;
 
     private List<ReturnRequest> allReturns = new ArrayList<>();
     private String currentFilter = null; // null = all
@@ -56,6 +58,7 @@ public class AdminReturnListActivity extends AppCompatActivity {
         adapter = new ReturnAdapter();
         rvReturns.setAdapter(adapter);
 
+        chipGroupFilters = findViewById(R.id.chipGroupFilters);
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
         setupChips();
@@ -64,18 +67,44 @@ public class AdminReturnListActivity extends AppCompatActivity {
 
     private void setupChips() {
         setupChip(R.id.chipAll,      null);
-        setupChip(R.id.chipPending,  ReturnRequest.STATUS_PENDING);
-        setupChip(R.id.chipApproved, ReturnRequest.STATUS_APPROVED);
-        setupChip(R.id.chipRefunded, ReturnRequest.STATUS_REFUNDED);
         setupChip(R.id.chipRejected, ReturnRequest.STATUS_REJECTED);
+
+        if (chipGroupFilters != null) {
+            chipGroupFilters.setOnCheckedChangeListener((group, checkedId) -> {
+                currentFilter = getFilterByChipId(checkedId);
+                applyFilter();
+                updateChipStyles(checkedId);
+            });
+            updateChipStyles(chipGroupFilters.getCheckedChipId());
+        }
     }
 
     private void setupChip(int chipId, String filter) {
         Chip chip = findViewById(chipId);
-        chip.setOnClickListener(v -> {
-            currentFilter = filter;
-            applyFilter();
-        });
+        if (chip != null) {
+            chip.setTag(filter);
+        }
+    }
+
+    private String getFilterByChipId(int chipId) {
+        if (chipId < 0) return null;
+        Chip chip = findViewById(chipId);
+        if (chip == null) return null;
+        Object tag = chip.getTag();
+        return tag instanceof String ? (String) tag : null;
+    }
+
+    private void updateChipStyles(int selectedId) {
+        if (chipGroupFilters == null) return;
+        for (int i = 0; i < chipGroupFilters.getChildCount(); i++) {
+            View child = chipGroupFilters.getChildAt(i);
+            if (!(child instanceof Chip)) continue;
+            Chip chip = (Chip) child;
+            boolean selected = chip.getId() == selectedId;
+            chip.setChipBackgroundColorResource(selected ? android.R.color.holo_orange_light : android.R.color.white);
+            chip.setTextColor(selected ? getResources().getColor(android.R.color.white, null)
+                    : getResources().getColor(android.R.color.black, null));
+        }
     }
 
     private void loadReturns() {
@@ -196,6 +225,35 @@ public class AdminReturnListActivity extends AppCompatActivity {
             }, "markRefundedDialog");
     }
 
+    private void onDeleteReturn(ReturnRequest r) {
+        DialogUtils.showConfirmDialog(this, "Xóa yêu cầu hoàn trả",
+                "Bạn có chắc muốn xóa yêu cầu hoàn trả của đơn " + r.getOrderCode() + "?",
+                "Xóa", "Huỷ",
+                new ConfirmDialog.OnConfirmListener() {
+                    @Override
+                    public void onConfirm() {
+                        repo.delete(r.getId(), new ReturnRepository.Callback<Void>() {
+                            public void onSuccess(Void v) {
+                                runOnUiThread(() -> {
+                                    Toast.makeText(AdminReturnListActivity.this,
+                                            "Đã xóa yêu cầu hoàn trả", Toast.LENGTH_SHORT).show();
+                                    loadReturns();
+                                });
+                            }
+                            public void onFailure(String err) {
+                                runOnUiThread(() -> Toast.makeText(AdminReturnListActivity.this,
+                                        "Lỗi: " + err, Toast.LENGTH_LONG).show());
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onCancel() {
+                        // Không làm gì
+                    }
+                }, "deleteReturnDialog");
+    }
+
     // ── Adapter ──────────────────────────────────────────────────────────────
 
     class ReturnAdapter extends RecyclerView.Adapter<ReturnAdapter.VH> {
@@ -242,6 +300,7 @@ public class AdminReturnListActivity extends AppCompatActivity {
             h.btnApprove.setVisibility(View.GONE);
             h.btnReject.setVisibility(View.GONE);
             h.btnMarkRefunded.setVisibility(View.GONE);
+            h.btnDeleteRequest.setVisibility(View.GONE);
 
             if (r.isPending()) {
                 h.btnApprove.setVisibility(View.VISIBLE);
@@ -251,6 +310,9 @@ public class AdminReturnListActivity extends AppCompatActivity {
             } else if (r.isApproved()) {
                 h.btnMarkRefunded.setVisibility(View.VISIBLE);
                 h.btnMarkRefunded.setOnClickListener(v -> onMarkRefunded(r));
+            } else if (r.isRefunded() || r.isRejected()) {
+                h.btnDeleteRequest.setVisibility(View.VISIBLE);
+                h.btnDeleteRequest.setOnClickListener(v -> onDeleteReturn(r));
             }
         }
 
@@ -282,7 +344,7 @@ public class AdminReturnListActivity extends AppCompatActivity {
             TextView tvOrderCode, tvCustomerName, tvReason, tvStatus,
                      tvBankName, tvBankAccount, tvRefundAmount, tvCreatedAt;
             View llBankInfo;
-            Button btnApprove, btnReject, btnMarkRefunded;
+            Button btnApprove, btnReject, btnMarkRefunded, btnDeleteRequest;
 
             VH(View v) {
                 super(v);
@@ -298,6 +360,7 @@ public class AdminReturnListActivity extends AppCompatActivity {
                 btnApprove     = v.findViewById(R.id.btnApprove);
                 btnReject      = v.findViewById(R.id.btnReject);
                 btnMarkRefunded= v.findViewById(R.id.btnMarkRefunded);
+                btnDeleteRequest = v.findViewById(R.id.btnDeleteRequest);
             }
         }
     }

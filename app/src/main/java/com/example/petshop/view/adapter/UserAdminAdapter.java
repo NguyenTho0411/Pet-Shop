@@ -63,6 +63,9 @@ public class UserAdminAdapter extends RecyclerView.Adapter<UserAdminAdapter.VH> 
 
         if (u.getAvatarUrl() != null && !u.getAvatarUrl().isEmpty()) {
             Glide.with(h.itemView).load(u.getAvatarUrl()).into(h.ivAvatar);
+        } else {
+            Glide.with(h.itemView).clear(h.ivAvatar);
+            h.ivAvatar.setImageDrawable(null);
         }
 
         h.btnMore.setOnClickListener(v -> showPopup(v.getContext(), v, u));
