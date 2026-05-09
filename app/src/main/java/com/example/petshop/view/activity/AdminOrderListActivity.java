@@ -16,8 +16,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.petshop.R;
+import com.example.petshop.model.entity.Notification;
 import com.example.petshop.model.entity.Order;
 import com.example.petshop.repository.OrderRepository;
+import com.example.petshop.repository.NotificationRepository;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.chip.ChipGroup;
 
@@ -219,6 +221,7 @@ public class AdminOrderListActivity extends AppCompatActivity {
                     Toast.makeText(AdminOrderListActivity.this, "Đã cập nhật trạng thái!", Toast.LENGTH_SHORT).show();
                     loadOrders();
                 });
+                sendOrderStatusNotification(order, newStatus);
             }
 
             @Override
@@ -226,6 +229,44 @@ public class AdminOrderListActivity extends AppCompatActivity {
                 runOnUiThread(() -> Toast.makeText(AdminOrderListActivity.this, "Lỗi: " + error, Toast.LENGTH_SHORT).show());
             }
         });
+    }
+
+    private void sendOrderStatusNotification(Order order, String newStatus) {
+        if (order == null || order.getUserId() == null) return;
+
+        String title = "Cập nhật đơn hàng " + (order.getOrderCode() != null ? order.getOrderCode() : "");
+        String message = getStatusNotificationMessage(newStatus);
+
+        Notification notif = new Notification();
+        notif.setUserId(order.getUserId());
+        notif.setTitle(title);
+        notif.setMessage(message);
+        notif.setType("ORDER");
+        notif.setOrderId(order.getId());
+
+        new NotificationRepository().createNotificationAsync(notif);
+    }
+
+    private String getStatusNotificationMessage(String status) {
+        if (status == null) return "Trạng thái đơn hàng đã được cập nhật.";
+        switch (status) {
+            case Order.STATUS_CONFIRMED:
+                return "Đơn hàng của bạn đã được xác nhận và đang được chuẩn bị.";
+            case Order.STATUS_PREPARING:
+                return "Đơn hàng của bạn đang được chuẩn bị.";
+            case Order.STATUS_SHIPPING:
+                return "Đơn hàng của bạn đang được giao đến bạn!";
+            case Order.STATUS_DELIVERED:
+                return "Đơn hàng của bạn đã được giao thành công.";
+            case Order.STATUS_COMPLETED:
+                return "Đơn hàng của bạn đã hoàn thành. Cảm ơn bạn đã mua sắm!";
+            case Order.STATUS_CANCELLED:
+                return "Rất tiếc, đơn hàng của bạn đã bị hủy.";
+            case Order.STATUS_REFUNDED:
+                return "Đơn hàng của bạn đã được hoàn tiền.";
+            default:
+                return "Trạng thái đơn hàng: " + status;
+        }
     }
 
     private String getStatusLabel(String status) {

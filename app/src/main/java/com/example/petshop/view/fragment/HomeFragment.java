@@ -37,8 +37,10 @@ import com.example.petshop.view.activity.PromotionActivity;
 import com.example.petshop.view.adapter.HomeCategoryAdapter;
 import com.example.petshop.view.adapter.HomeFoodAdapter;
 import com.example.petshop.view.adapter.HomePetAdapter;
+import com.example.petshop.repository.NotificationRepository;
 import com.example.petshop.viewmodel.CartViewModel;
 import com.example.petshop.viewmodel.HomeViewModel;
+import com.google.firebase.firestore.ListenerRegistration;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -54,11 +56,13 @@ public class HomeFragment extends Fragment {
     private HomeFoodAdapter     foodAdapter;
     private TextView            tvGreeting, tvTimeGreeting;
     private View                tvCartBadge;
+    private TextView            tvNotificationBadge;
     private Button              btnLoginTopBar;
     private EditText            etSearch;
     private View                rootView;
     private String currentCategoryType = null;
     private String currentCategoryName = null;
+    private ListenerRegistration unreadNotifListener;
 
     @Nullable @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -79,11 +83,19 @@ public class HomeFragment extends Fragment {
     }
 
     @Override public void onResume() { super.onResume(); updateTopBar(); }
+    @Override public void onStop() {
+        super.onStop();
+        if (unreadNotifListener != null) {
+            unreadNotifListener.remove();
+            unreadNotifListener = null;
+        }
+    }
 
     private void bindViews(View root) {
         tvGreeting     = root.findViewById(R.id.tvGreeting);
         tvTimeGreeting = root.findViewById(R.id.tvTimeGreeting);
         tvCartBadge    = root.findViewById(R.id.tvCartBadge);
+        tvNotificationBadge = root.findViewById(R.id.tvNotificationBadge);
         btnLoginTopBar = root.findViewById(R.id.btnLoginTopBar);
 
         btnLoginTopBar.setOnClickListener(v ->
@@ -92,8 +104,21 @@ public class HomeFragment extends Fragment {
         root.findViewById(R.id.btnCart).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), CartActivity.class)));
 
-        root.findViewById(R.id.btnNotification).setOnClickListener(v ->
-                startActivity(new Intent(requireContext(), NotificationActivity.class)));
+        root.findViewById(R.id.btnNotification).setOnClickListener(v -> {
+            // Hide badge immediately when user opens notification screen
+            if (tvNotificationBadge != null) tvNotificationBadge.setVisibility(View.GONE);
+
+            // Mark all as read (best effort)
+            String uid = FirebaseHelper.getCurrentUser() != null ? FirebaseHelper.getCurrentUser().getUid() : null;
+            if (uid != null) {
+                new NotificationRepository().markAllAsRead(uid, new NotificationRepository.Callback<Void>() {
+                    @Override public void onSuccess(Void data) { /* no-op */ }
+                    @Override public void onFailure(String error) { /* no-op */ }
+                });
+            }
+
+            startActivity(new Intent(requireContext(), NotificationActivity.class));
+        });
 
         root.findViewById(R.id.cardPromo).setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), PromotionActivity.class)));
@@ -215,6 +240,45 @@ public class HomeFragment extends Fragment {
                 btnLoginTopBar.setVisibility(View.VISIBLE);
             }
         }
+
+        startUnreadNotificationListener();
+    }
+
+    private void startUnreadNotificationListener() {
+        if (tvNotificationBadge == null) return;
+        String uid = FirebaseHelper.getCurrentUser() != null ? FirebaseHelper.getCurrentUser().getUid() : null;
+        if (uid == null) {
+            tvNotificationBadge.setVisibility(View.GONE);
+            return;
+        }
+
+        if (unreadNotifListener != null) return;
+
+        unreadNotifListener = new NotificationRepository().listenUnreadCount(uid, new NotificationRepository.Callback<Long>() {
+            @Override
+            public void onSuccess(Long data) {
+                long count = data != null ? data : 0L;
+                if (getActivity() == null) return;
+                getActivity().runOnUiThread(() -> renderUnreadBadge(count));
+            }
+
+            @Override
+            public void onFailure(String error) {
+                if (getActivity() == null) return;
+                getActivity().runOnUiThread(() -> tvNotificationBadge.setVisibility(View.GONE));
+            }
+        });
+    }
+
+    private void renderUnreadBadge(long count) {
+        if (tvNotificationBadge == null) return;
+        if (count <= 0) {
+            tvNotificationBadge.setVisibility(View.GONE);
+            return;
+        }
+
+        tvNotificationBadge.setVisibility(View.VISIBLE);
+        tvNotificationBadge.setText(count > 9 ? "9+" : String.valueOf(count));
     }
 
     private String getTimeGreeting() {

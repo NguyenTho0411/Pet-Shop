@@ -3,6 +3,7 @@ package com.example.petshop.repository;
 import com.example.petshop.model.entity.User;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
+import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -17,6 +18,7 @@ public class UserRepository {
     }
 
     private static final String COL = "users";
+    private static final String COL_ORDERS = "orders";
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     public void getAllUsers(Callback<List<User>> cb) {
@@ -79,9 +81,28 @@ public class UserRepository {
     }
 
     public void deleteUser(String uid, Callback<Void> cb) {
-        db.collection(COL).document(uid)
-                .delete()
-                .addOnSuccessListener(v -> cb.onSuccess(null))
+        if (uid == null || uid.trim().isEmpty()) {
+            cb.onFailure("UID không hợp lệ");
+            return;
+        }
+
+        // Xóa cascade các đơn hàng thuộc user trước khi xóa user (đảm bảo thống kê không bị lệch).
+        // Lưu ý: Firestore batch giới hạn 500 operations; nếu user có quá nhiều đơn,
+        // cần chia batch. Ở app demo, số lượng thường không lớn.
+        db.collection(COL_ORDERS)
+                .whereEqualTo("userId", uid)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    WriteBatch batch = db.batch();
+                    for (var doc : snap.getDocuments()) {
+                        batch.delete(doc.getReference());
+                    }
+                    batch.delete(db.collection(COL).document(uid));
+
+                    batch.commit()
+                            .addOnSuccessListener(v -> cb.onSuccess(null))
+                            .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 

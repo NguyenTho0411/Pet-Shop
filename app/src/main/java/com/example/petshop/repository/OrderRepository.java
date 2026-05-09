@@ -7,6 +7,7 @@ import com.example.petshop.model.entity.Pet;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.Transaction;
 
@@ -314,6 +315,10 @@ public class OrderRepository {
     }
 
     public void updateStatus(String orderId, String newStatus, String note, Callback<Void> cb) {
+        final long[] deltaOrders = {0L};
+        final double[] deltaSpent = {0.0};
+        final String[] userIdHolder = {null};
+
         db.runTransaction((Transaction.Function<Void>) tx -> {
                     DocumentReference orderRef = db.collection(COL_ORDERS).document(orderId);
                     DocumentSnapshot orderSnap = tx.get(orderRef);
@@ -364,28 +369,27 @@ public class OrderRepository {
                     boolean willCount = countsForCustomerStats(newStatus, nextPaymentStatus, paymentMethod);
 
                     if (wasCounted != willCount) {
-                        DocumentReference userRef = db.collection(COL_USERS).document(order.getUserId());
-                        DocumentSnapshot userSnap = tx.get(userRef);
-
-                        if (userSnap.exists()) {
-                            long totalOrders = userSnap.getLong("totalOrders") != null
-                                    ? userSnap.getLong("totalOrders") : 0;
-                            double totalSpent = userSnap.getDouble("totalSpent") != null
-                                    ? userSnap.getDouble("totalSpent") : 0.0;
-
-                            long deltaOrders = willCount ? 1 : -1;
-                            double deltaSpent = willCount ? order.getTotalAmount() : -order.getTotalAmount();
-
-                            tx.update(userRef,
-                                    "totalOrders", Math.max(0, totalOrders + deltaOrders),
-                                    "totalSpent", Math.max(0, totalSpent + deltaSpent));
-                        }
+                        // NOTE:
+                        // Một số project cấu hình Firestore Rules chỉ cho phép admin update "orders"
+                        // nhưng KHÔNG cho phép client update "users" (tránh bị gian lận thống kê).
+                        // Vì vậy, cập nhật thống kê user được tách ra khỏi transaction:
+                        // - Transaction vẫn update "orders" (không bị chặn khi chuyển DELIVERED)
+                        // - Sau đó best-effort update "users" bằng FieldValue.increment
+                        userIdHolder[0] = order.getUserId();
+                        deltaOrders[0] = willCount ? 1 : -1;
+                        deltaSpent[0] = willCount ? order.getTotalAmount() : -order.getTotalAmount();
                     }
 
                     tx.update(orderRef, updates);
                     return null;
                 })
-                .addOnSuccessListener(v -> cb.onSuccess(null))
+                .addOnSuccessListener(v -> {
+                    // Update user stats in background (best-effort)
+                    if (userIdHolder[0] != null && (deltaOrders[0] != 0L || deltaSpent[0] != 0.0)) {
+                        updateUserStatsBestEffort(userIdHolder[0], deltaOrders[0], deltaSpent[0]);
+                    }
+                    cb.onSuccess(null);
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
@@ -462,5 +466,19 @@ public class OrderRepository {
 
     private String now() {
         return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(new Date());
+    }
+
+    private void updateUserStatsBestEffort(String userId, long deltaOrders, double deltaSpent) {
+        if (userId == null || userId.trim().isEmpty()) return;
+
+        Map<String, Object> upd = new HashMap<>();
+        if (deltaOrders != 0L) upd.put("totalOrders", FieldValue.increment(deltaOrders));
+        if (deltaSpent != 0.0) upd.put("totalSpent", FieldValue.increment(deltaSpent));
+        upd.put("updatedAt", now());
+
+        db.collection(COL_USERS).document(userId)
+                .update(upd)
+                .addOnFailureListener(e ->
+                        android.util.Log.w("OrderRepo", "Best-effort user stats update failed: " + e.getMessage()));
     }
 }

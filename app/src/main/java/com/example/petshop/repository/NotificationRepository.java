@@ -3,11 +3,14 @@ package com.example.petshop.repository;
 import com.example.petshop.model.entity.Notification;
 import com.example.petshop.model.entity.User;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.ListenerRegistration;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class NotificationRepository {
 
@@ -77,7 +80,7 @@ public class NotificationRepository {
 
     public void markAsRead(String notificationId, Callback<Void> cb) {
         db.collection(COL).document(notificationId)
-                .update("isRead", true)
+                .update("isRead", true, "read", true)
                 .addOnSuccessListener(v -> {
                     android.util.Log.d("NotificationRepo", "markAsRead: id=" + notificationId);
                     cb.onSuccess(null);
@@ -92,13 +95,16 @@ public class NotificationRepository {
         android.util.Log.d("NotificationRepo", "markAllAsRead: userId=" + userId);
         db.collection(COL)
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("isRead", false)
                 .get()
                 .addOnSuccessListener(snap -> {
-                    android.util.Log.d("NotificationRepo", "markAllAsRead: found " + snap.size() + " unread notifications");
+                    long unreadCount = 0L;
                     for (var doc : snap.getDocuments()) {
-                        doc.getReference().update("isRead", true);
+                        if (isUnread(doc)) {
+                            unreadCount++;
+                            doc.getReference().update("isRead", true, "read", true);
+                        }
                     }
+                    android.util.Log.d("NotificationRepo", "markAllAsRead: found " + unreadCount + " unread notifications");
                     cb.onSuccess(null);
                 })
                 .addOnFailureListener(e -> {
@@ -114,7 +120,7 @@ public class NotificationRepository {
     }
 
     public void createNotification(Notification notification, Callback<String> cb) {
-        String id = System.currentTimeMillis() + "_" + notification.getUserId();
+        String id = UUID.randomUUID().toString() + "_" + notification.getUserId();
         notification.setId(id);
         notification.setCreatedAt(Timestamp.now().toString());
         notification.setRead(false);
@@ -124,11 +130,15 @@ public class NotificationRepository {
     }
 
     public void createNotificationAsync(Notification notification) {
-        String id = System.currentTimeMillis() + "_" + notification.getUserId();
+        String id = UUID.randomUUID().toString() + "_" + notification.getUserId();
         notification.setId(id);
         notification.setCreatedAt(Timestamp.now().toString());
         notification.setRead(false);
-        db.collection(COL).document(id).set(notification);
+        db.collection(COL).document(id).set(notification)
+                .addOnSuccessListener(v ->
+                        android.util.Log.d("NotificationRepo", "createNotificationAsync OK: id=" + id + ", to=" + notification.getUserId()))
+                .addOnFailureListener(e ->
+                        android.util.Log.e("NotificationRepo", "createNotificationAsync FAILED: " + e.getMessage()));
     }
 
     public void sendToAllCustomers(String title, String message, String type, String orderId, List<com.example.petshop.model.entity.User> customers) {
@@ -138,7 +148,7 @@ public class NotificationRepository {
 
         for (User user : customers) {
             com.google.firebase.firestore.WriteBatch batch = db.batch();
-            String notifId = System.currentTimeMillis() + "_" + user.getId();
+            String notifId = UUID.randomUUID().toString() + "_" + user.getId();
             Notification notif = new Notification();
             notif.setId(notifId);
             notif.setUserId(user.getId());
@@ -156,12 +166,42 @@ public class NotificationRepository {
     public void getUnreadCount(String userId, Callback<Long> cb) {
         db.collection(COL)
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("isRead", false)
                 .get()
-                .addOnSuccessListener(snap -> cb.onSuccess((long) snap.size()))
+                .addOnSuccessListener(snap -> cb.onSuccess(countUnread(snap.getDocuments())))
                 .addOnFailureListener(e -> {
                     e.printStackTrace();
                     cb.onSuccess(0L);
                 });
+    }
+
+    public ListenerRegistration listenUnreadCount(String userId, Callback<Long> cb) {
+        return db.collection(COL)
+                .whereEqualTo("userId", userId)
+                .addSnapshotListener((snap, e) -> {
+                    if (e != null) {
+                        cb.onSuccess(0L);
+                        return;
+                    }
+                    cb.onSuccess(snap != null ? countUnread(snap.getDocuments()) : 0L);
+                });
+    }
+
+    private long countUnread(List<? extends DocumentSnapshot> docs) {
+        long unreadCount = 0L;
+        for (DocumentSnapshot doc : docs) {
+            if (isUnread(doc)) unreadCount++;
+        }
+        return unreadCount;
+    }
+
+    private boolean isUnread(DocumentSnapshot doc) {
+        Boolean isRead = doc.getBoolean("isRead");
+        if (isRead != null) return !isRead;
+
+        Boolean legacyRead = doc.getBoolean("read");
+        if (legacyRead != null) return !legacyRead;
+
+        // Backward compatibility: old docs without read flags are treated as unread.
+        return true;
     }
 }

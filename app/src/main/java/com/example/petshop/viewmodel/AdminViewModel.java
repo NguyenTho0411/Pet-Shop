@@ -13,7 +13,11 @@ import com.google.firebase.firestore.EventListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.ListenerRegistration;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * AdminViewModel - MVVM Pattern cho Admin Dashboard
@@ -43,6 +47,8 @@ public class AdminViewModel extends AndroidViewModel {
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
     private ListenerRegistration ordersListener;
     private ListenerRegistration usersListener;
+    private QuerySnapshot lastOrderSnapshots;
+    private final Set<String> activeCustomerIds = new HashSet<>();
 
     public AdminViewModel(@NonNull Application application) {
         super(application);
@@ -92,11 +98,13 @@ public class AdminViewModel extends AndroidViewModel {
                         }
 
                         if (snapshots == null || snapshots.isEmpty()) {
+                            lastOrderSnapshots = null;
                             resetOrderStats();
                             isLoading.postValue(false);
                             return;
                         }
 
+                        lastOrderSnapshots = snapshots;
                         calculateOrderStats(snapshots);
                         isLoading.postValue(false);
                         Log.d(TAG, "Orders updated: " + snapshots.size() + " documents");
@@ -112,45 +120,79 @@ public class AdminViewModel extends AndroidViewModel {
                         return;
                     }
 
-                    int count = snapshots != null ? snapshots.size() : 0;
-                    totalUsers.postValue((long) count);
-                    Log.d(TAG, "Users updated: " + count);
+                    if (snapshots == null) {
+                        totalUsers.postValue(0L);
+                        activeCustomerIds.clear();
+                        if (lastOrderSnapshots != null) calculateOrderStats(lastOrderSnapshots);
+                        return;
+                    }
+
+                    totalUsers.postValue((long) snapshots.size());
+
+                    activeCustomerIds.clear();
+                    for (QueryDocumentSnapshot doc : snapshots) {
+                        String role = doc.getString("role");
+                        String status = doc.getString("status");
+                        if ("CUSTOMER".equals(role) && "ACTIVE".equals(status)) {
+                            activeCustomerIds.add(doc.getId());
+                        }
+                    }
+
+                    // Recalculate order stats when user activity changes
+                    if (lastOrderSnapshots != null) calculateOrderStats(lastOrderSnapshots);
+                    Log.d(TAG, "Users updated: total=" + snapshots.size() + ", activeCustomers=" + activeCustomerIds.size());
                 });
     }
 
     private void calculateOrderStats(QuerySnapshot snapshots) {
-        long total = 0;
-        long pending = 0;
+        long totalConsidered = 0;   // orders of ACTIVE customers only
+        long pending = 0;           // all non-final states
         long cancelled = 0;
         long preparing = 0;
         long shipping = 0;
-        long delivered = 0;
-        long paidRevenue = 0;
+        long delivered = 0;         // delivered-like for UI tiles
+        long countedOrders = 0;     // "Tổng đơn hàng" theo rule COD/VNPAY
+        long revenue = 0;           // doanh thu theo rule COD/VNPAY
         long refundedOrders = 0;
         long refundedMoney = 0;
 
         for (var doc : snapshots.getDocuments()) {
-            total++;
-
             String status = doc.getString("status");
             String paymentStatus = doc.getString("paymentStatus");
             String paymentMethod = doc.getString("paymentMethod");
             Double amount = doc.getDouble("totalAmount");
             if (amount == null) amount = 0.0;
 
-            boolean isPaid = Order.PAY_STATUS_PAID.equals(paymentStatus)
-                    || (Order.PAYMENT_COD.equals(paymentMethod)
-                    && (Order.STATUS_DELIVERED.equals(status)));
+            String userId = doc.getString("userId");
+            // Only count orders of ACTIVE customers
+            if (userId == null || !activeCustomerIds.contains(userId)) {
+                continue;
+            }
+
+            totalConsidered++;
+
+            boolean isCancelled = Order.STATUS_CANCELLED.equals(status);
+            boolean isRefunded = Order.STATUS_REFUNDED.equals(status)
+                    || Order.PAY_STATUS_REFUNDED.equals(paymentStatus);
+
+            boolean isCountedByRule =
+                    (!isCancelled && !isRefunded) && (
+                            // COD: only counted when delivered/completed
+                            (Order.PAYMENT_COD.equals(paymentMethod)
+                                    && (Order.STATUS_DELIVERED.equals(status) || Order.STATUS_COMPLETED.equals(status)))
+                                    ||
+                            // VNPAY: counted when payment succeeded (count once, regardless of later delivered)
+                            (Order.PAYMENT_VNPAY.equals(paymentMethod) && Order.PAY_STATUS_PAID.equals(paymentStatus))
+                    );
+
+            if (isCountedByRule) {
+                countedOrders++;
+                revenue += amount.longValue();
+            }
 
             switch (status != null ? status : "") {
                 case Order.STATUS_CANCELLED:
                     cancelled++;
-                    break;
-
-                case Order.STATUS_DELIVERED:
-                case Order.STATUS_COMPLETED:
-                    delivered++;
-                    if (isPaid) paidRevenue += amount.longValue();
                     break;
 
                 case Order.STATUS_REFUNDED:
@@ -158,18 +200,41 @@ public class AdminViewModel extends AndroidViewModel {
                     refundedMoney += amount.longValue();
                     break;
 
-                default:
-                    // Các đơn chưa được đánh là Đã giao / Hoàn thành / Đã hủy / Hoàn tiền
-                    pending++;
+                case Order.STATUS_CONFIRMED:
+                case Order.STATUS_PREPARING:
+                    preparing++;
                     break;
+
+                case Order.STATUS_SHIPPING:
+                    shipping++;
+                    break;
+
+                case Order.STATUS_DELIVERED:
+                case Order.STATUS_COMPLETED:
+                case Order.STATUS_RETURN_REQUESTED:
+                case Order.STATUS_RETURN_APPROVED:
+                    delivered++;
+                    break;
+
+                default:
+                    // "Chờ xử lý": tất cả đơn chưa có nhãn đã giao/hoàn thành/đã huỷ/hoàn tiền
+                    // (bao gồm PENDING, WAITING_PAYMENT, CONFIRMED,...)
+                    break;
+            }
+
+            // Pending rule: all orders not in final states
+            boolean isFinal = Order.STATUS_DELIVERED.equals(status)
+                    || Order.STATUS_COMPLETED.equals(status)
+                    || Order.STATUS_CANCELLED.equals(status)
+                    || Order.STATUS_REFUNDED.equals(status);
+            if (!isFinal) {
+                pending++;
             }
         }
 
-        // Count refunded orders as part of total orders, only exclude cancelled orders.
-        long activeOrders = Math.max(0, total - cancelled);
-        long netRevenue = Math.max(0, paidRevenue - refundedMoney);
+        long netRevenue = Math.max(0, revenue - refundedMoney);
 
-        totalOrders.postValue(activeOrders);
+        totalOrders.postValue(countedOrders);
         pendingOrders.postValue(pending);
         preparingOrders.postValue(preparing);
         shippingOrders.postValue(shipping);
@@ -178,9 +243,9 @@ public class AdminViewModel extends AndroidViewModel {
         totalRevenue.postValue(netRevenue);
         refundedAmount.postValue(refundedMoney);
 
-        Log.d(TAG, "Stats: total=" + total
-                + ", active=" + activeOrders
-                + ", paidRevenue=" + paidRevenue
+        Log.d(TAG, "Stats: considered=" + totalConsidered
+                + ", countedOrders=" + countedOrders
+                + ", revenue=" + revenue
                 + ", refundedOrders=" + refundedOrders
                 + ", refundedMoney=" + refundedMoney
                 + ", netRevenue=" + netRevenue);

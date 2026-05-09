@@ -1,12 +1,14 @@
 package com.example.petshop.repository;
 
 import com.example.petshop.model.entity.Voucher;
+import com.example.petshop.model.entity.Notification;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 public class VoucherRepository {
@@ -73,7 +75,12 @@ public class VoucherRepository {
         voucher.setCreatedAt(Timestamp.now().toString());
         voucher.setUsedCount(0);
         db.collection(COL).document(id).set(voucher)
-                .addOnSuccessListener(v -> cb.onSuccess(id))
+                .addOnSuccessListener(v -> {
+                    cb.onSuccess(id);
+                    if (voucher != null && voucher.isActive()) {
+                        sendVoucherNotification(voucher);
+                    }
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
@@ -90,8 +97,22 @@ public class VoucherRepository {
     }
 
     public void toggleActive(String id, boolean isActive, Callback<Void> cb) {
-        db.collection(COL).document(id).update("isActive", isActive)
-                .addOnSuccessListener(v -> cb.onSuccess(null))
+        // Get voucher info first to build notification message
+        db.collection(COL).document(id).get()
+                .addOnSuccessListener(doc -> {
+                    Voucher voucher = doc.toObject(Voucher.class);
+                    if (voucher != null) voucher.setId(doc.getId());
+
+                    db.collection(COL).document(id).update("isActive", isActive)
+                            .addOnSuccessListener(v -> {
+                                cb.onSuccess(null);
+                                if (isActive && voucher != null) {
+                                    voucher.setActive(true);
+                                    sendVoucherNotification(voucher);
+                                }
+                            })
+                            .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
@@ -142,5 +163,69 @@ public class VoucherRepository {
                     }
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    private void sendVoucherNotification(Voucher voucher) {
+        if (voucher == null) return;
+        if (!voucher.isActive()) return;
+
+        db.collection("users")
+                .whereEqualTo("role", "CUSTOMER")
+                .whereEqualTo("status", "ACTIVE")
+                .get()
+                .addOnSuccessListener(snap -> {
+                    if (snap.isEmpty()) return;
+
+                    String title = "Voucher mới! 🎁";
+                    String message = buildVoucherMessage(voucher);
+                    String createdAt = Timestamp.now().toString();
+
+                    for (var doc : snap.getDocuments()) {
+                        String notifId = UUID.randomUUID().toString() + "_" + doc.getId();
+                        Notification notif = new Notification();
+                        notif.setId(notifId);
+                        notif.setUserId(doc.getId());
+                        notif.setTitle(title);
+                        notif.setMessage(message);
+                        notif.setType("PROMO");
+                        notif.setCreatedAt(createdAt);
+                        notif.setRead(false);
+
+                        db.collection("notifications").document(notifId).set(notif)
+                                .addOnFailureListener(e ->
+                                        android.util.Log.e("VoucherRepo", "sendVoucherNotification FAILED for user=" + doc.getId() + ": " + e.getMessage()));
+                    }
+                });
+    }
+
+    private String buildVoucherMessage(Voucher voucher) {
+        String code = voucher.getCode() != null ? voucher.getCode() : "";
+        String discountText;
+        try {
+            String type = voucher.getType() != null ? voucher.getType() : "";
+            if (Voucher.TYPE_FREESHIP.equals(type)) {
+                discountText = "Miễn phí vận chuyển";
+            } else if (Voucher.TYPE_PERCENT.equals(type)) {
+                discountText = "Giảm " + (int) voucher.getDiscountValue() + "%";
+            } else {
+                discountText = "Giảm " + formatPrice(voucher.getDiscountValue());
+            }
+        } catch (Exception e) {
+            discountText = "Có ưu đãi mới";
+        }
+
+        String minOrderText = "";
+        try {
+            if (voucher.getMinOrderAmount() > 0) {
+                minOrderText = "\nĐơn tối thiểu: " + formatPrice(voucher.getMinOrderAmount());
+            }
+        } catch (Exception ignored) { }
+
+        return "Mã: " + code + "\n" + discountText + minOrderText;
+    }
+
+    private String formatPrice(double price) {
+        java.text.NumberFormat nf = java.text.NumberFormat.getInstance(new Locale("vi", "VN"));
+        return nf.format((long) price) + "đ";
     }
 }

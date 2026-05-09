@@ -67,6 +67,9 @@ public class AdminReturnListActivity extends AppCompatActivity {
 
     private void setupChips() {
         setupChip(R.id.chipAll,      null);
+        setupChip(R.id.chipPending,  ReturnRequest.STATUS_PENDING);
+        setupChip(R.id.chipApproved, ReturnRequest.STATUS_APPROVED);
+        setupChip(R.id.chipRefunded, ReturnRequest.STATUS_REFUNDED);
         setupChip(R.id.chipRejected, ReturnRequest.STATUS_REJECTED);
 
         if (chipGroupFilters != null) {
