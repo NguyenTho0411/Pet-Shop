@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  * Chạy 1 lần để tạo tài khoản admin.
  * Gọi AdminSetupHelper.createAdminAccount(email, password, name) từ bất kỳ Activity nào.
- * SAU KHI TẠO XONG NÊN XOÁ FILE NÀY để bảo mật.
+ * SAU KHI TẠO XONG NÊN XOÁ FILE NÀY.
  */
 public class AdminSetupHelper {
 

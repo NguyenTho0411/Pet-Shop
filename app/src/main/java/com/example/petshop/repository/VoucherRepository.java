@@ -3,6 +3,7 @@ package com.example.petshop.repository;
 import com.example.petshop.model.entity.Voucher;
 import com.example.petshop.model.entity.Notification;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
@@ -38,13 +39,12 @@ public class VoucherRepository {
     // Get system vouchers (visible to all users)
     public void getSystemVouchers(Callback<List<Voucher>> cb) {
         db.collection(COL)
-                .whereEqualTo("isActive", true)
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Voucher> list = new ArrayList<>();
                     for (var doc : snap.getDocuments()) {
                         Voucher v = doc.toObject(Voucher.class);
-                        if (v != null) {
+                        if (v != null && v.isActive()) {
                             v.setId(doc.getId());
                             list.add(v);
                         }
@@ -119,9 +119,14 @@ public class VoucherRepository {
     // Track user voucher usage
     public void recordVoucherUsage(String userId, String voucherId, Callback<Void> cb) {
         String usageId = userId + "_" + voucherId + "_" + System.currentTimeMillis();
+        java.util.Map<String, Object> usageData = new java.util.HashMap<>();
+        usageData.put("userId", userId);
+        usageData.put("voucherId", voucherId);
+        usageData.put("timestamp", Timestamp.now());
+
         db.collection(COL).document(voucherId)
                 .collection(COL_USAGE).document(usageId)
-                .set(java.util.Collections.singletonMap("timestamp", Timestamp.now()))
+                .set(usageData)
                 .addOnSuccessListener(v -> {
                     // Increment usage count
                     incrementUsageCount(voucherId, cb);
@@ -132,10 +137,29 @@ public class VoucherRepository {
     public void getUserVoucherUsageCount(String userId, String voucherId, Callback<Long> cb) {
         db.collection(COL).document(voucherId)
                 .collection(COL_USAGE)
-                .whereEqualTo("userId", userId)
                 .get()
-                .addOnSuccessListener(snap -> cb.onSuccess((long) snap.size()))
+                .addOnSuccessListener(snap -> {
+                    long count = 0L;
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        if (isUsageByUser(doc, userId, voucherId)) {
+                            count++;
+                        }
+                    }
+                    cb.onSuccess(count);
+                })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    private boolean isUsageByUser(DocumentSnapshot doc, String userId, String voucherId) {
+        String usageUserId = doc.getString("userId");
+        if (usageUserId != null) {
+            return usageUserId.equals(userId);
+        }
+
+        // Backward compatibility for old usage docs using id format: userId_voucherId_timestamp
+        String docId = doc.getId();
+        String legacyPrefix = userId + "_" + voucherId + "_";
+        return docId != null && docId.startsWith(legacyPrefix);
     }
 
     private void incrementUsageCount(String voucherId, Callback<Void> cb) {

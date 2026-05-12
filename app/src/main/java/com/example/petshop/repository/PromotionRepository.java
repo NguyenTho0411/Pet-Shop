@@ -5,6 +5,7 @@ import com.example.petshop.model.entity.Notification;
 import com.example.petshop.model.entity.Pet;
 import com.example.petshop.model.entity.Promotion;
 import com.google.firebase.Timestamp;
+import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.Query;
 
@@ -23,6 +24,7 @@ public class PromotionRepository {
     }
 
     private static final String COL = "promotions";
+    private static final String COL_USAGE = "promotion_usage";
     private final FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     public void getAll(Callback<List<Promotion>> cb) {
@@ -72,14 +74,12 @@ public class PromotionRepository {
 
     public void getSystemVouchers(Callback<List<Promotion>> cb) {
         db.collection(COL)
-                .whereEqualTo("promotionType", "VOUCHER")
-                .whereEqualTo("active", true)
                 .get()
                 .addOnSuccessListener(snap -> {
                     List<Promotion> list = new ArrayList<>();
                     for (var doc : snap.getDocuments()) {
                         Promotion p = doc.toObject(Promotion.class);
-                        if (p != null && p.isWithinDateRange()) {
+                        if (p != null && p.isActive() && p.isWithinDateRange() && p.isVoucher()) {
                             p.setId(doc.getId());
                             list.add(p);
                         }
@@ -450,6 +450,36 @@ public class PromotionRepository {
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
     }
 
+    public void recordPromotionUsage(String userId, String promotionId, Callback<Void> cb) {
+        String usageId = userId + "_" + promotionId + "_" + System.currentTimeMillis();
+        java.util.Map<String, Object> usageData = new java.util.HashMap<>();
+        usageData.put("userId", userId);
+        usageData.put("promotionId", promotionId);
+        usageData.put("timestamp", Timestamp.now());
+
+        db.collection(COL).document(promotionId)
+                .collection(COL_USAGE).document(usageId)
+                .set(usageData)
+                .addOnSuccessListener(v -> incrementUsageCount(promotionId, cb))
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    public void getUserPromotionUsageCount(String userId, String promotionId, Callback<Long> cb) {
+        db.collection(COL).document(promotionId)
+                .collection(COL_USAGE)
+                .get()
+                .addOnSuccessListener(snap -> {
+                    long count = 0L;
+                    for (DocumentSnapshot doc : snap.getDocuments()) {
+                        if (isUsageByUser(doc, userId, promotionId)) {
+                            count++;
+                        }
+                    }
+                    cb.onSuccess(count);
+                })
+                .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
     /**
      * Giảm usageCount khi đơn hàng bị huỷ (hoàn lại lượt sử dụng voucher).
      */
@@ -463,6 +493,18 @@ public class PromotionRepository {
                     }
                 })
                 .addOnFailureListener(e -> cb.onFailure(e.getMessage()));
+    }
+
+    private boolean isUsageByUser(DocumentSnapshot doc, String userId, String promotionId) {
+        String usageUserId = doc.getString("userId");
+        if (usageUserId != null) {
+            return usageUserId.equals(userId);
+        }
+
+        // Backward compatibility for old docs using id format: userId_promotionId_timestamp
+        String docId = doc.getId();
+        String legacyPrefix = userId + "_" + promotionId + "_";
+        return docId != null && docId.startsWith(legacyPrefix);
     }
 
     private boolean isNotExpired(String endDate) {

@@ -384,26 +384,62 @@ public class CheckoutActivity extends AppCompatActivity {
             return;
         }
 
-        if (hasAppliedVoucher(promo.getId(), promo.getVoucherCode())) {
-            Toast.makeText(this, "Mã này đã được áp dụng", Toast.LENGTH_SHORT).show();
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+        if (uid == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập để dùng voucher", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginActivity.class));
             return;
         }
 
-        double discount = promo.calculateDiscount(subtotal);
+        progressBar.setVisibility(View.VISIBLE);
+        new PromotionRepository().getUserPromotionUsageCount(uid, promo.getId(), new PromotionRepository.Callback<Long>() {
+            @Override
+            public void onSuccess(Long usageCountData) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
 
-        appliedVouchers.add(new AppliedVoucher(
-                promo.getId(),
-                promo.getVoucherCode(),
-                true,
-                discount
-        ));
+                    long usageCount = usageCountData != null ? usageCountData : 0L;
+                    int perUserLimit = Math.max(0, promo.getPerUserLimit());
+                    if (perUserLimit > 0 && usageCount >= perUserLimit) {
+                        Toast.makeText(CheckoutActivity.this,
+                                "Bạn đã dùng mã này tối đa " + perUserLimit + " lần",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        recalculateVoucherDiscount(subtotal);
-        updatePriceSummary(subtotal);
+                    if (hasAppliedVoucher(promo.getId(), promo.getVoucherCode())) {
+                        Toast.makeText(CheckoutActivity.this, "Mã này đã được áp dụng", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        Toast.makeText(this,
-                "Đã cộng dồn mã " + promo.getVoucherCode(),
-                Toast.LENGTH_SHORT).show();
+                    double discount = promo.calculateDiscount(subtotal);
+                    appliedVouchers.add(new AppliedVoucher(
+                            promo.getId(),
+                            promo.getVoucherCode(),
+                            true,
+                            discount
+                    ));
+
+                    recalculateVoucherDiscount(subtotal);
+                    updatePriceSummary(subtotal);
+                    Toast.makeText(CheckoutActivity.this,
+                            "Đã cộng dồn mã " + promo.getVoucherCode(),
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(CheckoutActivity.this,
+                            "Không thể kiểm tra lượt dùng voucher. Vui lòng thử lại.",
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void validateAndApplyVoucher(Voucher v) {
@@ -434,26 +470,62 @@ public class CheckoutActivity extends AppCompatActivity {
             return;
         }
 
-        if (hasAppliedVoucher(v.getId(), v.getCode())) {
-            Toast.makeText(this, "Mã này đã được áp dụng", Toast.LENGTH_SHORT).show();
+        String uid = FirebaseAuth.getInstance().getCurrentUser() != null
+                ? FirebaseAuth.getInstance().getCurrentUser().getUid()
+                : null;
+        if (uid == null) {
+            Toast.makeText(this, "Vui lòng đăng nhập để dùng voucher", Toast.LENGTH_SHORT).show();
+            startActivity(new Intent(this, LoginActivity.class));
             return;
         }
 
-        double discount = v.calculateDiscount(subtotal);
+        progressBar.setVisibility(View.VISIBLE);
+        new VoucherRepository().getUserVoucherUsageCount(uid, v.getId(), new VoucherRepository.Callback<Long>() {
+            @Override
+            public void onSuccess(Long usageCountData) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
 
-        appliedVouchers.add(new AppliedVoucher(
-                v.getId(),
-                v.getCode(),
-                false,
-                discount
-        ));
+                    long usageCount = usageCountData != null ? usageCountData : 0L;
+                    int perUserLimit = Math.max(0, v.getPerUserLimit());
+                    if (perUserLimit > 0 && usageCount >= perUserLimit) {
+                        Toast.makeText(CheckoutActivity.this,
+                                "Bạn đã dùng mã này tối đa " + perUserLimit + " lần",
+                                Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        recalculateVoucherDiscount(subtotal);
-        updatePriceSummary(subtotal);
+                    if (hasAppliedVoucher(v.getId(), v.getCode())) {
+                        Toast.makeText(CheckoutActivity.this, "Mã này đã được áp dụng", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
 
-        Toast.makeText(this,
-                "Đã cộng dồn mã " + v.getCode(),
-                Toast.LENGTH_SHORT).show();
+                    double discount = v.calculateDiscount(subtotal);
+                    appliedVouchers.add(new AppliedVoucher(
+                            v.getId(),
+                            v.getCode(),
+                            false,
+                            discount
+                    ));
+
+                    recalculateVoucherDiscount(subtotal);
+                    updatePriceSummary(subtotal);
+                    Toast.makeText(CheckoutActivity.this,
+                            "Đã cộng dồn mã " + v.getCode(),
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+
+            @Override
+            public void onFailure(String error) {
+                runOnUiThread(() -> {
+                    progressBar.setVisibility(View.GONE);
+                    Toast.makeText(CheckoutActivity.this,
+                            "Không thể kiểm tra lượt dùng voucher. Vui lòng thử lại.",
+                            Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
     }
 
     private void loadSystemVouchers() {
@@ -772,15 +844,15 @@ public class CheckoutActivity extends AppCompatActivity {
             if (applied == null || applied.id == null || applied.id.isEmpty()) continue;
 
             if (applied.promotionVoucher) {
-                new PromotionRepository().incrementUsageCount(applied.id, new PromotionRepository.Callback<Void>() {
+                new PromotionRepository().recordPromotionUsage(userId, applied.id, new PromotionRepository.Callback<Void>() {
                     @Override
                     public void onSuccess(Void data) {
-                        android.util.Log.d("Checkout", "Promotion voucher usage incremented: " + applied.id);
+                        android.util.Log.d("Checkout", "Promotion voucher usage recorded: " + applied.id);
                     }
 
                     @Override
                     public void onFailure(String error) {
-                        android.util.Log.e("Checkout", "Failed to increment promotion usage: " + error);
+                        android.util.Log.e("Checkout", "Failed to record promotion usage: " + error);
                     }
                 });
             } else {
